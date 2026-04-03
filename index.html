@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hive 🐝</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #F5C518;
+    --orange: #FF6B35;
+    --dark-bg: #0D0D0F;
+    --dark-card: #16161A;
+    --dark-border: #2a2a2e;
+    --light-bg: #FAF9F6;
+    --light-card: #FFFFFF;
+    --light-border: #E8E6E1;
+    --text-dark: #0D0D0F;
+    --text-light: #FAF9F6;
+    --text-muted-dark: #888;
+    --text-muted-light: #999;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* PHONE SHELL */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--dark-bg);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08);
+    border: 2px solid #222;
+  }
+
+  .phone.light-mode {
+    background: var(--light-bg);
+  }
+
+  /* SCREENS */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ==================== SPLASH SCREEN ==================== */
+  #splash {
+    background: var(--dark-bg);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .splash-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  .splash-bee {
+    font-size: 56px;
+    animation: beeSpin 1s ease both 0.3s;
+  }
+
+  .splash-tagline {
+    color: rgba(255,255,255,0.4);
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: fadeUp 0.6s ease both 0.5s;
+  }
+
+  .splash-ring {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 2px solid rgba(245,197,24,0.15);
+    position: absolute;
+    animation: pulseRing 2s ease infinite;
+  }
+  .splash-ring:nth-child(2) { width: 260px; height: 260px; animation-delay: 0.3s; }
+  .splash-ring:nth-child(3) { width: 340px; height: 340px; animation-delay: 0.6s; }
+
+  @keyframes splashPop {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes beeSpin {
+    from { transform: rotate(-20deg) scale(0); }
+    to { transform: rotate(0deg) scale(1); }
+  }
+  @keyframes fadeUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes pulseRing {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.1; transform: scale(1.05); }
+  }
+
+  /* ==================== AUTH SCREEN ==================== */
+  #auth {
+    background: var(--dark-bg);
+    padding: 60px 32px 40px;
+    align-items: center;
+  }
+
+  .auth-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .auth-tagline {
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+
+  .auth-tabs {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    padding: 4px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 11px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .auth-tab.active {
+    background: var(--gold);
+    color: #000;
+    font-weight: 700;
+  }
+
+  /* Steps indicator */
+  .steps {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+  .step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .step-dot.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(245,197,24,0.1);
+  }
+  .step-dot.done {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: #000;
+  }
+  .step-line {
+    flex: 1;
+    height: 1.5px;
+    background: rgba(255,255,255,0.1);
+  }
+  .step-line.done { background: var(--gold); }
+
+  .auth-form { width: 100%; }
+
+  .form-row { display: flex; gap: 12px; }
+
+  .field {
+    margin-bottom: 16px;
+    flex: 1;
+  }
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 8px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--gold);
+    background: rgba(245,197,24,0.05);
+  }
+  .field input::placeholder { color: rgba(255,255,255,0.2); }
+
+  .field.has-icon { position: relative; }
+  .field.has-icon input { padding-right: 44px; }
+  .field .eye-btn {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    font-size: 16px;
+    padding-top: 24px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(245,197,24,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: rgba(255,255,255,0.2);
+    font-size: 12px;
+  }
+  .auth-divider::before, .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .social-btns { display: flex; gap: 10px; }
+  .social-btn {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .social-btn:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+
+  /* Sign-in panel */
+  #signin-panel { display: none; width: 100%; }
+  #signup-panel { width: 100%; }
+
+  /* ==================== MAIN APP ==================== */
+  #app {
+    background: var(--dark-bg);
+    flex-direction: row;
+  }
+  .phone.light-mode #app { background: var(--light-bg); }
+
+  /* SIDEBAR NAV */
+  .sidebar {
+    width: 60px;
+    background: var(--dark-card);
+    border-right: 1px solid var(--dark-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 0 32px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .phone.light-mode .sidebar {
+    background: #F0EDE8;
+    border-right-color: var(--light-border);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    color: var(--gold);
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .nav-item {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(245,197,24,0.1); }
+  .nav-item.active { background: rgba(245,197,24,0.15); }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    width: 3px;
+    height: 24px;
+    background: var(--gold);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .notif-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: var(--orange);
+    border-radius: 50%;
+  }
+
+  .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+  .theme-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .phone.light-mode .theme-btn { border-color: rgba(0,0,0,0.15); color: rgba(0,0,0,0.4); }
+
+  .avatar-nav {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .avatar-nav:hover { border-color: var(--gold); }
+
+  /* MAIN CONTENT */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+  .main-content::-webkit-scrollbar { display: none; }
+
+  /* FEED HEADER */
+  .feed-header {
+    padding: 24px 20px 16px;
+    position: sticky;
+    top: 0;
+    background: var(--dark-bg);
+    z-index: 10;
+    border-bottom: 1px solid var(--dark-border);
+  }
+  .phone.light-mode .feed-header { background: var(--light-bg); border-bottom-color: var(--light-border); }
+
+  .feed-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .phone.light-mode .feed-title { color: var(--text-dark); }
+
+  /* STORIES BAR */
+  .stories-bar {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 16px;
+  }
+  .stories-bar::-webkit-scrollbar { display: none; }
+
+  .story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .story-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 2.5px solid var(--gold);
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .story-avatar:hover { transform: scale(1.05); }
+  .story-avatar.viewed { border-color: rgba(255,255,255,0.2); }
+  .phone.light-mode .story-avatar { background: rgba(0,0,0,0.05); }
+  .phone.light-mode .story-avatar.viewed { border-color: rgba(0,0,0,0.15); }
+
+  .story-name {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    font-weight: 500;
+  }
+  .phone.light-mode .story-name { color: rgba(0,0,0,0.5); }
+
+  /* FEED TABS */
+  .feed-tabs {
+    display: flex;
+    gap: 24px;
+  }
+  .feed-tab {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .feed-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .phone.light-mode .feed-tab { color: rgba(0,0,0,0.3); }
+  .phone.light-mode .feed-tab.active { color: var(--gold); }
+
+  /* COMPOSE BOX */
+  .compose-box {
+    margin: 16px;
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 18px;
+    padding: 16px;
+  }
+  .phone.light-mode .compose-box { background: #fff; border-color: var(--light-border); }
+
+  .compose-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .compose-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .compose-input {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1.5px solid var(--dark-border);
+    padding: 6px 0 10px;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+  }
+  .phone.light-mode .compose-input { border-bottom-color: var(--light-border); color: rgba(0,0,0,0.4); }
+
+  .compose-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .compose-actions { display: flex; gap: 10px; }
+  .compose-action {
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .compose-action:hover { opacity: 1; transform: scale(1.1); }
+
+  .post-btn {
+    padding: 8px 18px;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .post-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,197,24,0.3); }
+
+  /* POST CARD */
+  .post-card {
+    margin: 0 16px 12px;
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 18px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .post-card:hover { border-color: rgba(245,197,24,0.2); }
+  .phone.light-mode .post-card { background: #fff; border-color: var(--light-border); }
+
+  .post-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .post-user { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+
+  .post-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+  }
+  .phone.light-mode .post-avatar { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.4); }
+
+  .post-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .phone.light-mode .post-name { color: var(--text-dark); }
+
+  .verified { color: var(--gold); font-size: 12px; }
+
+  .post-handle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+  .phone.light-mode .post-handle { color: rgba(0,0,0,0.4); }
+
+  .post-more {
+    color: rgba(255,255,255,0.3);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    background: none;
+    border: none;
+  }
+  .post-more:hover { background: rgba(255,255,255,0.05); }
+  .phone.light-mode .post-more { color: rgba(0,0,0,0.3); }
+
+  .post-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 12px;
+  }
+  .phone.light-mode .post-body { color: rgba(0,0,0,0.7); }
+
+  .post-hashtag {
+    color: var(--orange);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .post-image {
+    width: 100%;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .phone.light-mode .post-image { background: rgba(0,0,0,0.04); }
+
+  /* POST ACTIONS */
+  .post-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.06); }
+  .phone.light-mode .action-btn { color: rgba(0,0,0,0.4); }
+  .phone.light-mode .action-btn:hover { background: rgba(0,0,0,0.05); }
+
+  .action-icon { font-size: 16px; }
+
+  /* LIKE BUTTON */
+  .like-btn { position: relative; }
+  .like-btn.liked { color: #ff4d6d !important; }
+  .like-btn.liked .action-icon { animation: heartPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+
+  @keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+
+  /* Particle burst */
+  .particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    pointer-events: none;
+  }
+  .particle {
+    position: absolute;
+    font-size: 12px;
+    animation: particleFly 0.6s ease forwards;
+    opacity: 0;
+  }
+  @keyframes particleFly {
+    0% { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.5); opacity: 0; }
+  }
+
+  /* FOLLOW BUTTON (in action bar) */
+  .follow-btn {
+    margin-left: auto;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+  .follow-btn.following {
+    background: var(--gold);
+    color: #000;
+  }
+  .follow-btn:hover { transform: scale(1.03); }
+
+  /* COMMENTS SECTION */
+  .comments-section {
+    margin-top: 12px;
+    border-top: 1px solid var(--dark-border);
+    padding-top: 12px;
+    display: none;
+  }
+  .phone.light-mode .comments-section { border-top-color: var(--light-border); }
+  .comments-section.open { display: block; }
+
+  .comment {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .comment-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .phone.light-mode .comment-avatar { background: rgba(0,0,0,0.06); }
+
+  .comment-body { flex: 1; }
+  .comment-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 2px;
+  }
+  .phone.light-mode .comment-name { color: rgba(0,0,0,0.7); }
+  .comment-text { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .phone.light-mode .comment-text { color: rgba(0,0,0,0.5); }
+
+  .comment-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+  }
+  .comment-input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    outline: none;
+  }
+  .phone.light-mode .comment-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #000; }
+  .comment-send {
+    padding: 8px 12px;
+    background: var(--gold);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.2s;
+  }
+  .comment-send:hover { transform: scale(1.05); }
+
+  /* PROFILE SCREEN */
+  #profile-screen {
+    background: var(--dark-bg);
+    overflow-y: auto;
+    scrollbar-width: none;
+    display: none;
+    flex-direction: column;
+  }
+  #profile-screen::-webkit-scrollbar { display: none; }
+  #profile-screen.show { display: flex !important; }
+  .phone.light-mode #profile-screen { background: var(--light-bg); }
+
+  .profile-cover {
+    height: 130px;
+    background: linear-gradient(135deg, #F5C518 0%, #FF6B35 100%);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .profile-back {
+    position: absolute;
+    top: 50px;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    border: none;
+    color: #fff;
+  }
+
+  .profile-avatar-wrap {
+    position: absolute;
+    bottom: -28px;
+    left: 20px;
+  }
+
+  .profile-avatar-big {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--dark-card);
+    border: 3px solid var(--dark-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    color: var(--gold);
+  }
+  .phone.light-mode .profile-avatar-big { background: var(--light-card); border-color: var(--light-bg); }
+
+  .profile-info {
+    padding: 40px 20px 20px;
+  }
+
+  .profile-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .profile-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone.light-mode .profile-name { color: var(--text-dark); }
+
+  .profile-handle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 10px;
+  }
+  .phone.light-mode .profile-handle { color: rgba(0,0,0,0.4); }
+
+  .profile-bio {
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+  }
+  .phone.light-mode .profile-bio { color: rgba(0,0,0,0.6); }
+
+  .profile-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+  }
+  .phone.light-mode .stat-num { color: var(--text-dark); }
+  .stat-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .phone.light-mode .stat-label { color: rgba(0,0,0,0.4); }
+
+  .profile-follow-btn {
+    padding: 11px 28px;
+    border-radius: 12px;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .profile-follow-btn.following {
+    background: var(--gold);
+    color: #000;
+  }
+  .profile-follow-btn:hover { transform: scale(1.02); }
+
+  .profile-post-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 8px;
+  }
+
+  .grid-post {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .grid-post:hover { opacity: 0.8; }
+  .phone.light-mode .grid-post { background: rgba(0,0,0,0.04); }
+
+  /* STORY VIEWER */
+  .story-viewer {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+  }
+  .story-viewer.open { display: flex; }
+
+  .story-progress {
+    display: flex;
+    gap: 4px;
+    padding: 52px 16px 12px;
+  }
+  .story-prog-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .story-prog-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .story-prog-fill.done { width: 100%; }
+  .story-prog-fill.active { animation: storyFill 5s linear forwards; }
+  @keyframes storyFill { from { width: 0% } to { width: 100% } }
+
+  .story-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+  .story-user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .story-user-name {
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .story-time { color: rgba(255,255,255,0.5); font-size: 12px; }
+  .story-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .story-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(245,197,24,0.95);
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* NOTIFICATION DOT ANIMATION */
+  @keyframes notifPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  .notif-badge { animation: notifPulse 2s ease infinite; }
+
+  /* Smooth transitions */
+  .screen { animation: screenIn 0.3s ease; }
+  @keyframes screenIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* SCROLL HINT */
+  .load-more {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255,255,255,0.2);
+    font-size: 12px;
+  }
+  .phone.light-mode .load-more { color: rgba(0,0,0,0.2); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div class="screen active" id="splash">
+    <div class="splash-ring"></div>
+    <div class="splash-ring"></div>
+    <div class="splash-ring"></div>
+    <div class="splash-logo">
+      <span class="splash-bee">🐝</span>
+      Hive
+    </div>
+    <div class="splash-tagline">Your community. Your vibe.</div>
+  </div>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div class="screen" id="auth">
+    <div class="auth-logo"><span>🐝</span> Hive</div>
+    <div class="auth-tagline">Your community. Your vibe.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signup')">Create Account</button>
+      <button class="auth-tab" onclick="switchAuthTab('signin')">Sign In</button>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="signup-panel">
+      <div class="steps">
+        <div class="step-dot active" id="step1">1</div>
+        <div class="step-line" id="line1"></div>
+        <div class="step-dot" id="step2">2</div>
+        <div class="step-line" id="line2"></div>
+        <div class="step-dot" id="step3">3</div>
+      </div>
+
+      <div class="auth-form" id="step1-form">
+        <div class="form-row">
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" placeholder="Jane" id="fname">
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" placeholder="Doe" id="lname">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" placeholder="you@example.com" id="email1">
+        </div>
+        <div class="field has-icon">
+          <label>Password</label>
+          <input type="password" placeholder="Min. 8 characters" id="pass1">
+          <button class="eye-btn" onclick="togglePass('pass1',this)">👁</button>
+        </div>
+        <button class="btn-primary" onclick="goStep(2)">Continue →</button>
+      </div>
+
+      <div class="auth-form" id="step2-form" style="display:none">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" placeholder="@yourusername" id="username">
+        </div>
+        <div class="field">
+          <label>Bio (optional)</label>
+          <input type="text" placeholder="Tell the Hive about yourself...">
+        </div>
+        <button class="btn-primary" onclick="goStep(3)">Continue →</button>
+        <button class="btn-primary" style="background:transparent;color:rgba(255,255,255,0.4);margin-top:8px;border:1px solid rgba(255,255,255,0.1)" onclick="goStep(1)">← Back</button>
+      </div>
+
+      <div class="auth-form" id="step3-form" style="display:none">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:56px;margin-bottom:12px">🐝</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;color:#fff;font-size:18px;margin-bottom:6px">You're almost in!</div>
+          <div style="color:rgba(255,255,255,0.4);font-size:13px">Choose your profile emoji</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px" id="emoji-picker">
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'😎')">😎</span>
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'🌸')">🌸</span>
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'🚀')">🚀</span>
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'🎨')">🎨</span>
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'🌍')">🌍</span>
+          <span class="emoji-opt" style="font-size:32px;cursor:pointer;padding:8px;border-radius:12px;border:2px solid transparent;transition:all 0.2s" onclick="pickEmoji(this,'🎵')">🎵</span>
+        </div>
+        <button class="btn-primary" onclick="enterApp()">Join the Hive 🐝</button>
+        <button class="btn-primary" style="background:transparent;color:rgba(255,255,255,0.4);margin-top:8px;border:1px solid rgba(255,255,255,0.1)" onclick="goStep(2)">← Back</button>
+      </div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="signin-panel">
+      <div class="auth-form">
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" placeholder="you@example.com">
+        </div>
+        <div class="field has-icon">
+          <label>Password</label>
+          <input type="password" placeholder="Your password" id="pass-signin">
+          <button class="eye-btn" onclick="togglePass('pass-signin',this)">👁</button>
+        </div>
+        <button class="btn-primary" onclick="enterApp()">Sign In →</button>
+        <div style="text-align:center;margin-top:12px">
+          <span style="color:rgba(255,255,255,0.3);font-size:13px;cursor:pointer;text-decoration:underline">Forgot password?</span>
+        </div>
+        <div class="auth-divider">or continue with</div>
+        <div class="social-btns">
+          <button class="social-btn" onclick="enterApp()">🍎 Apple</button>
+          <button class="social-btn" onclick="enterApp()">G Google</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div class="screen" id="app">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-logo">Y</div>
+      <div class="nav-item active" onclick="setNav(this,'feed')" title="Home">🏠</div>
+      <div class="nav-item" onclick="setNav(this,'explore')" title="Explore">🔍</div>
+      <div class="nav-item" onclick="setNav(this,'notifs')" title="Notifications">
+        🔔
+        <div class="notif-badge"></div>
+      </div>
+      <div class="nav-item" onclick="setNav(this,'messages')" title="Messages">✉️</div>
+      <div class="nav-item" onclick="setNav(this,'saved')" title="Saved">📝</div>
+      <div class="sidebar-bottom">
+        <button class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode" id="theme-btn">🌙</button>
+        <div class="avatar-nav" id="nav-avatar" onclick="openProfile('You','😎','@yourusername','Building cool things on the internet 🛠️',247,1024,389)">Y</div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-content" id="main-content">
+
+      <!-- FEED -->
+      <div id="feed-panel">
+        <div class="feed-header">
+          <div class="feed-title">Your Hive 🍯</div>
+
+          <!-- STORIES BAR -->
+          <div class="stories-bar">
+            <div class="story-item" onclick="openStory('You','😎')">
+              <div class="story-avatar">😎</div>
+              <div class="story-name">You</div>
+            </div>
+            <div class="story-item" onclick="openStory('Sara','🌸')">
+              <div class="story-avatar">🌸</div>
+              <div class="story-name">Sara</div>
+            </div>
+            <div class="story-item" onclick="openStory('DevMike','🚀')">
+              <div class="story-avatar viewed">🚀</div>
+              <div class="story-name">DevMike</div>
+            </div>
+            <div class="story-item" onclick="openStory('ArtLena','🎨')">
+              <div class="story-avatar">🎨</div>
+              <div class="story-name">ArtLena</div>
+            </div>
+            <div class="story-item" onclick="openStory('TravelJo','🌍')">
+              <div class="story-avatar viewed">🌍</div>
+              <div class="story-name">TravelJo</div>
+            </div>
+            <div class="story-item" onclick="openStory('BeatKing','🎵')">
+              <div class="story-avatar">🎵</div>
+              <div class="story-name">BeatKing</div>
+            </div>
+          </div>
+
+          <!-- TABS -->
+          <div class="feed-tabs">
+            <button class="feed-tab active" onclick="switchTab(this)">For You</button>
+            <button class="feed-tab" onclick="switchTab(this)">Following</button>
+            <button class="feed-tab" onclick="switchTab(this)">Trending</button>
+          </div>
+        </div>
+
+        <!-- COMPOSE -->
+        <div class="compose-box">
+          <div class="compose-top">
+            <div class="compose-avatar" id="compose-avatar">Y</div>
+            <input class="compose-input" placeholder="Share something with the Hive..." id="compose-text">
+          </div>
+          <div class="compose-bottom">
+            <div class="compose-actions">
+              <span class="compose-action" title="Image">🖼️</span>
+              <span class="compose-action" title="Video">🎬</span>
+              <span class="compose-action" title="Emoji">😊</span>
+              <span class="compose-action" title="Location">📍</span>
+            </div>
+            <button class="post-btn" onclick="postVibe()">Post to Hive 🐝</button>
+          </div>
+        </div>
+
+        <!-- POSTS -->
+        <div id="posts-container">
+
+          <!-- POST 1 -->
+          <div class="post-card">
+            <div class="post-header">
+              <div class="post-user" onclick="openProfile('Sara Moon','🌸','@saramoon','Full-stack dev & coffee enthusiast ☕ Building things that matter.',312,2847,198)">
+                <div class="post-avatar">🌸</div>
+                <div>
+                  <div class="post-name">Sara Moon <span class="verified">✦</span></div>
+                  <div class="post-handle">@saramoon · 2h</div>
+                </div>
+              </div>
+              <button class="post-more">···</button>
+            </div>
+            <div class="post-body">
+              Just shipped a new feature after 3 weeks of work 🎉 There's nothing like that feeling when everything finally clicks. The late nights were SO worth it. <span class="post-hashtag">#buildinpublic</span> <span class="post-hashtag">#shipped</span>
+            </div>
+            <div class="post-image">🚀</div>
+            <div class="post-actions">
+              <button class="action-btn like-btn" onclick="toggleLike(this)">
+                <span class="action-icon">🤍</span> <span class="like-count">124</span>
+                <div class="particles" id="p1"></div>
+              </button>
+              <button class="action-btn" onclick="toggleComments(this)">
+                <span class="action-icon">💬</span> 38
+              </button>
+              <button class="action-btn">
+                <span class="action-icon">🔁</span> 19
+              </button>
+              <button class="follow-btn" onclick="toggleFollow(this)">Follow</button>
+            </div>
+            <div class="comments-section">
+              <div class="comment">
+                <div class="comment-avatar">🚀</div>
+                <div class="comment-body">
+                  <div class="comment-name">DevMike</div>
+                  <div class="comment-text">This is huge! Congrats! 🔥</div>
+                </div>
+              </div>
+              <div class="comment">
+                <div class="comment-avatar">🌍</div>
+                <div class="comment-body">
+                  <div class="comment-name">TravelJo</div>
+                  <div class="comment-text">Late nights + shipping = the best feeling ever 🙌</div>
+                </div>
+              </div>
+              <div class="comment-input-row">
+                <input class="comment-input" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(this)">
+                <button class="comment-send" onclick="addComment(this.previousElementSibling)">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- POST 2 -->
+          <div class="post-card">
+            <div class="post-header">
+              <div class="post-user" onclick="openProfile('TravelJo','🌍','@traveljo','Wandering the globe 🌎 | 47 countries & counting | Capturing moments',89,5621,304)">
+                <div class="post-avatar">🌍</div>
+                <div>
+                  <div class="post-name">TravelJo</div>
+                  <div class="post-handle">@traveljo · 5h</div>
+                </div>
+              </div>
+              <button class="post-more">···</button>
+            </div>
+            <div class="post-body">
+              Woke up to this view in Santorini 🌅 Can't believe this is real life. Every single morning feels like a painting. Highly recommend just... leaving. <span class="post-hashtag">#travel</span> <span class="post-hashtag">#santorini</span> <span class="post-hashtag">#blessed</span>
+            </div>
+            <div class="post-image">🌅</div>
+            <div class="post-actions">
+              <button class="action-btn like-btn liked" onclick="toggleLike(this)">
+                <span class="action-icon">❤️</span> <span class="like-count">892</span>
+                <div class="particles"></div>
+              </button>
+              <button class="action-btn" onclick="toggleComments(this)">
+                <span class="action-icon">💬</span> 107
+              </button>
+              <button class="action-btn">
+                <span class="action-icon">🔁</span> 64
+              </button>
+              <button class="follow-btn following" onclick="toggleFollow(this)">Following</button>
+            </div>
+            <div class="comments-section">
+              <div class="comment">
+                <div class="comment-avatar">🌸</div>
+                <div class="comment-body">
+                  <div class="comment-name">Sara Moon</div>
+                  <div class="comment-text">I need to be here immediately 😭</div>
+                </div>
+              </div>
+              <div class="comment-input-row">
+                <input class="comment-input" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(this)">
+                <button class="comment-send" onclick="addComment(this.previousElementSibling)">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- POST 3 -->
+          <div class="post-card">
+            <div class="post-header">
+              <div class="post-user" onclick="openProfile('DevMike','🚀','@devmike','Senior engineer @ Anthropic | Open source | Clean code evangelist',521,8340,267)">
+                <div class="post-avatar">🚀</div>
+                <div>
+                  <div class="post-name">DevMike <span class="verified">✦</span></div>
+                  <div class="post-handle">@devmike · 8h</div>
+                </div>
+              </div>
+              <button class="post-more">···</button>
+            </div>
+            <div class="post-body">
+              Hot take: the best documentation is the code that doesn't need documentation. Write code for the human reading it next, not the machine running it. <span class="post-hashtag">#programming</span> <span class="post-hashtag">#cleancode</span>
+            </div>
+            <div class="post-actions">
+              <button class="action-btn like-btn" onclick="toggleLike(this)">
+                <span class="action-icon">🤍</span> <span class="like-count">441</span>
+                <div class="particles"></div>
+              </button>
+              <button class="action-btn" onclick="toggleComments(this)">
+                <span class="action-icon">💬</span> 93
+              </button>
+              <button class="action-btn">
+                <span class="action-icon">🔁</span> 211
+              </button>
+              <button class="follow-btn" onclick="toggleFollow(this)">Follow</button>
+            </div>
+            <div class="comments-section">
+              <div class="comment-input-row">
+                <input class="comment-input" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(this)">
+                <button class="comment-send" onclick="addComment(this.previousElementSibling)">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- POST 4 -->
+          <div class="post-card">
+            <div class="post-header">
+              <div class="post-user" onclick="openProfile('ArtLena','🎨','@artlena','Digital artist | Procreate + Figma | NFTs & prints available 🖼️',198,12400,445)">
+                <div class="post-avatar">🎨</div>
+                <div>
+                  <div class="post-name">ArtLena</div>
+                  <div class="post-handle">@artlena · 12h</div>
+                </div>
+              </div>
+              <button class="post-more">···</button>
+            </div>
+            <div class="post-body">
+              Finished my new digital piece after 14 hours straight 🎭 Art is 10% inspiration and 90% staring at the canvas wondering why it looks wrong. <span class="post-hashtag">#digitalart</span> <span class="post-hashtag">#procreate</span> <span class="post-hashtag">#artistsonvibe</span>
+            </div>
+            <div class="post-image">🎨</div>
+            <div class="post-actions">
+              <button class="action-btn like-btn" onclick="toggleLike(this)">
+                <span class="action-icon">🤍</span> <span class="like-count">2.1k</span>
+                <div class="particles"></div>
+              </button>
+              <button class="action-btn" onclick="toggleComments(this)">
+                <span class="action-icon">💬</span> 187
+              </button>
+              <button class="action-btn">
+                <span class="action-icon">🔁</span> 432
+              </button>
+              <button class="follow-btn" onclick="toggleFollow(this)">Follow</button>
+            </div>
+            <div class="comments-section">
+              <div class="comment-input-row">
+                <input class="comment-input" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(this)">
+                <button class="comment-send" onclick="addComment(this.previousElementSibling)">Send</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="load-more">You're all caught up 🐝</div>
+      </div>
+
+      <!-- EXPLORE PANEL -->
+      <div id="explore-panel" style="display:none;padding:24px 16px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px" class="panel-title">Explore 🔍</div>
+        <input style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.08);border-radius:14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:20px" placeholder="Search users, hashtags, vibes...">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:12px;letter-spacing:1px">TRENDING HASHTAGS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="padding:8px 14px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:20px;color:var(--gold);font-size:13px;cursor:pointer">#buildinpublic</span>
+          <span style="padding:8px 14px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:20px;color:var(--orange);font-size:13px;cursor:pointer">#santorini</span>
+          <span style="padding:8px 14px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:20px;color:var(--gold);font-size:13px;cursor:pointer">#digitalart</span>
+          <span style="padding:8px 14px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:20px;color:var(--orange);font-size:13px;cursor:pointer">#cleancode</span>
+          <span style="padding:8px 14px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:20px;color:var(--gold);font-size:13px;cursor:pointer">#travel</span>
+          <span style="padding:8px 14px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:20px;color:var(--orange);font-size:13px;cursor:pointer">#procreate</span>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS PANEL -->
+      <div id="notifs-panel" style="display:none;padding:24px 16px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px" class="panel-title">Notifications 🔔</div>
+        <div id="notifs-list">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="font-size:28px">🌸</div>
+            <div style="flex:1"><span style="color:#fff;font-weight:600;font-size:13px">Sara Moon</span> <span style="color:rgba(255,255,255,0.4);font-size:13px">liked your post</span><div style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:2px">2 minutes ago</div></div>
+            <div style="font-size:16px">❤️</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="font-size:28px">🚀</div>
+            <div style="flex:1"><span style="color:#fff;font-weight:600;font-size:13px">DevMike</span> <span style="color:rgba(255,255,255,0.4);font-size:13px">started following you</span><div style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:2px">15 minutes ago</div></div>
+            <div style="font-size:16px">👤</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="font-size:28px">🌍</div>
+            <div style="flex:1"><span style="color:#fff;font-weight:600;font-size:13px">TravelJo</span> <span style="color:rgba(255,255,255,0.4);font-size:13px">commented on your post</span><div style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:2px">1 hour ago</div></div>
+            <div style="font-size:16px">💬</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="font-size:28px">🎨</div>
+            <div style="flex:1"><span style="color:#fff;font-weight:600;font-size:13px">ArtLena</span> <span style="color:rgba(255,255,255,0.4);font-size:13px">reposted your vibe</span><div style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:2px">3 hours ago</div></div>
+            <div style="font-size:16px">🔁</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MESSAGES PANEL -->
+      <div id="messages-panel" style="display:none;padding:24px 16px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px" class="panel-title">Messages ✉️</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:14px;background:rgba(245,197,24,0.06);cursor:pointer" onclick="showToast('DMs coming in Phase 2 🐝')">
+            <div style="font-size:32px">🌸</div>
+            <div style="flex:1">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff">Sara Moon</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.4)">Just saw your post! Amazing work 🔥</div>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25)">2m</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:14px;cursor:pointer" onclick="showToast('DMs coming in Phase 2 🐝')">
+            <div style="font-size:32px">🚀</div>
+            <div style="flex:1">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff">DevMike</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.4)">Let's collab on that feature idea</div>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25)">1h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAVED PANEL -->
+      <div id="saved-panel" style="display:none;padding:24px 16px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px" class="panel-title">Saved 📝</div>
+        <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.3)">
+          <div style="font-size:48px;margin-bottom:12px">📌</div>
+          <div style="font-size:14px">Posts you save will appear here</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PROFILE OVERLAY -->
+    <div class="screen" id="profile-screen" style="position:absolute;inset:0;z-index:50;overflow-y:auto">
+      <div class="profile-cover">
+        <button class="profile-back" onclick="closeProfile()">←</button>
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar-big" id="prof-avatar-big">🌸</div>
+        </div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-top-row">
+          <div>
+            <div class="profile-name" id="prof-name">Sara Moon <span class="verified">✦</span></div>
+            <div class="profile-handle" id="prof-handle">@saramoon</div>
+          </div>
+          <button class="profile-follow-btn" id="prof-follow-btn" onclick="toggleProfileFollow(this)">Follow</button>
+        </div>
+        <div class="profile-bio" id="prof-bio">Full-stack dev & coffee enthusiast ☕</div>
+        <div class="profile-stats">
+          <div class="stat"><div class="stat-num" id="prof-posts">312</div><div class="stat-label">Posts</div></div>
+          <div class="stat"><div class="stat-num" id="prof-followers">2.8k</div><div class="stat-label">Followers</div></div>
+          <div class="stat"><div class="stat-num" id="prof-following">198</div><div class="stat-label">Following</div></div>
+        </div>
+        <div class="profile-post-grid">
+          <div class="grid-post">🚀</div>
+          <div class="grid-post">☕</div>
+          <div class="grid-post">💻</div>
+          <div class="grid-post">🌙</div>
+          <div class="grid-post">🎉</div>
+          <div class="grid-post">🔥</div>
+          <div class="grid-post">✨</div>
+          <div class="grid-post">🛠️</div>
+          <div class="grid-post">🌸</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end #app -->
+
+  <!-- STORY VIEWER -->
+  <div class="story-viewer" id="story-viewer">
+    <div class="story-progress">
+      <div class="story-prog-bar"><div class="story-prog-fill active" id="story-fill"></div></div>
+      <div class="story-prog-bar"><div class="story-prog-fill"></div></div>
+      <div class="story-prog-bar"><div class="story-prog-fill"></div></div>
+    </div>
+    <div class="story-header">
+      <div class="story-user-avatar" id="story-avatar">🌸</div>
+      <div>
+        <div class="story-user-name" id="story-name">Sara Moon</div>
+        <div class="story-time">2h ago</div>
+      </div>
+      <button class="story-close" onclick="closeStory()">✕</button>
+    </div>
+    <div class="story-content" id="story-content">🚀</div>
+  </div>
+
+</div><!-- end .phone -->
+
+<script>
+  let currentEmoji = '😎';
+  let userName = 'Y';
+  let storyTimer = null;
+
+  // === SPLASH → AUTH ===
+  setTimeout(() => {
+    document.getElementById('splash').classList.remove('active');
+    document.getElementById('auth').classList.add('active');
+  }, 2200);
+
+  // === AUTH TABS ===
+  function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    if (tab === 'signup') {
+      document.getElementById('signup-panel').style.display = 'block';
+      document.getElementById('signin-panel').style.display = 'none';
+    } else {
+      document.getElementById('signup-panel').style.display = 'none';
+      document.getElementById('signin-panel').style.display = 'block';
+    }
+  }
+
+  // === SIGN UP STEPS ===
+  function goStep(n) {
+    [1,2,3].forEach(i => {
+      document.getElementById('step'+i+'-form').style.display = i===n ? 'block' : 'none';
+      const dot = document.getElementById('step'+i);
+      dot.classList.toggle('active', i===n);
+      dot.classList.toggle('done', i<n);
+    });
+    [1,2].forEach(i => {
+      const line = document.getElementById('line'+i);
+      if (line) line.classList.toggle('done', i<n);
+    });
+  }
+
+  function pickEmoji(el, emoji) {
+    currentEmoji = emoji;
+    document.querySelectorAll('.emoji-opt').forEach(e => {
+      e.style.borderColor = 'transparent';
+      e.style.background = 'transparent';
+    });
+    el.style.borderColor = 'var(--gold)';
+    el.style.background = 'rgba(245,197,24,0.1)';
+  }
+
+  function togglePass(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+  }
+
+  // === ENTER APP ===
+  function enterApp() {
+    const fname = document.getElementById('fname');
+    const initial = fname && fname.value ? fname.value[0].toUpperCase() : 'Y';
+    userName = initial;
+    document.getElementById('nav-avatar').textContent = initial;
+    document.getElementById('compose-avatar').textContent = initial;
+    document.getElementById('auth').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+    showToast('Welcome to the Hive! 🐝');
+  }
+
+  // === THEME TOGGLE ===
+  function toggleTheme() {
+    const phone = document.getElementById('phone');
+    const btn = document.getElementById('theme-btn');
+    phone.classList.toggle('light-mode');
+    const isLight = phone.classList.contains('light-mode');
+    btn.textContent = isLight ? '☀️' : '🌙';
+    // Fix text colors for light mode panels
+    document.querySelectorAll('.panel-title').forEach(el => {
+      el.style.color = isLight ? '#0D0D0F' : '#fff';
+    });
+  }
+
+  // === NAV ===
+  function setNav(el, panel) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    ['feed','explore','notifs','messages','saved'].forEach(p => {
+      document.getElementById(p+'-panel').style.display = p === panel ? 'block' : 'none';
+    });
+    // Clear notif badge when notifications opened
+    if (panel === 'notifs') {
+      const badge = document.querySelector('.notif-badge');
+      if (badge) badge.style.display = 'none';
+    }
+  }
+
+  // === FEED TABS ===
+  function switchTab(el) {
+    document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // === LIKE BUTTON ===
+  function toggleLike(btn) {
+    const isLiked = btn.classList.contains('liked');
+    const icon = btn.querySelector('.action-icon');
+    const countEl = btn.querySelector('.like-count');
+    const particles = btn.querySelector('.particles');
+
+    btn.classList.toggle('liked');
+
+    if (!isLiked) {
+      icon.textContent = '❤️';
+      const count = parseCount(countEl.textContent);
+      countEl.textContent = formatCount(count + 1);
+      burstParticles(particles);
+    } else {
+      icon.textContent = '🤍';
+      const count = parseCount(countEl.textContent);
+      countEl.textContent = formatCount(count - 1);
+    }
+  }
+
+  function parseCount(str) {
+    if (str.includes('k')) return parseFloat(str) * 1000;
+    return parseInt(str) || 0;
+  }
+  function formatCount(n) {
+    if (n >= 1000) return (n/1000).toFixed(1).replace('.0','') + 'k';
+    return n.toString();
+  }
+
+  function burstParticles(container) {
+    const emojis = ['❤️','✨','💛','⭐','🌟'];
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      const angle = (i/6)*360 + Math.random()*30;
+      const dist = 30 + Math.random()*20;
+      const dx = Math.cos(angle*Math.PI/180)*dist + 'px';
+      const dy = Math.sin(angle*Math.PI/180)*dist + 'px';
+      p.style.setProperty('--dx', dx);
+      p.style.setProperty('--dy', dy);
+      p.style.animationDelay = Math.random()*0.1 + 's';
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 700);
+    }
+  }
+
+  // === FOLLOW BUTTON ===
+  function toggleFollow(btn) {
+    const isFollowing = btn.classList.contains('following');
+    btn.classList.toggle('following');
+    btn.textContent = isFollowing ? 'Follow' : 'Following';
+    showToast(isFollowing ? 'Unfollowed' : 'Now following! 🐝');
+  }
+
+  function toggleProfileFollow(btn) {
+    const isFollowing = btn.classList.contains('following');
+    btn.classList.toggle('following');
+    btn.textContent = isFollowing ? 'Follow' : 'Following';
+    const followerEl = document.getElementById('prof-followers');
+    const count = parseCount(followerEl.textContent);
+    followerEl.textContent = formatCount(isFollowing ? count-1 : count+1);
+    showToast(isFollowing ? 'Unfollowed' : 'Now following! 🐝');
+  }
+
+  // === COMMENTS ===
+  function toggleComments(btn) {
+    const card = btn.closest('.post-card');
+    const section = card.querySelector('.comments-section');
+    section.classList.toggle('open');
+  }
+
+  function addComment(input) {
+    if (!input.value.trim()) return;
+    const section = input.closest('.comments-section');
+    const comment = document.createElement('div');
+    comment.className = 'comment';
+    comment.innerHTML = `
+      <div class="comment-avatar">${currentEmoji}</div>
+      <div class="comment-body">
+        <div class="comment-name">You</div>
+        <div class="comment-text">${input.value}</div>
+      </div>`;
+    section.insertBefore(comment, input.closest('.comment-input-row'));
+    input.value = '';
+    showToast('Comment posted! 💬');
+  }
+
+  // === POST VIBE ===
+  function postVibe() {
+    const text = document.getElementById('compose-text').value.trim();
+    if (!text) { showToast('Write something first ✍️'); return; }
+
+    const newPost = document.createElement('div');
+    newPost.className = 'post-card';
+    newPost.style.animation = 'screenIn 0.4s ease';
+    newPost.innerHTML = `
+      <div class="post-header">
+        <div class="post-user">
+          <div class="post-avatar">${currentEmoji}</div>
+          <div>
+            <div class="post-name">You</div>
+            <div class="post-handle">@yourusername · just now</div>
+          </div>
+        </div>
+        <button class="post-more">···</button>
+      </div>
+      <div class="post-body">${text.replace(/#(\w+)/g, '<span class="post-hashtag">#$1</span>')}</div>
+      <div class="post-actions">
+        <button class="action-btn like-btn" onclick="toggleLike(this)">
+          <span class="action-icon">🤍</span> <span class="like-count">0</span>
+          <div class="particles"></div>
+        </button>
+        <button class="action-btn" onclick="toggleComments(this)">
+          <span class="action-icon">💬</span> 0
+        </button>
+        <button class="action-btn"><span class="action-icon">🔁</span> 0</button>
+      </div>
+      <div class="comments-section">
+        <div class="comment-input-row">
+          <input class="comment-input" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(this)">
+          <button class="comment-send" onclick="addComment(this.previousElementSibling)">Send</button>
+        </div>
+      </div>`;
+
+    const container = document.getElementById('posts-container');
+    container.insertBefore(newPost, container.firstChild);
+    document.getElementById('compose-text').value = '';
+    showToast('Vibe posted! 🐝✨');
+  }
+
+  // === PROFILE ===
+  function openProfile(name, emoji, handle, bio, posts, followers, following) {
+    document.getElementById('prof-avatar-big').textContent = emoji;
+    document.getElementById('prof-name').innerHTML = name + (name !== 'You' ? ' <span class="verified">✦</span>' : '');
+    document.getElementById('prof-handle').textContent = handle;
+    document.getElementById('prof-bio').textContent = bio;
+    document.getElementById('prof-posts').textContent = formatCount(posts);
+    document.getElementById('prof-followers').textContent = formatCount(followers);
+    document.getElementById('prof-following').textContent = formatCount(following);
+
+    const followBtn = document.getElementById('prof-follow-btn');
+    if (name === 'You') {
+      followBtn.textContent = 'Edit Profile';
+      followBtn.onclick = () => showToast('Edit profile coming soon ✏️');
+    } else {
+      followBtn.textContent = 'Follow';
+      followBtn.className = 'profile-follow-btn';
+      followBtn.onclick = () => toggleProfileFollow(followBtn);
+    }
+
+    document.getElementById('profile-screen').classList.add('show');
+  }
+
+  function closeProfile() {
+    document.getElementById('profile-screen').classList.remove('show');
+  }
+
+  // === STORIES ===
+  const storyContents = {
+    'You': '🛠️', 'Sara': '☕', 'DevMike': '💻', 'ArtLena': '🖼️', 'TravelJo': '🌅', 'BeatKing': '🎵'
+  };
+
+  function openStory(name, emoji) {
+    document.getElementById('story-avatar').textContent = emoji;
+    document.getElementById('story-name').textContent = name;
+    document.getElementById('story-content').textContent = storyContents[name] || '🐝';
+    const fill = document.getElementById('story-fill');
+    fill.style.animation = 'none';
+    fill.offsetHeight; // reflow
+    fill.style.animation = 'storyFill 5s linear forwards';
+
+    document.getElementById('story-viewer').classList.add('open');
+    storyTimer = setTimeout(closeStory, 5100);
+  }
+
+  function closeStory() {
+    document.getElementById('story-viewer').classList.remove('open');
+    if (storyTimer) clearTimeout(storyTimer);
+  }
+
+  // === TOAST ===
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>
