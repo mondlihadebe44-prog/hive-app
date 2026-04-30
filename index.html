@@ -1,16 +1,16 @@
 create policy "Anyone can view avatars"
 on storage.objects for select
 to anon, authenticated
-using ( bucket_id = 'avatarss' );
+using ( bucket_id = 'avatars' );
 
 create policy "Users can upload avatars"
 on storage.objects for insert
 to authenticated
-with check ( bucket_id = 'avatarss' );
+with check ( bucket_id = 'avatars' );
 
 create policy "Users can update avatars"
 on storage.objects for update
 to authenticated
-using ( bucket_id = 'avatarss' );
+using ( bucket_id = 'avatars' );
 
 alter table profiles add column if not exists avatar_url text;
