@@ -402,7 +402,7 @@
 
     // Upload to storage
     const { error: uploadError } = await sb.storage.from('avatars').upload(fileName, file, { upsert: true });
-    if (uploadError) { status.textContent = 'Upload failed!'; return; }
+    if (uploadError) { console.error('Avatar upload error:', uploadError); status.textContent = 'Upload failed: ' + uploadError.message; return; }
 
     // Get public URL
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
