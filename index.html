@@ -183,7 +183,7 @@
       <div class="nav-logo">🐝</div>
       <div class="nav-item active" onclick="setNav(this,'feed')">🏠</div>
       <div class="nav-item" onclick="setNav(this,'explore')">🔍</div>
-      <div class="nav-item" onclick="setNav(this,'notifs')">🔔</div>
+      <div class="nav-item" onclick="setNav(this,'notifs')">🔔<span id="notif-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--orange);border-radius:50%"></span></div>
       <div class="nav-item" onclick="setNav(this,'profile')">👤</div>
       <div class="sidebar-bottom">
         <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
@@ -243,8 +243,11 @@
       </div>
       <!-- NOTIFICATIONS -->
       <div id="notifs-panel" style="display:none;padding:24px 16px">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px">Notifications 🔔</div>
-        <div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No notifications yet</div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff">Notifications 🔔</div>
+          <button onclick="markAllRead()" style="background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);padding:6px 12px;border-radius:10px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700">Mark all read</button>
+        </div>
+        <div id="notifs-list"><div class="loading-posts"><div class="loading-spinner"></div>Loading...</div></div>
       </div>
       <!-- PROFILE -->
       <div id="profile-panel" style="display:none;padding:24px 16px">
@@ -429,6 +432,9 @@
     document.getElementById('auth').classList.remove('active');
     document.getElementById('app').classList.add('active');
     loadPosts();
+    checkUnreadNotifications();
+    // Check for new notifications every 30 seconds
+    setInterval(checkUnreadNotifications, 30000);
     showToast('Welcome to Hive! 🐝');
   }
 
@@ -571,6 +577,16 @@
       btn.classList.add('liked'); icon.textContent = '❤️'; countEl.textContent = count + 1;
       burstParticles(btn.querySelector('.particles'));
       await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id });
+      // Create notification for post owner
+      const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
+      if (post && post.user_id !== currentUser.id) {
+        await sb.from('notifications').insert({
+          user_id: post.user_id,
+          from_user_id: currentUser.id,
+          type: 'like',
+          post_id: postId
+        });
+      }
     }
   }
 
@@ -579,8 +595,21 @@
     const isFollowing = btn.classList.contains('following');
     btn.classList.toggle('following');
     btn.textContent = isFollowing ? 'Follow' : 'Following';
-    if (isFollowing) { await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId); showToast('Unfollowed'); }
-    else { await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId }); showToast('Now following! 🐝'); }
+    if (isFollowing) {
+      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
+      showToast('Unfollowed');
+    } else {
+      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+      // Create notification
+      if (userId !== currentUser.id) {
+        await sb.from('notifications').insert({
+          user_id: userId,
+          from_user_id: currentUser.id,
+          type: 'follow'
+        });
+      }
+      showToast('Now following! 🐝');
+    }
   }
 
   async function postVibe() {
@@ -658,6 +687,7 @@
     el.classList.add('active');
     ['feed','explore','notifs','profile'].forEach(p => document.getElementById(p+'-panel').style.display = p === panel ? 'block' : 'none');
     if (panel === 'profile') loadProfileStats();
+    if (panel === 'notifs') loadNotifications();
   }
 
   async function loadProfileStats() {
@@ -671,6 +701,64 @@
   }
 
   function switchTab(el) { document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); }
+
+  async function loadNotifications() {
+    if (!currentUser) return;
+    const list = document.getElementById('notifs-list');
+    list.innerHTML = '<div class="loading-posts"><div class="loading-spinner"></div>Loading...</div>';
+
+    const { data: notifs } = await sb.from('notifications')
+      .select('*, profiles!notifications_from_user_id_fkey(username, full_name, avatar_url)')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (!notifs || notifs.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No notifications yet</div></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    notifs.forEach(n => {
+      const p = n.profiles || {};
+      const name = p.full_name || 'Someone';
+      const initial = name[0].toUpperCase();
+      const color = getColor(name);
+      const icons = { like: '❤️', follow: '👤', comment: '💬' };
+      const messages = { like: 'liked your post', follow: 'started following you', comment: 'commented on your post' };
+
+      const div = document.createElement('div');
+      div.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;margin-bottom:4px;background:${n.read ? 'transparent' : 'rgba(245,197,24,0.06)'};border:1px solid ${n.read ? 'transparent' : 'rgba(245,197,24,0.1)'}`;
+      div.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000;flex-shrink:0;overflow:hidden">
+          ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+        </div>
+        <div style="flex:1">
+          <span style="color:#fff;font-weight:600;font-size:13px">${name}</span>
+          <span style="color:rgba(255,255,255,0.4);font-size:13px"> ${messages[n.type] || ''}</span>
+          <div style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:2px">${timeAgo(n.created_at)}</div>
+        </div>
+        <div style="font-size:18px">${icons[n.type] || '🔔'}</div>`;
+      list.appendChild(div);
+    });
+
+    // Clear badge
+    document.getElementById('notif-badge').style.display = 'none';
+  }
+
+  async function checkUnreadNotifications() {
+    if (!currentUser) return;
+    const { count } = await sb.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('read', false);
+    if (count > 0) document.getElementById('notif-badge').style.display = 'block';
+  }
+
+  async function markAllRead() {
+    if (!currentUser) return;
+    await sb.from('notifications').update({ read: true }).eq('user_id', currentUser.id);
+    document.getElementById('notif-badge').style.display = 'none';
+    loadNotifications();
+    showToast('All notifications read! ✅');
+  }
   function toggleTheme() { document.getElementById('phone').classList.toggle('light-mode'); document.getElementById('theme-btn').textContent = document.getElementById('phone').classList.contains('light-mode') ? '☀️' : '🌙'; }
 
   // HELPERS
