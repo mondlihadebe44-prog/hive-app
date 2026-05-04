@@ -403,8 +403,6 @@
     // Upload to storage
     const { error: uploadError } = await sb.storage.from('avatars').upload(fileName, file, { upsert: true });
     if (uploadError) { console.error('Avatar upload error:', uploadError); status.textContent = 'Upload failed: ' + uploadError.message; return; }
-
-    // Get public URL
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
     const avatarUrl = urlData.publicUrl;
 
@@ -412,10 +410,19 @@
     const { error: updateError } = await sb.from('profiles').update({ avatar_url: avatarUrl }).eq('id', session.user.id);
     if (updateError) { status.textContent = 'Update failed!'; return; }
 
+    // Force update all avatars immediately
+    const allAvatars = ['nav-avatar', 'compose-avatar', 'profile-avatar-big'];
+    allAvatars.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = `<img src="${avatarUrl}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        el.style.background = 'transparent';
+      }
+    });
     status.textContent = 'Avatar updated! ✅';
-    await loadProfile();
-    showToast('Avatar updated! 🐝');
+    showToast('Looking good! 🐝');
     setTimeout(() => { status.textContent = ''; }, 3000);
+    await loadProfile();
   }
 
   function showApp() {
