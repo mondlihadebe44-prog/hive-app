@@ -242,6 +242,31 @@
           <span style="padding:8px 14px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:20px;color:var(--gold);font-size:13px;cursor:pointer">#vibes</span>
         </div>
       </div>
+      <!-- MESSAGES -->
+      <div id="messages-panel" style="display:none;flex-direction:column;height:100%">
+        <div id="conversations-view" style="padding:24px 16px;height:100%;overflow-y:auto">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:16px">Messages ✉️</div>
+          <input id="dm-search" placeholder="Search users to message..." style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.08);border-radius:14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:8px" oninput="searchUsersForDM(this.value)">
+          <div id="dm-search-results" style="margin-bottom:12px"></div>
+          <div id="conversations-list"><div class="loading-posts"><div class="loading-spinner"></div>Loading...</div></div>
+        </div>
+        <div id="chat-view" style="display:none;flex-direction:column;height:100%">
+          <div style="padding:16px;border-bottom:1px solid var(--dark-border);display:flex;align-items:center;gap:12px;background:var(--dark-card);flex-shrink:0">
+            <button onclick="showConversations()" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
+            <div id="chat-avatar" style="width:36px;height:36px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#000;overflow:hidden"></div>
+            <div>
+              <div id="chat-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff"></div>
+              <div id="chat-handle" style="font-size:11px;color:rgba(255,255,255,0.4)"></div>
+            </div>
+          </div>
+          <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+          <div style="padding:12px 16px;border-top:1px solid var(--dark-border);display:flex;gap:8px;background:var(--dark-card);flex-shrink:0">
+            <input id="chat-input" placeholder="Send a message..." style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()" style="padding:10px 16px;background:var(--gold);border:none;border-radius:12px;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Send</button>
+          </div>
+        </div>
+      </div>
+
       <!-- NOTIFICATIONS -->
       <div id="notifs-panel" style="display:none;padding:24px 16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
