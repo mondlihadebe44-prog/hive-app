@@ -276,33 +276,44 @@
         <div id="notifs-list"><div class="loading-posts"><div class="loading-spinner"></div>Loading...</div></div>
       </div>
       <!-- PROFILE -->
-      <div id="profile-panel" style="display:none;padding:24px 16px">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:20px">My Profile 👤</div>
-        <div style="text-align:center;padding:20px 0">
-          <!-- Avatar with upload -->
-          <div style="position:relative;width:90px;margin:0 auto 12px;cursor:pointer" onclick="document.getElementById('avatar-upload').click()">
-            <div id="profile-avatar-big" style="width:90px;height:90px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:#000;overflow:hidden">?</div>
-            <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid var(--dark-bg)">📷</div>
+      <div id="profile-panel" style="display:none;overflow-y:auto">
+        <!-- COVER PHOTO -->
+        <div style="position:relative;height:140px;background:linear-gradient(135deg,#F5C518,#FF6B35);cursor:pointer" id="cover-container" onclick="document.getElementById('cover-upload').click()">
+          <img id="cover-photo" style="width:100%;height:100%;object-fit:cover;display:none">
+          <div id="cover-edit-btn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border-radius:20px;padding:6px 12px;font-size:11px;color:#fff;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px)">📷 Edit cover</div>
+          <input type="file" id="cover-upload" accept="image/*" style="display:none" onchange="uploadCover(this)">
+        </div>
+
+        <!-- AVATAR overlapping cover -->
+        <div style="padding:0 16px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:-45px;margin-bottom:12px">
+            <div style="position:relative;cursor:pointer" onclick="document.getElementById('avatar-upload').click()">
+              <div id="profile-avatar-big" style="width:90px;height:90px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:#000;overflow:hidden;border:3px solid var(--dark-bg)">?</div>
+              <div style="position:absolute;bottom:2px;right:2px;width:26px;height:26px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid var(--dark-bg)">📷</div>
+            </div>
           </div>
           <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
-          <div id="avatar-upload-status" style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px"></div>
+          <div id="avatar-upload-status" style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px"></div>
+
           <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff" id="profile-name-big">...</div>
-          <div style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:4px" id="profile-handle-big">@...</div>
-          <div style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:8px" id="profile-bio-big">...</div>
-        </div>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:16px">
-          <div style="text-align:center">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--gold)" id="my-posts-count">0</div>
-            <div style="color:rgba(255,255,255,0.4);font-size:11px">Posts</div>
+          <div style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:2px" id="profile-handle-big">@...</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:8px;line-height:1.5" id="profile-bio-big">...</div>
+
+          <div style="display:flex;gap:24px;margin-top:16px;padding-bottom:16px;border-bottom:1px solid var(--dark-border)">
+            <div style="text-align:center">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold)" id="my-posts-count">0</div>
+              <div style="color:rgba(255,255,255,0.4);font-size:11px">Posts</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold)" id="my-followers-count">0</div>
+              <div style="color:rgba(255,255,255,0.4);font-size:11px">Followers</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold)" id="my-following-count">0</div>
+              <div style="color:rgba(255,255,255,0.4);font-size:11px">Following</div>
+            </div>
           </div>
-          <div style="text-align:center">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--gold)" id="my-followers-count">0</div>
-            <div style="color:rgba(255,255,255,0.4);font-size:11px">Followers</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--gold)" id="my-following-count">0</div>
-            <div style="color:rgba(255,255,255,0.4);font-size:11px">Following</div>
-          </div>
+          <div id="cover-upload-status" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px"></div>
         </div>
       </div>
     </div>
@@ -411,13 +422,38 @@
         profileAvatar.style.background = color;
       }
 
+      // Update cover photo
+      if (data.cover_url) {
+        const coverPhoto = document.getElementById('cover-photo');
+        if (coverPhoto) { coverPhoto.src = data.cover_url; coverPhoto.style.display = 'block'; }
+      }
       document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
     }
   }
 
-  async function uploadAvatar(input) {
+  async function uploadCover(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const status = document.getElementById('cover-upload-status');
+    status.textContent = 'Uploading cover...';
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { status.textContent = 'Please sign in!'; return; }
+    const fileExt = file.name.split('.').pop();
+    const fileName = `cover-${session.user.id}.${fileExt}`;
+    const { error: uploadError } = await sb.storage.from('covers').upload(fileName, file, { upsert: true });
+    if (uploadError) { status.textContent = 'Upload failed: ' + uploadError.message; return; }
+    const { data: urlData } = sb.storage.from('covers').getPublicUrl(fileName);
+    const coverUrl = urlData.publicUrl;
+    const { error: updateError } = await sb.from('profiles').update({ cover_url: coverUrl }).eq('id', session.user.id);
+    if (updateError) { status.textContent = 'Update failed!'; return; }
+    const coverPhoto = document.getElementById('cover-photo');
+    coverPhoto.src = coverUrl; coverPhoto.style.display = 'block';
+    status.textContent = 'Cover updated! ✅';
+    showToast('Cover photo updated! 🎉');
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }
     const file = input.files[0];
     if (!file) return;
     const status = document.getElementById('avatar-upload-status');
