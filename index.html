@@ -411,7 +411,7 @@
         profileAvatar.style.background = color;
       }
 
-      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="color:#4A90D9;font-size:18px">👑</span>' : '');
+      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
     }
@@ -484,7 +484,7 @@
     const username = p.username || 'unknown';
     const initial = name[0].toUpperCase();
     const isOwn = currentUser && post.user_id === currentUser.id;
-    const verified = p.verified ? '<span style="color:#4A90D9;font-size:14px" title="Queen Bee">👑</span>' : '';
+    const verified = p.verified ? '<span style="display:inline-block;font-size:14px;filter:drop-shadow(0 0 4px #4A90D9) drop-shadow(0 0 8px #4A90D9)" title="Verified">🐝</span>' : '';
     const card = document.createElement('div');
     card.className = 'post-card';
     card.dataset.postId = post.id;
