@@ -330,11 +330,19 @@
 
   // INIT
   setTimeout(async () => {
-    document.getElementById('splash').classList.remove('active');
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) { currentUser = session.user; await loadProfile(); showApp(); }
-    else document.getElementById('auth').classList.add('active');
-  }, 2200);
+    const splashEl = document.getElementById('splash');
+    const authEl = document.getElementById('auth');
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      splashEl.classList.remove('active');
+      if (session) { currentUser = session.user; await loadProfile(); showApp(); }
+      else authEl.classList.add('active');
+    } catch(e) {
+      // If anything fails just show auth
+      splashEl.classList.remove('active');
+      authEl.classList.add('active');
+    }
+  }, 2500);
 
   // AUTH TABS
   function switchAuthTab(tab) {
