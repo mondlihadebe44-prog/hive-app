@@ -106,9 +106,15 @@
   .action-btn { display:flex;align-items:center;gap:5px;padding:7px 10px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s; }
   .action-btn:hover { background:rgba(255,255,255,0.06); }
   .action-icon { font-size:16px; }
-  .like-btn.liked { color:#ff4d6d!important; }
-  .like-btn.liked .action-icon { animation:heartPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
-  @keyframes heartPop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+  .like-btn.liked { color:var(--gold)!important; }
+  .like-btn.liked .action-icon { animation:buzzPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes buzzPop { 
+    0%{transform:scale(1) rotate(0deg)} 
+    25%{transform:scale(1.4) rotate(-15deg)} 
+    50%{transform:scale(1.3) rotate(15deg)} 
+    75%{transform:scale(1.2) rotate(-10deg)} 
+    100%{transform:scale(1) rotate(0deg)} 
+  }
   .particles { position:absolute;top:50%;left:50%;pointer-events:none; }
   .particle { position:absolute;font-size:12px;animation:particleFly 0.6s ease forwards;opacity:0; }
   @keyframes particleFly { 0%{transform:translate(-50%,-50%) scale(0);opacity:1} 100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0.5);opacity:0} }
@@ -329,20 +335,19 @@
   let currentProfile = null;
 
   // INIT
-  setTimeout(async () => {
-    const splashEl = document.getElementById('splash');
-    const authEl = document.getElementById('auth');
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      splashEl.classList.remove('active');
-      if (session) { currentUser = session.user; await loadProfile(); showApp(); }
-      else authEl.classList.add('active');
-    } catch(e) {
-      // If anything fails just show auth
-      splashEl.classList.remove('active');
-      authEl.classList.add('active');
+  // Show auth immediately, check session in background
+  document.getElementById('splash').classList.remove('active');
+  document.getElementById('auth').classList.add('active');
+  
+  // Check if already logged in after showing auth
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      currentUser = session.user;
+      loadProfile().then(() => showApp());
     }
-  }, 2500);
+  }).catch(() => {
+    // Already showing auth, nothing to do
+  });
 
   // AUTH TABS
   function switchAuthTab(tab) {
@@ -549,7 +554,7 @@
       ${post.image_url ? `<img src="${post.image_url}" style="width:100%;border-radius:12px;margin-bottom:12px;max-height:300px;object-fit:cover">` : ''}
       <div class="post-actions">
         <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')">
-          <span class="action-icon">🤍</span><span class="like-count">0</span>
+          <span class="action-icon">🐝</span><span class="like-count">0</span>
           <div class="particles"></div>
         </button>
         <button class="action-btn comment-toggle-btn" onclick="toggleComments(this,'${post.id}')">
@@ -636,7 +641,7 @@
     if (el) el.textContent = count || 0;
     if (currentUser) {
       const { data } = await sb.from('likes').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
-      if (data) { const btn = card.querySelector('.like-btn'); if (btn) { btn.classList.add('liked'); btn.querySelector('.action-icon').textContent = '❤️'; } }
+      if (data) { const btn = card.querySelector('.like-btn'); if (btn) { btn.classList.add('liked'); btn.querySelector('.action-icon').textContent = '🐝'; } }
     }
   }
 
@@ -647,10 +652,10 @@
     const icon = btn.querySelector('.action-icon');
     const count = parseInt(countEl.textContent) || 0;
     if (isLiked) {
-      btn.classList.remove('liked'); icon.textContent = '🤍'; countEl.textContent = Math.max(0, count - 1);
+      btn.classList.remove('liked'); icon.textContent = '🐝'; countEl.textContent = Math.max(0, count - 1);
       await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
-      btn.classList.add('liked'); icon.textContent = '❤️'; countEl.textContent = count + 1;
+      btn.classList.add('liked'); icon.textContent = '🐝'; countEl.textContent = count + 1;
       burstParticles(btn.querySelector('.particles'));
       await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id });
       // Create notification for post owner
@@ -804,8 +809,8 @@
       const name = p.full_name || 'Someone';
       const initial = name[0].toUpperCase();
       const color = getColor(name);
-      const icons = { like: '❤️', follow: '👤', comment: '💬' };
-      const messages = { like: 'liked your post', follow: 'started following you', comment: 'commented on your post' };
+      const icons = { like: '🐝', follow: '👤', comment: '💬', message: '✉️' };
+      const messages = { like: 'buzzed your post 🐝', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message' };
 
       const div = document.createElement('div');
       div.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;margin-bottom:4px;background:${n.read ? 'transparent' : 'rgba(245,197,24,0.06)'};border:1px solid ${n.read ? 'transparent' : 'rgba(245,197,24,0.1)'}`;
@@ -981,7 +986,7 @@
   function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
   function getColor(n) { const c=['#F5C518','#FF6B35','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD']; let h=0; for(let x of n) h=x.charCodeAt(0)+h*31; return c[Math.abs(h)%c.length]; }
   function burstParticles(container) {
-    ['❤️','✨','💛','⭐'].forEach((e,i) => {
+    ['🐝','✨','💛','⭐','🍯'].forEach((e,i) => {
       const p = document.createElement('div'); p.className = 'particle'; p.textContent = e;
       const a = (i/4)*360; const d = 30+Math.random()*20;
       p.style.setProperty('--dx', Math.cos(a*Math.PI/180)*d+'px');
