@@ -334,19 +334,21 @@
   let currentUser = null;
   let currentProfile = null;
 
-  // INIT
-  // Show auth immediately, check session in background
-  document.getElementById('splash').classList.remove('active');
-  document.getElementById('auth').classList.add('active');
-  
-  // Check if already logged in after showing auth
-  sb.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-      currentUser = session.user;
-      loadProfile().then(() => showApp());
-    }
-  }).catch(() => {
-    // Already showing auth, nothing to do
+  // INIT - Run after everything loads
+  window.addEventListener('load', function() {
+    // Show auth immediately, check session in background
+    document.getElementById('splash').classList.remove('active');
+    document.getElementById('auth').classList.add('active');
+    
+    // Check if already logged in after showing auth
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        currentUser = session.user;
+        loadProfile().then(() => showApp());
+      }
+    }).catch(() => {
+      // Already showing auth, nothing to do
+    });
   });
 
   // AUTH TABS
@@ -998,4 +1000,3 @@
 </script>
 </body>
 </html>
-=0
