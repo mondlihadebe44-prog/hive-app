@@ -27,7 +27,7 @@
   @keyframes pulseRing { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.1;transform:scale(1.05)} }
 
   /* AUTH */
-  #auth { background:#0D0D0F;padding:60px 32px 40px;align-items:center;overflow-y:auto; }
+  #auth { background:#0D0D0F;padding:60px 32px 40px;align-items:center;overflow-y:auto;display:none; }
   .auth-logo { font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:8px;margin-bottom:6px; }
   .auth-tagline { color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:32px; }
   .auth-tabs { display:flex;background:rgba(255,255,255,0.05);border-radius:14px;padding:4px;width:100%;margin-bottom:32px; }
@@ -334,24 +334,17 @@
   let currentUser = null;
   let currentProfile = null;
 
-  // INIT - Run after DOM loads
-  document.addEventListener('DOMContentLoaded', function() {
-    // Show auth immediately
-    const splash = document.getElementById('splash');
-    const auth = document.getElementById('auth');
-    if (splash) splash.classList.remove('active');
-    if (auth) auth.classList.add('active');
-    
-    // Check if already logged in
-    sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        currentUser = session.user;
-        loadProfile().then(() => showApp());
+  // INIT - Dead simple
+  setTimeout(function() {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+    sb.auth.getSession().then(function(result) {
+      if (result.data && result.data.session) {
+        currentUser = result.data.session.user;
+        loadProfile().then(function() { showApp(); });
       }
-    }).catch((e) => {
-      console.log('Session check failed:', e);
     });
-  });
+  }, 1500);
 
   // AUTH TABS
   function switchAuthTab(tab) {
