@@ -284,9 +284,9 @@
       <!-- PROFILE -->
       <div id="profile-panel" style="display:none;overflow-y:auto">
         <!-- COVER PHOTO -->
-        <div style="position:relative;height:140px;background:linear-gradient(135deg,#F5C518,#FF6B35);cursor:pointer" id="cover-container" onclick="document.getElementById('cover-upload').click()">
+        <div style="position:relative;height:140px;background:linear-gradient(135deg,#F5C518,#FF6B35)" id="cover-container">
           <img id="cover-photo" style="width:100%;height:100%;object-fit:cover;display:none">
-          <div id="cover-edit-btn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border-radius:20px;padding:6px 12px;font-size:11px;color:#fff;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px)">📷 Edit cover</div>
+          <div onclick="document.getElementById('cover-upload').click()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border-radius:20px;padding:6px 12px;font-size:11px;color:#fff;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px);cursor:pointer">📷 Edit cover</div>
           <input type="file" id="cover-upload" accept="image/*" style="display:none" onchange="uploadCover(this)">
         </div>
 
@@ -334,20 +334,22 @@
   let currentUser = null;
   let currentProfile = null;
 
-  // INIT - Run after everything loads
-  window.addEventListener('load', function() {
-    // Show auth immediately, check session in background
-    document.getElementById('splash').classList.remove('active');
-    document.getElementById('auth').classList.add('active');
+  // INIT - Run after DOM loads
+  document.addEventListener('DOMContentLoaded', function() {
+    // Show auth immediately
+    const splash = document.getElementById('splash');
+    const auth = document.getElementById('auth');
+    if (splash) splash.classList.remove('active');
+    if (auth) auth.classList.add('active');
     
-    // Check if already logged in after showing auth
+    // Check if already logged in
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         currentUser = session.user;
         loadProfile().then(() => showApp());
       }
-    }).catch(() => {
-      // Already showing auth, nothing to do
+    }).catch((e) => {
+      console.log('Session check failed:', e);
     });
   });
 
