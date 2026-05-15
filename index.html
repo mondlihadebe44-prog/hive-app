@@ -382,9 +382,18 @@
     if (!email || !password) { showError('Please fill in all fields!'); return; }
     const btn = document.getElementById('signin-btn');
     btn.disabled = true; btn.textContent = 'Signing in...';
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { showError(error.message); btn.disabled = false; btn.textContent = 'Sign In →'; return; }
-    currentUser = data.user; await loadProfile(); showApp();
+    
+    try {
+      const { data, error } = await Promise.race([
+        sb.auth.signInWithPassword({ email, password }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+      ]);
+      if (error) throw error;
+      currentUser = data.user; await loadProfile(); showApp();
+    } catch(e) {
+      showError(e.message === 'timeout' ? 'Connection timeout! Check your internet and try again.' : e.message);
+      btn.disabled = false; btn.textContent = 'Sign In →';
+    }
   }
 
   async function signOut() {
@@ -997,4 +1006,3 @@
 </script>
 </body>
 </html>
-=0=0
