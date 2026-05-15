@@ -15,7 +15,7 @@
   .screen { position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden; }
   .screen.active { display:flex; }
 
-  /* SPLASH */a==
+  /* SPLASH */
   #splash { background:#0D0D0F;align-items:center;justify-content:center;flex-direction:column;gap:16px; }
   .splash-logo { font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:10px;animation:splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
   .splash-tagline { color:rgba(255,255,255,0.4);font-size:14px;letter-spacing:2px;text-transform:uppercase;animation:fadeUp 0.6s ease both 0.5s; }
@@ -27,7 +27,7 @@
   @keyframes pulseRing { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.1;transform:scale(1.05)} }
 
   /* AUTH */
-  #auth { background:#0D0D0F;padding:60px 32px 40px;align-items:center;overflow-y:auto;display:none; }
+  #auth { background:#0D0D0F;padding:60px 32px 40px;align-items:center;overflow-y:auto;display:none;z-index:100; }
   .auth-logo { font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:8px;margin-bottom:6px; }
   .auth-tagline { color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:32px; }
   .auth-tabs { display:flex;background:rgba(255,255,255,0.05);border-radius:14px;padding:4px;width:100%;margin-bottom:32px; }
@@ -997,3 +997,4 @@
 </script>
 </body>
 </html>
+=0=0
