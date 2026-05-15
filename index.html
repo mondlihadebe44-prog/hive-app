@@ -512,11 +512,17 @@
   }
 
   function showApp() {
-    document.getElementById('auth').classList.remove('active');
-    document.getElementById('app').classList.add('active');
+    // Hide all screens
+    document.getElementById('auth').style.display = 'none';
+    document.getElementById('splash').style.display = 'none';
+    // Show app
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    app.classList.add('active');
+    // Show feed panel
+    document.getElementById('feed-panel').style.display = 'block';
     loadPosts();
     checkUnreadNotifications();
-    // Check for new notifications every 30 seconds
     setInterval(checkUnreadNotifications, 30000);
     showToast('Welcome to Hive! 🐝');
   }
