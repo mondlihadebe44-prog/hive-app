@@ -475,28 +475,29 @@ body {
 
 /* Profile panel */
 .profile-cover {
-  height: 180px; position: relative;
+  height: 200px; position: relative;
   background: linear-gradient(135deg, var(--gold), var(--orange));
-  cursor: pointer;
+  overflow: hidden;
 }
 .profile-cover img { width: 100%; height: 100%; object-fit: cover; }
 .cover-edit-btn {
   position: absolute; top: 12px; right: 12px;
   background: rgba(0,0,0,0.6); border: none; border-radius: 50px;
   padding: 6px 14px; color: #fff; font-size: 12px; cursor: pointer;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); z-index: 2;
 }
 .profile-info-section { padding: 0 20px 20px; }
 .profile-avatar-wrap {
-  margin-top: -36px; margin-bottom: 12px;
+  margin-top: -46px; margin-bottom: 12px;
   display: flex; justify-content: space-between; align-items: flex-end;
 }
 .profile-avatar-large {
-  width: 80px; height: 80px; border-radius: 50%;
+  width: 92px; height: 92px; border-radius: 50%;
   background: var(--gold); border: 4px solid #000;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 28px; color: #000; overflow: hidden; cursor: pointer;
+  font-size: 32px; color: #000; overflow: hidden;
+  cursor: pointer; position: relative; flex-shrink: 0;
 }
 .profile-name-large {
   font-family: 'Syne', sans-serif; font-weight: 800;
