@@ -1,0 +1,32 @@
+{
+  "name": "Hive - Your Community. Your Vibe.",
+  "short_name": "Hive",
+  "description": "Hive social app - share vibes with your community",
+  "start_url": "/hive-app/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#F5C518",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/144x144/1f41d.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
