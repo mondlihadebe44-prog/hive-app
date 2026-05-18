@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hive 🐝</title>
+<meta name="description" content="Hive - Your community. Your vibe.">
+<meta name="theme-color" content="#F5C518">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Hive">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -376,6 +384,22 @@ body {
 }
 .action-btn:hover { background: rgba(245,197,24,0.08); color: var(--gold); }
 .action-icon { font-size: 18px; }
+/* Reactions */
+.reactions-popup {
+  position: absolute; bottom: 40px; left: 0;
+  background: #1a1a1a; border: 1px solid var(--border);
+  border-radius: 50px; padding: 8px 12px;
+  display: none; gap: 8px; align-items: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 100; white-space: nowrap;
+}
+.reactions-popup.show { display: flex; animation: popUp 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes popUp { from{transform:scale(0.5) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+.reaction-opt {
+  font-size: 24px; cursor: pointer; transition: transform 0.15s;
+  padding: 4px; border-radius: 50%;
+}
+.reaction-opt:hover { transform: scale(1.4) translateY(-4px); }
 .like-btn.liked { color: var(--gold) !important; }
 .like-btn.liked .action-icon { animation: buzzAnim 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes buzzAnim {
@@ -1048,9 +1072,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div class="post-body">${formatBody(post.body)}</div>
         ${post.image_url ? `<img class="post-image" src="${post.image_url}">` : ''}
         <div class="post-actions">
-          <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')">
+          <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
             <span class="action-icon">🐝</span><span class="like-count">0</span>
             <div class="particles"></div>
+            <div class="reactions-popup" id="reactions-${post.id}">
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','buzz',this.closest('.like-btn'))">🐝</span>
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','fire',this.closest('.like-btn'))">🔥</span>
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','haha',this.closest('.like-btn'))">😂</span>
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','wow',this.closest('.like-btn'))">😮</span>
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','respect',this.closest('.like-btn'))">🙌</span>
+              <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','love',this.closest('.like-btn'))">💛</span>
+            </div>
           </button>
           <button class="action-btn" onclick="toggleComments(this,'${post.id}')">
             <span class="action-icon">💬</span><span class="comment-count">0</span>
@@ -1087,22 +1119,66 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (el) el.textContent = count || 0;
   }
 
-  async function toggleLike(btn, postId) {
-    if (!currentUser) { showToast('Sign in to buzz!'); return; }
-    const isLiked = btn.classList.contains('liked');
+  // REACTIONS
+  const reactionEmojis = { buzz:'🐝', fire:'🔥', haha:'😂', wow:'😮', respect:'🙌', love:'💛' };
+  let touchTimer = null;
+
+  function showReactions(btn) {
+    const popup = btn.querySelector('.reactions-popup');
+    if (popup) popup.classList.add('show');
+  }
+
+  function hideReactions(btn) {
+    setTimeout(() => {
+      const popup = btn.querySelector('.reactions-popup');
+      if (popup && !popup.matches(':hover')) popup.classList.remove('show');
+    }, 500);
+  }
+
+  function handleTouchStart(btn, postId) {
+    touchTimer = setTimeout(() => showReactions(btn), 500);
+  }
+
+  function handleTouchEnd(btn) {
+    if (touchTimer) clearTimeout(touchTimer);
+  }
+
+  async function react(postId, reaction, btn) {
+    if (!currentUser) { showToast('Sign in to react!'); return; }
+    const emoji = reactionEmojis[reaction];
     const countEl = btn.querySelector('.like-count');
-    const count = parseInt(countEl.textContent) || 0;
+    const icon = btn.querySelector('.action-icon');
+    const isLiked = btn.classList.contains('liked');
+    const popup = btn.querySelector('.reactions-popup');
+    if (popup) popup.classList.remove('show');
     if (isLiked) {
-      btn.classList.remove('liked'); countEl.textContent = Math.max(0, count - 1);
-      await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+      await sb.from('likes').update({ reaction }).eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
-      btn.classList.add('liked'); countEl.textContent = count + 1;
-      burstParticles(btn.querySelector('.particles'));
-      await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id });
+      btn.classList.add('liked');
+      countEl.textContent = parseInt(countEl.textContent || 0) + 1;
+      await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id, reaction });
       const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
       if (post && post.user_id !== currentUser.id) {
         await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
       }
+    }
+    icon.textContent = emoji;
+    burstParticles(btn.querySelector('.particles'));
+    showToast('Reacted with ' + emoji);
+  }
+
+  async function toggleLike(btn, postId) {
+    if (!currentUser) { showToast('Sign in to react!'); return; }
+    const isLiked = btn.classList.contains('liked');
+    const countEl = btn.querySelector('.like-count');
+    const count = parseInt(countEl.textContent) || 0;
+    if (isLiked) {
+      btn.classList.remove('liked');
+      btn.querySelector('.action-icon').textContent = '🐝';
+      countEl.textContent = Math.max(0, count - 1);
+      await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+    } else {
+      await react(postId, 'buzz', btn);
     }
   }
 
@@ -1393,6 +1469,13 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     });
   }
   function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+  // Register PWA Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(() => {
+      console.log('Hive PWA ready! 🐝');
+    });
+  }
 </script>
 </body>
 </html>
