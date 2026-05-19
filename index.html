@@ -653,6 +653,29 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
 <div class="toast" id="toast"></div>
 
+<!-- EDIT PROFILE MODAL -->
+<div id="edit-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Edit Profile ✏️</div>
+      <button onclick="closeEditProfile()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Full Name</label>
+      <input type="text" id="edit-name" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Username</label>
+      <input type="text" id="edit-username" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div class="field" style="margin-bottom:24px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Bio</label>
+      <textarea id="edit-bio" rows="3" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea>
+    </div>
+    <button onclick="saveProfile()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="save-profile-btn">Save Changes</button>
+  </div>
+</div>
+
 <!-- SPLASH -->
 <div id="splash">
   <div class="splash-logo"><span>🐝</span> Hive</div>
@@ -853,6 +876,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <div><div class="stat-num" id="my-followers-count">0</div><div class="stat-label">Followers</div></div>
           <div><div class="stat-num" id="my-following-count">0</div><div class="stat-label">Following</div></div>
         </div>
+        <button onclick="openEditProfile()" style="margin-top:16px;width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">✏️ Edit Profile</button>
       </div>
     </div>
 
@@ -1453,6 +1477,33 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('chat-view').style.display = 'none';
     document.getElementById('conversations-view').style.display = 'block';
     loadConversations();
+  }
+
+  // EDIT PROFILE
+  function openEditProfile() {
+    document.getElementById('edit-name').value = currentProfile?.full_name || '';
+    document.getElementById('edit-username').value = currentProfile?.username || '';
+    document.getElementById('edit-bio').value = currentProfile?.bio || '';
+    document.getElementById('edit-profile-modal').style.display = 'flex';
+  }
+
+  function closeEditProfile() {
+    document.getElementById('edit-profile-modal').style.display = 'none';
+  }
+
+  async function saveProfile() {
+    const name = document.getElementById('edit-name').value.trim();
+    const username = document.getElementById('edit-username').value.trim().replace('@','');
+    const bio = document.getElementById('edit-bio').value.trim();
+    if (!name || !username) { showToast('Name and username are required!'); return; }
+    const btn = document.getElementById('save-profile-btn');
+    btn.textContent = 'Saving...'; btn.disabled = true;
+    const { error } = await sb.from('profiles').update({ full_name: name, username, bio }).eq('id', currentUser.id);
+    if (error) { showToast('Error saving: ' + error.message); btn.textContent = 'Save Changes'; btn.disabled = false; return; }
+    await loadProfile();
+    closeEditProfile();
+    showToast('Profile updated! 🐝');
+    btn.textContent = 'Save Changes'; btn.disabled = false;
   }
 
   // HELPERS
