@@ -584,6 +584,16 @@ body {
 .load-more { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
 
 /* Toast */
+/* Onboarding */
+.onboard-option {
+  padding: 12px 16px; border-radius: 50px;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--text); font-size: 14px; cursor: pointer;
+  transition: all 0.2s; text-align: center;
+}
+.onboard-option:hover { border-color: var(--gold); color: var(--gold); }
+.onboard-option.selected { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+
 .toast {
   position: fixed; bottom: 32px; left: 50%;
   transform: translateX(-50%) translateY(20px);
@@ -650,6 +660,82 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 </style>
 </head>
 <body>
+
+<!-- ONBOARDING -->
+<div id="onboarding" style="display:none;position:fixed;inset:0;background:#000;z-index:998;overflow-y:auto">
+  <div style="max-width:440px;margin:0 auto;padding:40px 24px">
+
+    <!-- Step 1 - Welcome -->
+    <div id="onboard-1">
+      <div style="text-align:center;padding:40px 0">
+        <div style="font-size:80px;margin-bottom:16px">🐝</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:var(--gold);margin-bottom:12px">Welcome to Hive!</div>
+        <div id="onboard-name" style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#fff;margin-bottom:16px"></div>
+        <div style="color:#555;font-size:16px;line-height:1.7;margin-bottom:40px">Hive is your community — a place to share vibes, connect with people and be yourself. 🍯</div>
+        <button onclick="goOnboard(2)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Let's go! →</button>
+      </div>
+    </div>
+
+    <!-- Step 2 - Location -->
+    <div id="onboard-2" style="display:none">
+      <div style="margin-bottom:24px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:8px">📍 Where are you from?</div>
+        <div style="color:#555;font-size:14px">Find your local Hive community</div>
+      </div>
+      <div id="location-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:32px">
+        <div class="onboard-option" onclick="selectOption(this,'location')">🏙️ Johannesburg</div>
+        <div class="onboard-option" onclick="selectOption(this,'location')">🌊 Cape Town</div>
+        <div class="onboard-option" onclick="selectOption(this,'location')">🌴 Durban</div>
+        <div class="onboard-option" onclick="selectOption(this,'location')">🌾 Pretoria</div>
+        <div class="onboard-option" onclick="selectOption(this,'location')">💎 Port Elizabeth</div>
+        <div class="onboard-option" onclick="selectOption(this,'location')">🌍 Other</div>
+      </div>
+      <button onclick="goOnboard(3)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
+    </div>
+
+    <!-- Step 3 - Interests -->
+    <div id="onboard-3" style="display:none">
+      <div style="margin-bottom:24px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:8px">🎯 What are you into?</div>
+        <div style="color:#555;font-size:14px">Pick your interests (choose as many as you like!)</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:32px">
+        <div class="onboard-option" onclick="selectOption(this,'interest')">💻 Tech</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">🎨 Art</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">✈️ Travel</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">🎵 Music</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">⚽ Sports</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">🍔 Food</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">📸 Photography</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">💪 Fitness</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">📚 Books</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">🎮 Gaming</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">💼 Business</div>
+        <div class="onboard-option" onclick="selectOption(this,'interest')">🌿 Nature</div>
+      </div>
+      <button onclick="goOnboard(4)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
+    </div>
+
+    <!-- Step 4 - All done -->
+    <div id="onboard-4" style="display:none">
+      <div style="text-align:center;padding:40px 0">
+        <div style="font-size:80px;margin-bottom:16px;animation:popIn 0.6s cubic-bezier(0.34,1.56,0.64,1)">🍯</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:var(--gold);margin-bottom:12px">You're in the Hive!</div>
+        <div style="color:#555;font-size:16px;line-height:1.7;margin-bottom:40px">Your community is waiting for you. Start sharing your vibes! 🐝</div>
+        <button onclick="finishOnboarding()" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Enter the Hive 🐝</button>
+      </div>
+    </div>
+
+    <!-- Progress dots -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:32px" id="onboard-dots">
+      <div id="dot-1" style="width:8px;height:8px;border-radius:50%;background:var(--gold);transition:all 0.3s"></div>
+      <div id="dot-2" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
+      <div id="dot-3" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
+      <div id="dot-4" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
+    </div>
+
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -965,7 +1051,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (error) { showError(error.message); btn.disabled = false; btn.textContent = 'Join the Hive 🐝'; return; }
     if (data.user) {
       await sb.from('profiles').upsert({ id: data.user.id, username, full_name: name, bio: 'New to the Hive! 🐝' });
-      currentUser = data.user; await loadProfile(); showApp();
+      currentUser = data.user; await loadProfile();
+      // Show onboarding for new users
+      document.getElementById('auth').style.display = 'none';
+      showOnboarding(name);
     }
   }
 
@@ -1477,6 +1566,34 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('chat-view').style.display = 'none';
     document.getElementById('conversations-view').style.display = 'block';
     loadConversations();
+  }
+
+  // ONBOARDING
+  function showOnboarding(name) {
+    document.getElementById('onboard-name').textContent = 'Hey ' + name + '! 👋';
+    document.getElementById('onboarding').style.display = 'block';
+  }
+
+  function goOnboard(step) {
+    [1,2,3,4].forEach(i => {
+      document.getElementById('onboard-'+i).style.display = i === step ? 'block' : 'none';
+      document.getElementById('dot-'+i).style.background = i === step ? 'var(--gold)' : '#333';
+    });
+  }
+
+  function selectOption(el, type) {
+    if (type === 'location') {
+      document.querySelectorAll('#location-grid .onboard-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    } else {
+      el.classList.toggle('selected');
+    }
+  }
+
+  function finishOnboarding() {
+    document.getElementById('onboarding').style.display = 'none';
+    localStorage.setItem('hive-onboarded-' + currentUser.id, 'true');
+    showApp();
   }
 
   // EDIT PROFILE
