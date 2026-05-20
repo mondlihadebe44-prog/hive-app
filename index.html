@@ -883,17 +883,42 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div style="padding:20px">
         <div class="search-box" style="margin-bottom:24px">
           <span>🔍</span>
-          <input placeholder="Search users, hashtags...">
+          <input placeholder="Search users, hashtags..." id="explore-search" oninput="searchUsers(this.value)">
         </div>
+        <div id="explore-search-results"></div>
+
+        <!-- Location Hives -->
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:16px">📍 Local Hives</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+          <div onclick="filterByLocation('Johannesburg')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:6px">🏙️</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Johannesburg</div>
+          </div>
+          <div onclick="filterByLocation('Cape Town')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:6px">🌊</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Cape Town</div>
+          </div>
+          <div onclick="filterByLocation('Durban')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:6px">🌴</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Durban</div>
+          </div>
+          <div onclick="filterByLocation('Pretoria')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:6px">🌾</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Pretoria</div>
+          </div>
+        </div>
+        <div id="location-results"></div>
+
+        <!-- Trending -->
         <div class="trending-card">
-          <div class="trending-title">Trending on Hive</div>
+          <div class="trending-title">Trending 🔥</div>
           <div>
             <span class="trending-tag">#hiveapp</span>
             <span class="trending-tag">#buildinpublic</span>
             <span class="trending-tag">#vibes</span>
-            <span class="trending-tag">#community</span>
             <span class="trending-tag">#southafrica</span>
-            <span class="trending-tag">#tech</span>
+            <span class="trending-tag">#joburg</span>
+            <span class="trending-tag">#capetown</span>
           </div>
         </div>
       </div>
@@ -1568,6 +1593,69 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadConversations();
   }
 
+  // EXPLORE SEARCH & LOCATION
+  async function searchUsers(query) {
+    const results = document.getElementById('explore-search-results');
+    if (!query || query.length < 1) { results.innerHTML = ''; return; }
+    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(10);
+    if (!users || users.length === 0) { results.innerHTML = '<div style="color:var(--muted);padding:12px">No users found</div>'; return; }
+    results.innerHTML = '';
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const verified = u.verified ? ' 🐝' : '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:all 0.2s';
+      div.onmouseover = () => div.style.borderColor = 'var(--gold)';
+      div.onmouseout = () => div.style.borderColor = 'var(--border)';
+      div.innerHTML = `
+        <div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
+        </div>`;
+      results.appendChild(div);
+    });
+  }
+
+  async function filterByLocation(location) {
+    const results = document.getElementById('location-results');
+    results.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading ' + location + ' Hive...</div>';
+    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified').ilike('location', '%' + location + '%').limit(10);
+    if (!users || users.length === 0) {
+      results.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No users from ${location} yet! Be the first! 🐝</div>`;
+      return;
+    }
+    results.innerHTML = `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:12px">People from ${location} 📍</div>`;
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const verified = u.verified ? ' 🐝' : '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);margin-bottom:8px';
+      div.innerHTML = `
+        <div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-size:13px;color:var(--muted)">@${u.username}</div>
+        </div>
+        <button onclick="followFromExplore(this,'${u.id}')" style="padding:6px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Follow</button>`;
+      results.appendChild(div);
+    });
+  }
+
+  async function followFromExplore(btn, userId) {
+    if (!currentUser) { showToast('Sign in to follow!'); return; }
+    btn.textContent = 'Following';
+    btn.style.background = 'var(--gold)';
+    btn.style.color = '#000';
+    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+    await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
+    showToast('Now following! 🐝');
+  }
+
   // ONBOARDING
   function showOnboarding(name) {
     document.getElementById('onboard-name').textContent = 'Hey ' + name + '! 👋';
@@ -1590,9 +1678,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     }
   }
 
-  function finishOnboarding() {
+  async function finishOnboarding() {
+    // Save location and interests
+    const selectedLocation = document.querySelector('#location-grid .onboard-option.selected');
+    const selectedInterests = document.querySelectorAll('#onboard-3 .onboard-option.selected');
+    const location = selectedLocation ? selectedLocation.textContent.trim() : '';
+    const interests = Array.from(selectedInterests).map(el => el.textContent.trim()).join(', ');
+    if (currentUser && (location || interests)) {
+      await sb.from('profiles').update({ location, interests }).eq('id', currentUser.id);
+      await loadProfile();
+    }
     document.getElementById('onboarding').style.display = 'none';
-    localStorage.setItem('hive-onboarded-' + currentUser.id, 'true');
     showApp();
   }
 
