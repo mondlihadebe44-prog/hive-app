@@ -395,6 +395,7 @@ body {
 }
 .reactions-popup.show { display: flex; animation: popUp 0.2s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes popUp { from{transform:scale(0.5) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+@keyframes fadeOut { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(0.95)} }
 .reaction-opt {
   font-size: 24px; cursor: pointer; transition: transform 0.15s;
   padding: 4px; border-radius: 50%;
@@ -1205,7 +1206,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
           </div>
-          <button class="post-more">···</button>
+          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
         ${post.image_url ? `<img class="post-image" src="${post.image_url}">` : ''}
@@ -1593,7 +1594,66 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadConversations();
   }
 
-  // EXPLORE SEARCH & LOCATION
+  // POST OPTIONS MENU
+  let activeMenu = null;
+
+  function showPostMenu(btn, postId, isOwn) {
+    // Close any existing menu
+    if (activeMenu) { activeMenu.remove(); activeMenu = null; }
+
+    const menu = document.createElement('div');
+    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+
+    if (isOwn) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+      deleteBtn.innerHTML = '🗑️ Delete post';
+      deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255,68,68,0.1)';
+      deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
+      deleteBtn.onclick = () => deletePost(postId, menu);
+      menu.appendChild(deleteBtn);
+    }
+
+    const copyBtn = document.createElement('button');
+    copyBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    copyBtn.innerHTML = '🔗 Copy link';
+    copyBtn.onmouseover = () => copyBtn.style.background = 'rgba(255,255,255,0.05)';
+    copyBtn.onmouseout = () => copyBtn.style.background = 'none';
+    copyBtn.onclick = () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; };
+    menu.appendChild(copyBtn);
+
+    const reportBtn = document.createElement('button');
+    reportBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--muted);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    reportBtn.innerHTML = '🚩 Report';
+    reportBtn.onmouseover = () => reportBtn.style.background = 'rgba(255,255,255,0.05)';
+    reportBtn.onmouseout = () => reportBtn.style.background = 'none';
+    reportBtn.onclick = () => { showToast('Reported! 🚩'); menu.remove(); activeMenu = null; };
+    menu.appendChild(reportBtn);
+
+    btn.parentElement.style.position = 'relative';
+    btn.parentElement.appendChild(menu);
+    activeMenu = menu;
+
+    // Close when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target) && e.target !== btn) {
+          menu.remove(); activeMenu = null;
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 100);
+  }
+
+  async function deletePost(postId, menu) {
+    if (!confirm('Delete this post? This cannot be undone.')) return;
+    menu.remove(); activeMenu = null;
+    const { error } = await sb.from('posts').delete().eq('id', postId).eq('user_id', currentUser.id);
+    if (error) { showToast('Error deleting post!'); return; }
+    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    if (card) { card.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => card.remove(), 300); }
+    showToast('Post deleted! 🗑️');
+  }
   async function searchUsers(query) {
     const results = document.getElementById('explore-search-results');
     if (!query || query.length < 1) { results.innerHTML = ''; return; }
