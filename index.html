@@ -1226,7 +1226,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="action-btn" onclick="toggleComments(this,'${post.id}')">
             <span class="action-icon">💬</span><span class="comment-count">0</span>
           </button>
-          <button class="action-btn"><span class="action-icon">🔁</span> 0</button>
+          <button class="action-btn repost-btn" onclick="toggleRepost(this,'${post.id}')">
+            <span class="action-icon">🔁</span><span class="repost-count">0</span>
+          </button>
           ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : ''}
         </div>
         <div class="comments-section" id="comments-${post.id}">
@@ -1239,6 +1241,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>`;
     loadLikes(post.id, card);
     loadCommentCount(post.id, card);
+    loadRepostCount(post.id, card);
     return card;
   }
 
@@ -1468,8 +1471,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const { data: notifs } = await sb.from('notifications').select('*, profiles!notifications_from_user_id_fkey(username,full_name,avatar_url)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
     if (!notifs || notifs.length === 0) { list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔔</div><div class="empty-text">No notifications yet</div></div>'; return; }
     list.innerHTML = '';
-    const icons = { like: '🐝', follow: '👤', comment: '💬', message: '✉️' };
-    const msgs = { like: 'buzzed your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message' };
+    const icons = { like: '🐝', follow: '👤', comment: '💬', message: '✉️', repost: '🔁' };
+    const msgs = { like: 'buzzed your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message', repost: 'rebuzzed your post' };
     notifs.forEach(n => {
       const p = n.profiles || {};
       const name = p.full_name || 'Someone';
@@ -1592,6 +1595,37 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('chat-view').style.display = 'none';
     document.getElementById('conversations-view').style.display = 'block';
     loadConversations();
+  }
+
+  async function loadRepostCount(postId, card) {
+    const { count } = await sb.from('reposts').select('*', { count: 'exact', head: true }).eq('post_id', postId);
+    const el = card.querySelector('.repost-count');
+    if (el) el.textContent = count || 0;
+    if (currentUser) {
+      const { data } = await sb.from('reposts').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
+      if (data) { const btn = card.querySelector('.repost-btn'); if (btn) { btn.style.color = '#4ECDC4'; } }
+    }
+  }
+
+  async function toggleRepost(btn, postId) {
+    if (!currentUser) { showToast('Sign in to rebuzz!'); return; }
+    const isReposted = btn.style.color === 'rgb(78, 205, 196)';
+    const countEl = btn.querySelector('.repost-count');
+    const count = parseInt(countEl.textContent) || 0;
+    if (isReposted) {
+      btn.style.color = ''; countEl.textContent = Math.max(0, count - 1);
+      await sb.from('reposts').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+      showToast('Rebuzz removed');
+    } else {
+      btn.style.color = '#4ECDC4'; countEl.textContent = count + 1;
+      await sb.from('reposts').insert({ post_id: postId, user_id: currentUser.id });
+      // Notify post owner
+      const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
+      if (post && post.user_id !== currentUser.id) {
+        await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'repost', post_id: postId });
+      }
+      showToast('Rebuzzed! 🔁🐝');
+    }
   }
 
   // POST OPTIONS MENU
