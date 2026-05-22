@@ -914,12 +914,12 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div class="trending-card">
           <div class="trending-title">Trending 🔥</div>
           <div>
-            <span class="trending-tag">#hiveapp</span>
-            <span class="trending-tag">#buildinpublic</span>
-            <span class="trending-tag">#vibes</span>
-            <span class="trending-tag">#southafrica</span>
-            <span class="trending-tag">#joburg</span>
-            <span class="trending-tag">#capetown</span>
+            <span class="trending-tag" onclick="openHashtag('hiveapp')">#hiveapp</span>
+            <span class="trending-tag" onclick="openHashtag('buildinpublic')">#buildinpublic</span>
+            <span class="trending-tag" onclick="openHashtag('vibes')">#vibes</span>
+            <span class="trending-tag" onclick="openHashtag('southafrica')">#southafrica</span>
+            <span class="trending-tag" onclick="openHashtag('joburg')">#joburg</span>
+            <span class="trending-tag" onclick="openHashtag('capetown')">#capetown</span>
           </div>
         </div>
       </div>
@@ -992,7 +992,16 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
     </div>
 
-  </div><!-- end main-content -->
+  <!-- HASHTAG PANEL -->
+  <div id="hashtag-panel" class="panel">
+    <div class="panel-header" style="display:flex;align-items:center;gap:12px">
+      <button onclick="setNav(document.getElementById('nav-explore'),'explore')" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
+      <div class="panel-title" id="hashtag-title">#hiveapp</div>
+    </div>
+    <div id="hashtag-posts">
+      <div class="loading-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
 
   <!-- RIGHT SIDEBAR -->
   <div class="right-sidebar">
@@ -1165,6 +1174,21 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (panel === 'profile') loadProfileStats();
     if (panel === 'notifs') loadNotifications();
     if (panel === 'messages') loadConversations();
+  }
+
+  async function openHashtag(tag) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('hashtag-panel').classList.add('active');
+    document.getElementById('hashtag-title').textContent = '#' + tag;
+    const container = document.getElementById('hashtag-posts');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading #' + tag + '...</div>';
+    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', '%#' + tag + '%').order('created_at', { ascending: false }).limit(20);
+    if (!posts || posts.length === 0) {
+      container.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔍</div><div class="empty-text">No posts with #${tag} yet! Be first!</div></div>`;
+      return;
+    }
+    container.innerHTML = '';
+    posts.forEach(post => container.appendChild(createPostCard(post)));
   }
 
   function switchTab(el) { document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); }
@@ -1814,7 +1838,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   // HELPERS
-  function formatBody(text) { return text.replace(/#(\w+)/g, '<span class="post-hashtag">#$1</span>'); }
+  function formatBody(text) { return text.replace(/#(\w+)/g, '<span class="post-hashtag" onclick="openHashtag(\'$1\')">#$1</span>'); }
   function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
   function getColor(n) { const c=['#F5C518','#FF6B35','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD']; let h=0; for(let x of n) h=x.charCodeAt(0)+h*31; return c[Math.abs(h)%c.length]; }
   function burstParticles(container) {
