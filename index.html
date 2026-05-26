@@ -816,6 +816,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     <button class="nav-item" onclick="setNav(this,'profile')" id="nav-profile">
       <span class="nav-icon">👤</span><span class="nav-label">Profile</span>
     </button>
+    <button class="nav-item" onclick="setNav(this,'saved')" id="nav-saved">
+      <span class="nav-icon">🔖</span><span class="nav-label">Saved</span>
+    </button>
     <div class="sidebar-bottom">
       <div class="sidebar-actions">
         <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
@@ -998,25 +1001,33 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <button onclick="setNav(document.getElementById('nav-explore'),'explore')" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
       <div class="panel-title" id="hashtag-title">#hiveapp</div>
     </div>
-    <div id="hashtag-posts">
-      <div class="loading-wrap"><div class="spinner"></div></div>
-    </div>
+    <div id="hashtag-posts"><div class="loading-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- SAVED PANEL -->
+  <div id="saved-panel" class="panel">
+    <div class="panel-header"><div class="panel-title">Saved 🔖</div></div>
+    <div id="saved-posts"><div class="loading-wrap"><div class="spinner"></div>Loading...</div></div>
   </div>
 
   <!-- RIGHT SIDEBAR -->
   <div class="right-sidebar">
     <div class="search-box">
       <span>🔍</span>
-      <input placeholder="Search Hive">
+      <input placeholder="Search Hive" oninput="searchUsers(this.value)">
     </div>
     <div class="trending-card">
       <div class="trending-title">Trending 🔥</div>
       <div>
-        <span class="trending-tag">#hiveapp</span>
-        <span class="trending-tag">#buildinpublic</span>
-        <span class="trending-tag">#vibes</span>
-        <span class="trending-tag">#southafrica</span>
+        <span class="trending-tag" onclick="openHashtag('hiveapp')">#hiveapp</span>
+        <span class="trending-tag" onclick="openHashtag('buildinpublic')">#buildinpublic</span>
+        <span class="trending-tag" onclick="openHashtag('vibes')">#vibes</span>
+        <span class="trending-tag" onclick="openHashtag('southafrica')">#southafrica</span>
       </div>
+    </div>
+    <div class="trending-card">
+      <div class="trending-title">Who to Follow 👥</div>
+      <div id="who-to-follow"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
     </div>
   </div>
 
@@ -1155,6 +1166,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadPosts();
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
+    setTimeout(loadWhoToFollow, 1000);
     showToast('Welcome to Hive! 🐝');
   }
 
@@ -1174,6 +1186,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (panel === 'profile') loadProfileStats();
     if (panel === 'notifs') loadNotifications();
     if (panel === 'messages') loadConversations();
+    if (panel === 'saved') loadBookmarks();
   }
 
   async function openHashtag(tag) {
@@ -1252,6 +1265,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           </button>
           <button class="action-btn repost-btn" onclick="toggleRepost(this,'${post.id}')">
             <span class="action-icon">🔁</span><span class="repost-count">0</span>
+          </button>
+          <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
+            <span class="action-icon">🔖</span>
           </button>
           ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : ''}
         </div>
@@ -1712,6 +1728,61 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (card) { card.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => card.remove(), 300); }
     showToast('Post deleted! 🗑️');
   }
+
+  // BOOKMARKS
+  async function toggleBookmark(btn, postId) {
+    if (!currentUser) { showToast('Sign in to bookmark!'); return; }
+    const isBookmarked = btn.classList.contains('bookmarked');
+    const icon = btn.querySelector('.action-icon');
+    if (isBookmarked) {
+      btn.classList.remove('bookmarked'); icon.textContent = '🔖'; btn.style.color = '';
+      await sb.from('bookmarks').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+      showToast('Bookmark removed');
+    } else {
+      btn.classList.add('bookmarked'); icon.textContent = '🔖'; btn.style.color = 'var(--gold)';
+      await sb.from('bookmarks').insert({ post_id: postId, user_id: currentUser.id });
+      showToast('Bookmarked! 🔖');
+    }
+  }
+
+  async function loadBookmarks() {
+    const container = document.getElementById('saved-posts');
+    if (!container) return;
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
+    const { data } = await sb.from('bookmarks').select('*, posts(*, profiles(username,full_name,avatar_url,verified))').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔖</div><div class="empty-text">No saved posts yet! Tap 🔖 on any post.</div></div>'; return; }
+    container.innerHTML = '';
+    data.forEach(b => { if (b.posts) container.appendChild(createPostCard(b.posts)); });
+  }
+
+  // WHO TO FOLLOW
+  async function loadWhoToFollow() {
+    const container = document.getElementById('who-to-follow');
+    if (!container || !currentUser) return;
+    const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+    const followingIds = (following || []).map(f => f.following_id);
+    followingIds.push(currentUser.id);
+    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified').not('id', 'in', `(${followingIds.join(',')})`).limit(4);
+    if (!users || users.length === 0) { container.innerHTML = '<div style="color:var(--muted);font-size:13px">No suggestions yet!</div>'; return; }
+    container.innerHTML = '';
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const verified = u.verified ? ' 🐝' : '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px';
+      div.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:16px;flex-shrink:0">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${verified}</div>
+          <div style="font-size:11px;color:var(--muted)">@${u.username}</div>
+        </div>
+        <button onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
+      container.appendChild(div);
+    });
+  }
+
   async function searchUsers(query) {
     const results = document.getElementById('explore-search-results');
     if (!query || query.length < 1) { results.innerHTML = ''; return; }
