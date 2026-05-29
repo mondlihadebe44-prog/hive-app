@@ -1207,16 +1207,42 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     posts.forEach(post => container.appendChild(createPostCard(post)));
   }
 
-  function switchTab(el) { document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); }
+  function switchTab(el) {
+    document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    const tab = el.textContent.trim();
+    if (tab === 'For You') loadPosts('foryou');
+    if (tab === 'Following') loadPosts('following');
+    if (tab === 'Trending') loadPosts('trending');
+  }
   function toggleTheme() { document.body.classList.toggle('light'); document.getElementById('theme-btn').textContent = document.body.classList.contains('light') ? '☀️' : '🌙'; }
 
   // POSTS
-  async function loadPosts() {
+  async function loadPosts(tab = 'foryou') {
     const container = document.getElementById('posts-container');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>';
-    const { data: posts, error } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').order('created_at', { ascending: false }).limit(20);
+    let query = sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)');
+
+    if (tab === 'following' && currentUser) {
+      // Get posts from people you follow
+      const { data: follows } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+      const ids = (follows || []).map(f => f.following_id);
+      if (ids.length === 0) {
+        container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">👥</div><div class="empty-text">Follow people to see their posts here!</div></div>';
+        return;
+      }
+      query = query.in('user_id', ids);
+    } else if (tab === 'trending') {
+      // Most liked posts
+      query = query.order('created_at', { ascending: false }).limit(20);
+    } else {
+      // For You - all posts
+      query = query.order('created_at', { ascending: false }).limit(20);
+    }
+
+    const { data: posts, error } = await query.order('created_at', { ascending: false }).limit(20);
     if (error || !posts || posts.length === 0) {
-      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No vibes yet! Be the first to post!</div></div>';
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No vibes yet!</div></div>';
       return;
     }
     container.innerHTML = '';
