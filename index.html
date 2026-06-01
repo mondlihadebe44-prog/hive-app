@@ -595,6 +595,24 @@ body {
 .onboard-option:hover { border-color: var(--gold); color: var(--gold); }
 .onboard-option.selected { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
 
+/* Vibe Check */
+.vibe-emoji-opt {
+  font-size: 28px; cursor: pointer; padding: 6px;
+  border-radius: 10px; transition: transform 0.2s;
+  border: 2px solid transparent;
+}
+.vibe-emoji-opt:hover { transform: scale(1.2); }
+.vibe-emoji-opt.selected { border-color: var(--gold); background: rgba(245,197,24,0.1); }
+.vibe-color-opt {
+  width: 32px; height: 32px; border-radius: 50%;
+  cursor: pointer; transition: transform 0.2s;
+  border: 3px solid transparent;
+}
+.vibe-color-opt:hover { transform: scale(1.1); }
+.vibe-color-opt.selected { border-color: #fff; transform: scale(1.15); }
+.story-avatar.has-vibe { border-color: var(--gold); box-shadow: 0 0 12px rgba(245,197,24,0.5); }
+@keyframes vibeProgress { from{width:0%} to{width:100%} }
+
 .toast {
   position: fixed; bottom: 32px; left: 50%;
   transform: translateX(-50%) translateY(20px);
@@ -738,6 +756,82 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   </div>
 </div>
 
+<!-- VIBE CHECK CREATOR -->
+<div id="vibe-check-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Vibe Check 🐝</div>
+      <button onclick="closeVibeCheck()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Preview -->
+    <div id="vibe-preview" style="height:160px;border-radius:16px;background:#F5C518;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;margin-bottom:20px;transition:background 0.3s">
+      <div id="vibe-preview-emoji" style="font-size:48px">😎</div>
+      <div id="vibe-preview-text" style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000">What's your vibe?</div>
+    </div>
+
+    <!-- Emoji picker -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Pick your mood</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😎')">😎</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'🔥')">🔥</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😂')">😂</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😍')">😍</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😢')">😢</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😤')">😤</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'🥳')">🥳</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'😴')">😴</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'🤔')">🤔</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'💪')">💪</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'🙏')">🙏</span>
+        <span class="vibe-emoji-opt" onclick="pickVibeEmoji(this,'❤️')">❤️</span>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div style="margin-bottom:16px">
+      <input id="vibe-text" placeholder="Add a message... (optional)" oninput="updateVibePreview()" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+
+    <!-- Color picker -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Background</div>
+      <div style="display:flex;gap:8px">
+        <div class="vibe-color-opt selected" onclick="pickVibeColor(this,'#F5C518')" style="background:#F5C518"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#FF6B35')" style="background:#FF6B35"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#4ECDC4')" style="background:#4ECDC4"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#45B7D1')" style="background:#45B7D1"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#96CEB4')" style="background:#96CEB4"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#DDA0DD')" style="background:#DDA0DD"></div>
+        <div class="vibe-color-opt" onclick="pickVibeColor(this,'#1a1a1a')" style="background:#1a1a1a;border:1px solid #333"></div>
+      </div>
+    </div>
+
+    <button onclick="postVibeCheck()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="post-vibe-btn">Share Vibe Check 🐝</button>
+  </div>
+</div>
+
+<!-- VIBE CHECK VIEWER -->
+<div id="vibe-viewer" style="display:none;position:fixed;inset:0;z-index:700;background:#000" onclick="handleViewerTap(event)">
+  <div id="vibe-viewer-bg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:relative">
+    <!-- Progress bar -->
+    <div style="position:absolute;top:0;left:0;right:0;padding:50px 16px 12px;display:flex;gap:4px" id="vibe-progress-bars"></div>
+    <!-- Header -->
+    <div style="position:absolute;top:60px;left:0;right:0;padding:0 16px;display:flex;align-items:center;gap:12px">
+      <div id="viewer-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;border:2px solid #fff"></div>
+      <div>
+        <div id="viewer-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff"></div>
+        <div id="viewer-time" style="font-size:12px;color:rgba(255,255,255,0.6)"></div>
+      </div>
+      <button onclick="event.stopPropagation();closeVibeViewer()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
+    </div>
+    <!-- Content -->
+    <div id="viewer-emoji" style="font-size:96px"></div>
+    <div id="viewer-text" style="font-family:'Syne',sans-serif;font-weight:700;font-size:24px;color:#fff;text-align:center;padding:0 32px"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -841,11 +935,15 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     <div id="feed-panel" class="panel active">
       <div class="feed-header">
         <div class="feed-title">Your Hive 🍯</div>
-        <div class="stories-bar">
-          <div class="story-item"><div class="story-avatar">😎</div><div class="story-name">You</div></div>
-          <div class="story-item"><div class="story-avatar">🌸</div><div class="story-name">Sara</div></div>
-          <div class="story-item"><div class="story-avatar">🚀</div><div class="story-name">DevMike</div></div>
-          <div class="story-item"><div class="story-avatar">🎨</div><div class="story-name">ArtLena</div></div>
+        <div class="stories-bar" id="vibe-check-bar">
+          <!-- Add Vibe Check button -->
+          <div class="story-item" onclick="openAddVibeCheck()">
+            <div class="story-avatar" id="my-vibe-avatar" style="position:relative">
+              <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #000">+</div>
+              😎
+            </div>
+            <div class="story-name">Your Vibe</div>
+          </div>
         </div>
         <div class="feed-tabs">
           <button class="feed-tab active" onclick="switchTab(this)">For You</button>
@@ -1167,6 +1265,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('splash').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     loadPosts();
+    loadVibeChecks();
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
     setTimeout(loadWhoToFollow, 1000);
@@ -1756,6 +1855,167 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const card = document.querySelector(`[data-post-id="${postId}"]`);
     if (card) { card.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => card.remove(), 300); }
     showToast('Post deleted! 🗑️');
+  }
+
+  function handleViewerTap(event) {
+    const x = event.clientX;
+    const width = window.innerWidth;
+    if (x < width / 2) {
+      // Tap left - go back
+      if (currentVibeIndex > 0) openVibeViewer(currentVibeIndex - 1);
+    } else {
+      // Tap right - go forward
+      if (currentVibeIndex < vibeChecks.length - 1) openVibeViewer(currentVibeIndex + 1);
+      else closeVibeViewer();
+    }
+  }
+
+  // VIBE CHECK
+  let currentVibeEmoji = '😎';
+  let currentVibeBg = '#F5C518';
+  let vibeChecks = [];
+  let currentVibeIndex = 0;
+  let vibeTimer = null;
+
+  function openAddVibeCheck() {
+    document.getElementById('vibe-check-modal').style.display = 'flex';
+    currentVibeEmoji = '😎';
+    currentVibeBg = '#F5C518';
+    updateVibePreview();
+  }
+
+  function closeVibeCheck() {
+    document.getElementById('vibe-check-modal').style.display = 'none';
+    document.getElementById('vibe-text').value = '';
+  }
+
+  function pickVibeEmoji(el, emoji) {
+    document.querySelectorAll('.vibe-emoji-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    currentVibeEmoji = emoji;
+    updateVibePreview();
+  }
+
+  function pickVibeColor(el, color) {
+    document.querySelectorAll('.vibe-color-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    currentVibeBg = color;
+    updateVibePreview();
+  }
+
+  function updateVibePreview() {
+    const text = document.getElementById('vibe-text').value || "What's your vibe?";
+    const preview = document.getElementById('vibe-preview');
+    preview.style.background = currentVibeBg;
+    document.getElementById('vibe-preview-emoji').textContent = currentVibeEmoji;
+    document.getElementById('vibe-preview-text').textContent = text;
+    document.getElementById('vibe-preview-text').style.color = currentVibeBg === '#1a1a1a' ? '#fff' : '#000';
+  }
+
+  async function postVibeCheck() {
+    if (!currentUser) { showToast('Sign in first!'); return; }
+    const btn = document.getElementById('post-vibe-btn');
+    btn.disabled = true; btn.textContent = 'Sharing...';
+    const text = document.getElementById('vibe-text').value.trim();
+    const { error } = await sb.from('vibe_checks').insert({
+      user_id: currentUser.id, content: text,
+      emoji: currentVibeEmoji, bg_color: currentVibeBg
+    });
+    if (error) { showToast('Error! Try again.'); btn.disabled = false; btn.textContent = 'Share Vibe Check 🐝'; return; }
+    closeVibeCheck();
+    btn.disabled = false; btn.textContent = 'Share Vibe Check 🐝';
+    showToast('Vibe Check shared! 🐝🔥');
+    loadVibeChecks();
+  }
+
+  async function loadVibeChecks() {
+    const bar = document.getElementById('vibe-check-bar');
+    if (!bar) return;
+
+    const { data: vibes } = await sb.from('vibe_checks')
+      .select('*, profiles(username, full_name, avatar_url)')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(15);
+
+    vibeChecks = vibes || [];
+
+    // Keep the add button
+    const addBtn = bar.children[0];
+    bar.innerHTML = '';
+    bar.appendChild(addBtn);
+
+    // Update my vibe avatar
+    if (currentProfile && currentProfile.avatar_url) {
+      document.getElementById('my-vibe-avatar').innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #000">+</div>`;
+    }
+
+    // Add vibe items
+    vibes && vibes.forEach((vibe, index) => {
+      const p = vibe.profiles || {};
+      const name = (p.full_name || p.username || 'User').split(' ')[0];
+      const item = document.createElement('div');
+      item.className = 'story-item';
+      item.onclick = () => openVibeViewer(index);
+      item.innerHTML = `
+        <div class="story-avatar has-vibe" style="background:${vibe.bg_color};font-size:26px;border-color:var(--gold)">
+          ${vibe.emoji}
+        </div>
+        <div class="story-name">${name}</div>`;
+      bar.appendChild(item);
+    });
+  }
+
+  function openVibeViewer(index) {
+    currentVibeIndex = index;
+    const vibe = vibeChecks[index];
+    if (!vibe) return;
+
+    const viewer = document.getElementById('vibe-viewer');
+    viewer.style.display = 'block';
+    document.getElementById('vibe-viewer-bg').style.background = vibe.bg_color;
+
+    const p = vibe.profiles || {};
+    const name = p.full_name || p.username || 'User';
+    document.getElementById('viewer-name').textContent = name;
+    document.getElementById('viewer-time').textContent = timeAgo(vibe.created_at);
+    document.getElementById('viewer-emoji').textContent = vibe.emoji;
+    document.getElementById('viewer-text').textContent = vibe.content || '';
+    document.getElementById('viewer-text').style.color = vibe.bg_color === '#1a1a1a' ? '#fff' : '#000';
+    document.getElementById('viewer-emoji').style.filter = vibe.bg_color === '#1a1a1a' ? 'none' : 'none';
+
+    // Avatar
+    const avatarEl = document.getElementById('viewer-avatar');
+    if (p.avatar_url) {
+      avatarEl.innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      avatarEl.textContent = name[0].toUpperCase();
+      avatarEl.style.background = getColor(name);
+    }
+
+    // Progress bars
+    const barsEl = document.getElementById('vibe-progress-bars');
+    barsEl.innerHTML = '';
+    vibeChecks.forEach((_, i) => {
+      const bar = document.createElement('div');
+      bar.style.cssText = `flex:1;height:3px;background:${i < index ? 'rgba(255,255,255,0.8)' : i === index ? 'transparent' : 'rgba(255,255,255,0.3)'};border-radius:2px;overflow:hidden`;
+      if (i === index) {
+        bar.innerHTML = '<div style="height:100%;background:rgba(255,255,255,0.9);border-radius:2px;animation:vibeProgress 5s linear forwards"></div>';
+      }
+      barsEl.appendChild(bar);
+    });
+
+    // Auto advance
+    if (vibeTimer) clearTimeout(vibeTimer);
+    vibeTimer = setTimeout(() => {
+      if (currentVibeIndex < vibeChecks.length - 1) openVibeViewer(currentVibeIndex + 1);
+      else closeVibeViewer();
+    }, 5000);
+  }
+
+  function closeVibeViewer() {
+    document.getElementById('vibe-viewer').style.display = 'none';
+    if (vibeTimer) clearTimeout(vibeTimer);
   }
 
   // BOOKMARKS
