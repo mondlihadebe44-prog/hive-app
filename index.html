@@ -57,6 +57,13 @@ body {
 }
 @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
 @keyframes fadeUp { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes beeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+@keyframes beeFly {
+  0%{transform:translate(-100px,-50px) rotate(-10deg);opacity:0}
+  20%{opacity:1}
+  80%{opacity:1}
+  100%{transform:translate(calc(100vw + 100px),50px) rotate(10deg);opacity:0}
+}
 
 /* ===== AUTH ===== */
 #auth {
@@ -859,31 +866,88 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
 <!-- SPLASH -->
 <div id="splash">
-  <div class="splash-logo"><span>🐝</span> Hive</div>
-  <div class="splash-tagline">Your community. Your vibe.</div>
+  <div style="position:absolute;inset:0;overflow:hidden">
+    <div class="splash-ring" style="width:300px;height:300px;animation-delay:0s"></div>
+    <div class="splash-ring" style="width:450px;height:450px;animation-delay:0.3s"></div>
+    <div class="splash-ring" style="width:600px;height:600px;animation-delay:0.6s"></div>
+  </div>
+  <div id="flying-bee" style="position:absolute;font-size:40px;animation:beeFly 3s ease-in-out infinite">🐝</div>
+  <div class="splash-logo" style="flex-direction:column;gap:8px;text-align:center">
+    <div style="font-size:72px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+    <div style="font-size:56px">Hive</div>
+  </div>
+  <div class="splash-tagline" style="font-size:16px;color:rgba(255,255,255,0.6);margin-top:8px">Share your vibe. Discover your people.</div>
+  <div style="margin-top:24px;color:rgba(255,255,255,0.3);font-size:13px;animation:fadeUp 1s ease both 1s">Your community. Your vibe. 🍯</div>
 </div>
 
 <!-- AUTH -->
 <div id="auth">
   <div class="auth-inner">
-    <div class="auth-logo"><span>🐝</span> Hive</div>
-    <div class="auth-tagline">Your community. Your vibe.</div>
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:48px;animation:beeFloat 2s ease-in-out infinite;display:inline-block">🐝</div>
+      <div class="auth-logo" style="justify-content:center;margin-bottom:4px">Hive</div>
+      <div style="color:#555;font-size:14px;line-height:1.6">Join the Hive — connect with your community.<br><span style="color:var(--gold)">Share your vibe. Discover your people.</span></div>
+    </div>
+
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('signup')">Create Account</button>
       <button class="auth-tab" onclick="switchAuthTab('signin')">Sign In</button>
     </div>
+
     <div id="auth-error" class="auth-error"></div>
+
+    <!-- SIGN UP -->
     <div id="signup-panel" style="width:100%">
-      <div class="field"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your full name"></div>
-      <div class="field"><label>Username</label><input type="text" id="signup-username" placeholder="yourusername"></div>
-      <div class="field"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com"></div>
-      <div class="field"><label>Password</label><input type="password" id="signup-password" placeholder="Min. 8 characters"></div>
-      <button class="btn-primary" id="signup-btn" onclick="signUp()">Join the Hive 🐝</button>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="signup-name" placeholder="Your full name e.g. Mondli Hadebe">
+      </div>
+      <div class="field">
+        <label>Choose a Username</label>
+        <div style="position:relative">
+          <input type="text" id="signup-username" placeholder="e.g. mondli_vibes" oninput="validateUsername(this.value)" style="padding-right:40px">
+          <span id="username-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px"></span>
+        </div>
+        <div id="username-msg" style="font-size:12px;margin-top:4px;height:16px"></div>
+      </div>
+      <div class="field">
+        <label>Enter your Email</label>
+        <div style="position:relative">
+          <input type="email" id="signup-email" placeholder="you@example.com" oninput="validateEmail(this.value)" style="padding-right:40px">
+          <span id="email-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px"></span>
+        </div>
+        <div id="email-msg" style="font-size:12px;margin-top:4px;height:16px"></div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div style="position:relative">
+          <input type="password" id="signup-password" placeholder="Min. 8 characters" style="padding-right:44px">
+          <button onclick="togglePassVisibility('signup-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:18px;cursor:pointer">👁</button>
+        </div>
+      </div>
+      <button class="btn-primary" id="signup-btn" onclick="signUp()">
+        <span id="signup-btn-text">Join the Hive 🐝</span>
+      </button>
     </div>
+
+    <!-- SIGN IN -->
     <div id="signin-panel" style="width:100%;display:none">
-      <div class="field"><label>Email</label><input type="email" id="signin-email" placeholder="you@example.com"></div>
-      <div class="field"><label>Password</label><input type="password" id="signin-password" placeholder="Your password"></div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="signin-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div style="position:relative">
+          <input type="password" id="signin-password" placeholder="Your password" style="padding-right:44px">
+          <button onclick="togglePassVisibility('signin-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:18px;cursor:pointer">👁</button>
+        </div>
+      </div>
       <button class="btn-primary" id="signin-btn" onclick="signIn()">Sign In →</button>
+      <div style="text-align:center;margin-top:16px">
+        <span style="color:#555;font-size:13px;cursor:pointer;text-decoration:underline" onclick="showToast('Password reset coming soon! 🐝')">Forgot password?</span>
+      </div>
     </div>
   </div>
 </div>
