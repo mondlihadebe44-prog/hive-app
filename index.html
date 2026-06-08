@@ -901,12 +901,12 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     <div id="signup-panel" style="width:100%">
       <div class="field">
         <label>Full Name</label>
-        <input type="text" id="signup-name" placeholder="Your full name e.g. Mondli Hadebe">
+        <input type="text" id="signup-name" placeholder="Your full name e.g. Mondli Hadebe" autocomplete="name">
       </div>
       <div class="field">
         <label>Choose a Username</label>
         <div style="position:relative">
-          <input type="text" id="signup-username" placeholder="e.g. mondli_vibes" oninput="validateUsername(this.value)" style="padding-right:40px">
+          <input type="text" id="signup-username" placeholder="e.g. mondli_vibes" autocomplete="off" oninput="validateUsername(this.value)" style="padding-right:40px">
           <span id="username-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px"></span>
         </div>
         <div id="username-msg" style="font-size:12px;margin-top:4px;height:16px"></div>
@@ -914,7 +914,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div class="field">
         <label>Enter your Email</label>
         <div style="position:relative">
-          <input type="email" id="signup-email" placeholder="you@example.com" oninput="validateEmail(this.value)" style="padding-right:40px">
+          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" oninput="validateEmail(this.value)" style="padding-right:40px">
           <span id="email-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px"></span>
         </div>
         <div id="email-msg" style="font-size:12px;margin-top:4px;height:16px"></div>
@@ -922,13 +922,14 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div class="field">
         <label>Password</label>
         <div style="position:relative">
-          <input type="password" id="signup-password" placeholder="Min. 8 characters" style="padding-right:44px">
-          <button onclick="togglePassVisibility('signup-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:18px;cursor:pointer">👁</button>
+          <input type="password" id="signup-password" placeholder="Min. 8 characters" autocomplete="new-password" style="padding-right:44px">
+          <button type="button" onclick="togglePassVisibility('signup-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:18px;cursor:pointer">👁</button>
         </div>
       </div>
-      <button class="btn-primary" id="signup-btn" onclick="signUp()">
+      <button class="btn-primary" id="signup-btn" onclick="signUp()" style="margin-top:8px">
         <span id="signup-btn-text">Join the Hive 🐝</span>
       </button>
+      <div style="height:40px"></div>
     </div>
 
     <!-- SIGN IN -->
@@ -1245,6 +1246,36 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('signup-panel').style.display = tab === 'signup' ? 'block' : 'none';
     document.getElementById('signin-panel').style.display = tab === 'signin' ? 'block' : 'none';
     document.getElementById('auth-error').style.display = 'none';
+  }
+
+  function togglePassVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+    else { input.type = 'password'; btn.textContent = '👁'; }
+  }
+
+  function validateUsername(value) {
+    const status = document.getElementById('username-status');
+    const msg = document.getElementById('username-msg');
+    if (!value) { status.textContent = ''; msg.textContent = ''; return; }
+    const clean = value.replace(/\s/g, '').toLowerCase();
+    document.getElementById('signup-username').value = clean;
+    if (clean.length < 3) {
+      status.textContent = '❌'; msg.style.color = '#ff6b6b'; msg.textContent = 'Username must be at least 3 characters';
+    } else if (!/^[a-z0-9_]+$/.test(clean)) {
+      status.textContent = '❌'; msg.style.color = '#ff6b6b'; msg.textContent = 'Only letters, numbers and underscores';
+    } else {
+      status.textContent = '✅'; msg.style.color = '#4ECDC4'; msg.textContent = 'Username looks good!';
+    }
+  }
+
+  function validateEmail(value) {
+    const status = document.getElementById('email-status');
+    const msg = document.getElementById('email-msg');
+    if (!value) { status.textContent = ''; msg.textContent = ''; return; }
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if (valid) { status.textContent = '✅'; msg.style.color = '#4ECDC4'; msg.textContent = 'Valid email!'; }
+    else { status.textContent = '❌'; msg.style.color = '#ff6b6b'; msg.textContent = 'Please enter a valid email'; }
   }
 
   function showError(msg) { const e = document.getElementById('auth-error'); e.textContent = msg; e.style.display = 'block'; }
