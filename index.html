@@ -1486,7 +1486,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name">${name} ${verified}</span>
+            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name} ${verified}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
@@ -1625,6 +1625,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       if (userId !== currentUser.id) await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
       showToast('Now following! 🐝');
     }
+    // Refresh profile stats
+    await loadProfileStats();
   }
 
   async function toggleComments(btn, postId) {
