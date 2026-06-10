@@ -1155,6 +1155,34 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
     </div>
 
+  <!-- USER PROFILE PANEL -->
+  <div id="user-profile-panel" class="panel">
+    <div class="panel-header" style="display:flex;align-items:center;gap:12px">
+      <button onclick="history.back();document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('feed-panel').classList.add('active')" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
+      <div class="panel-title" id="user-profile-title">Profile</div>
+    </div>
+    <div id="user-cover" style="height:160px;background:linear-gradient(135deg,var(--gold),var(--orange));position:relative">
+      <img id="user-cover-img" style="width:100%;height:100%;object-fit:cover;display:none">
+    </div>
+    <div style="padding:0 20px 20px">
+      <div style="margin-top:-36px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div id="user-avatar-large" style="width:80px;height:80px;border-radius:50%;background:var(--gold);border:4px solid #000;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#000;overflow:hidden"></div>
+        <button id="user-follow-btn" onclick="toggleFollowUser(this)" style="padding:8px 20px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Follow</button>
+      </div>
+      <div id="user-name-large" style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:2px"></div>
+      <div id="user-handle-large" style="color:var(--muted);font-size:14px;margin-bottom:8px"></div>
+      <div id="user-bio-large" style="font-size:14px;color:#aaa;margin-bottom:16px"></div>
+      <div style="display:flex;gap:24px;margin-bottom:20px">
+        <div><div id="user-posts-count" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--gold)">0</div><div style="font-size:13px;color:var(--muted)">Posts</div></div>
+        <div><div id="user-followers-count" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--gold)">0</div><div style="font-size:13px;color:var(--muted)">Followers</div></div>
+        <div><div id="user-following-count" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--gold)">0</div><div style="font-size:13px;color:var(--muted)">Following</div></div>
+      </div>
+    </div>
+    <div id="user-posts-container">
+      <div class="loading-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
+
   <!-- HASHTAG PANEL -->
   <div id="hashtag-panel" class="panel">
     <div class="panel-header" style="display:flex;align-items:center;gap:12px">
@@ -1454,7 +1482,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     card.className = 'post-card';
     card.dataset.postId = post.id;
     card.innerHTML = `
-      <div class="post-card-avatar" style="background:${getColor(name)};color:#000">${avatarHTML}</div>
+      <div class="post-card-avatar" style="background:${getColor(name)};color:#000;cursor:pointer" onclick="openUserProfile('${post.user_id}')">${avatarHTML}</div>
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
@@ -1885,6 +1913,99 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'repost', post_id: postId });
       }
       showToast('Rebuzzed! 🔁🐝');
+    }
+  }
+
+  // USER PROFILE
+  let viewingUserId = null;
+
+  async function openUserProfile(userId) {
+    viewingUserId = userId;
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('user-profile-panel').classList.add('active');
+
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', userId).single();
+    if (!profile) return;
+
+    const name = profile.full_name || profile.username || 'Unknown';
+    const initial = name[0].toUpperCase();
+    const verified = profile.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:18px">🐝</span>' : '';
+
+    document.getElementById('user-profile-title').textContent = name;
+    document.getElementById('user-name-large').innerHTML = name + verified;
+    document.getElementById('user-handle-large').textContent = '@' + (profile.username || '');
+    document.getElementById('user-bio-large').textContent = profile.bio || '';
+
+    // Avatar
+    const avatarEl = document.getElementById('user-avatar-large');
+    if (profile.avatar_url) {
+      avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.textContent = initial;
+      avatarEl.style.background = getColor(name);
+    }
+
+    // Cover
+    if (profile.cover_url) {
+      const coverImg = document.getElementById('user-cover-img');
+      coverImg.src = profile.cover_url;
+      coverImg.style.display = 'block';
+    }
+
+    // Stats
+    const { count: posts } = await sb.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+    const { count: followers } = await sb.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId);
+    const { count: following } = await sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
+    document.getElementById('user-posts-count').textContent = posts || 0;
+    document.getElementById('user-followers-count').textContent = followers || 0;
+    document.getElementById('user-following-count').textContent = following || 0;
+
+    // Follow button
+    const followBtn = document.getElementById('user-follow-btn');
+    if (currentUser && userId === currentUser.id) {
+      followBtn.style.display = 'none';
+    } else {
+      followBtn.style.display = 'block';
+      followBtn.dataset.userId = userId;
+      if (currentUser) {
+        const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
+        if (data) { followBtn.textContent = 'Following'; followBtn.style.background = 'var(--gold)'; followBtn.style.color = '#000'; followBtn.classList.add('following'); }
+        else { followBtn.textContent = 'Follow'; followBtn.style.background = 'transparent'; followBtn.style.color = 'var(--gold)'; followBtn.classList.remove('following'); }
+      }
+    }
+
+    // Load user posts
+    const container = document.getElementById('user-posts-container');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const { data: userPosts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+    container.innerHTML = '';
+    if (!userPosts || userPosts.length === 0) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No posts yet!</div></div>';
+      return;
+    }
+    userPosts.forEach(post => container.appendChild(createPostCard(post)));
+  }
+
+  async function toggleFollowUser(btn) {
+    if (!currentUser) { showToast('Sign in to follow!'); return; }
+    const userId = btn.dataset.userId;
+    const isFollowing = btn.classList.contains('following');
+    if (isFollowing) {
+      btn.classList.remove('following'); btn.textContent = 'Follow'; btn.style.background = 'transparent'; btn.style.color = 'var(--gold)';
+      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
+      const el = document.getElementById('user-followers-count');
+      if (el) el.textContent = Math.max(0, parseInt(el.textContent) - 1);
+      showToast('Unfollowed');
+    } else {
+      btn.classList.add('following'); btn.textContent = 'Following'; btn.style.background = 'var(--gold)'; btn.style.color = '#000';
+      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+      await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
+      const el = document.getElementById('user-followers-count');
+      if (el) el.textContent = parseInt(el.textContent) + 1;
+      // Update my following count
+      await loadProfileStats();
+      showToast('Now following! 🐝');
     }
   }
 
