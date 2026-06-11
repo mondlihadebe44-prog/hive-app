@@ -1200,7 +1200,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
 
       <!-- CHAT VIEW -->
-      <div id="chat-view" style="display:none;flex-direction:column;height:100vh;position:relative">
+      <div id="chat-view" style="display:none;flex-direction:column;position:fixed;inset:0;z-index:50;background:var(--bg)">
         <!-- Chat header -->
         <div class="chat-header">
           <button class="chat-back" onclick="showConversations()">←</button>
@@ -1209,20 +1209,20 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
             <div id="chat-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px"></div>
             <div id="chat-status" style="font-size:11px;color:#4ECDC4">● Active now</div>
           </div>
-          <button onclick="openUserProfile(currentChatUser?.id)" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">ⓘ</button>
+          <button onclick="currentChatUser && openUserProfile(currentChatUser.id)" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">ⓘ</button>
         </div>
 
-        <!-- Messages area -->
-        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;background:var(--bg)"></div>
+        <!-- Messages area - fills remaining space -->
+        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:4px;scrollbar-width:none"></div>
 
-        <!-- Input area -->
-        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg)">
+        <!-- Input area - always at bottom -->
+        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0">
           <div style="flex:1;display:flex;align-items:center;gap:8px;background:#111;border:1px solid var(--border);border-radius:50px;padding:8px 14px">
             <input id="chat-input" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMessage()" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
             <button onclick="document.getElementById('dm-image-upload').click()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">🖼️</button>
             <input type="file" id="dm-image-upload" accept="image/*" style="display:none" onchange="sendImageDM(this)">
           </div>
-          <button onclick="sendMessage()" style="width:42px;height:42px;border-radius:50%;background:var(--gold);border:none;color:#000;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+          <button onclick="sendMessage()" style="width:42px;height:42px;border-radius:50%;background:var(--gold);border:none;color:#000;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
         </div>
       </div>
     </div>
@@ -2008,51 +2008,61 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   async function loadChatMessages() {
-    if (!currentChatUser) return;
+    if (!currentChatUser || !currentUser) return;
     const chatEl = document.getElementById('chat-messages');
+    chatEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Loading...</div>';
+
+    const { data: msgsData, error } = await sb.from('messages')
+      .select('*')
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentChatUser.id}),and(sender_id.eq.${currentChatUser.id},receiver_id.eq.${currentUser.id})`)
+      .order('created_at', { ascending: true });
+
     chatEl.innerHTML = '';
-    const { data: msgsData } = await sb.from('messages').select('*').or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentChatUser.id}),and(sender_id.eq.${currentChatUser.id},receiver_id.eq.${currentUser.id})`).order('created_at', { ascending: true });
-    if (!msgsData || msgsData.length === 0) {
-      chatEl.innerHTML = `<div style="text-align:center;padding:32px 20px">
-        <div style="font-size:48px;margin-bottom:12px">${currentChatUser.avatar_url ? `<img src="${currentChatUser.avatar_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">` : '👋'}</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px">${currentChatUser.full_name || currentChatUser.username}</div>
+
+    if (error || !msgsData || msgsData.length === 0) {
+      const name = currentChatUser.full_name || currentChatUser.username || 'Unknown';
+      chatEl.innerHTML = `<div style="text-align:center;padding:48px 20px">
+        <div style="width:72px;height:72px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#000;margin:0 auto 12px;overflow:hidden">
+          ${currentChatUser.avatar_url ? `<img src="${currentChatUser.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px">${name}</div>
         <div style="color:var(--muted);font-size:13px;margin-top:4px">Say hello! 👋</div>
       </div>`;
       return;
     }
 
-    // Group messages by date
     let lastDate = '';
     msgsData.forEach(m => {
+      // Only show messages between these two users
+      const validMsg = (m.sender_id === currentUser.id && m.receiver_id === currentChatUser.id) ||
+                       (m.sender_id === currentChatUser.id && m.receiver_id === currentUser.id);
+      if (!validMsg) return;
+
       const isMe = m.sender_id === currentUser.id;
       const msgDate = new Date(m.created_at).toLocaleDateString();
 
-      // Date separator
       if (msgDate !== lastDate) {
         lastDate = msgDate;
         const sep = document.createElement('div');
-        sep.style.cssText = 'text-align:center;margin:8px 0';
-        sep.innerHTML = `<span style="background:#1a1a1a;color:var(--muted);font-size:11px;padding:4px 12px;border-radius:50px">${msgDate === new Date().toLocaleDateString() ? 'Today' : msgDate}</span>`;
+        sep.style.cssText = 'text-align:center;margin:12px 0';
+        sep.innerHTML = `<span style="background:#1a1a1a;color:var(--muted);font-size:11px;padding:4px 14px;border-radius:50px">${msgDate === new Date().toLocaleDateString() ? 'Today' : msgDate}</span>`;
         chatEl.appendChild(sep);
       }
 
       const div = document.createElement('div');
-      div.style.cssText = `display:flex;justify-content:${isMe ? 'flex-end' : 'flex-start'};align-items:flex-end;gap:8px;margin-bottom:2px`;
+      div.style.cssText = `display:flex;justify-content:${isMe ? 'flex-end' : 'flex-start'};align-items:flex-end;gap:6px;margin-bottom:4px`;
 
-      // Show avatar for received messages
-      const avatarHTML = !isMe ? `<div style="width:28px;height:28px;border-radius:50%;background:${getColor(currentChatUser.full_name || 'User')};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentChatUser.avatar_url ? `<img src="${currentChatUser.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : (currentChatUser.full_name || 'U')[0].toUpperCase()}</div>` : '';
+      const otherAvatar = `<div style="width:26px;height:26px;border-radius:50%;background:${getColor(currentChatUser.full_name||'User')};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentChatUser.avatar_url?`<img src="${currentChatUser.avatar_url}" style="width:100%;height:100%;object-fit:cover">`:(currentChatUser.full_name||'U')[0].toUpperCase()}</div>`;
+      const myAvatar = `<div style="width:26px;height:26px;border-radius:50%;background:${getColor(currentProfile?.full_name||'Me')};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentProfile?.avatar_url?`<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover">`:(currentProfile?.full_name||'M')[0].toUpperCase()}</div>`;
 
       div.innerHTML = `
-        ${!isMe ? avatarHTML : ''}
-        <div style="max-width:72%;padding:10px 14px;border-radius:${isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};background:${isMe ? 'var(--gold)' : '#1e1e1e'};color:${isMe ? '#000' : 'var(--text)'};font-size:14px;line-height:1.5;box-shadow:0 1px 4px rgba(0,0,0,0.2)">
-          ${m.image_url ? `<img src="${m.image_url}" style="width:100%;border-radius:10px;margin-bottom:4px;max-height:200px;object-fit:cover">` : ''}
-          ${m.body ? `<div>${m.body}</div>` : ''}
-          <div style="font-size:10px;color:${isMe ? 'rgba(0,0,0,0.5)' : 'var(--muted)'};margin-top:3px;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:3px">
-            ${timeAgo(m.created_at)}
-            ${isMe ? '<span style="color:rgba(0,0,0,0.5)">✓✓</span>' : ''}
-          </div>
+        ${!isMe ? otherAvatar : ''}
+        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5">
+          ${m.image_url?`<img src="${m.image_url}" style="width:100%;border-radius:10px;margin-bottom:4px;max-height:200px;object-fit:cover">`:''}
+          ${m.body?`<div>${m.body}</div>`:''}
+          <div style="font-size:10px;color:${isMe?'rgba(0,0,0,0.45)':'var(--muted)'};margin-top:3px;text-align:right">${timeAgo(m.created_at)} ${isMe?'✓✓':''}</div>
         </div>
-        ${isMe ? `<div style="width:28px;height:28px;border-radius:50%;background:${getColor(currentProfile?.full_name || 'Me')};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentProfile?.avatar_url ? `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : (currentProfile?.full_name || 'M')[0].toUpperCase()}</div>` : ''}`;
+        ${isMe ? myAvatar : ''}`;
       chatEl.appendChild(div);
     });
     chatEl.scrollTop = chatEl.scrollHeight;
