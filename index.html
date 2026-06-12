@@ -924,6 +924,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Bio</label>
       <textarea id="edit-bio" rows="3" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea>
     </div>
+    <div class="field" style="margin-bottom:24px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">📍 Location</label>
+      <input type="text" id="edit-location" placeholder="e.g. Johannesburg" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
     <button onclick="saveProfile()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="save-profile-btn">Save Changes</button>
   </div>
 </div>
@@ -1242,6 +1246,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div id="cover-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
         <div class="profile-name-large" id="profile-name-big">...</div>
         <div class="profile-handle-large" id="profile-handle-big">@...</div>
+        <div id="profile-location-joined" style="display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap">
+          <span id="profile-location" style="font-size:13px;color:var(--muted);display:none">📍 <span id="profile-location-text"></span></span>
+          <span id="profile-joined" style="font-size:13px;color:var(--muted)">📅 <span id="profile-joined-text"></span></span>
+        </div>
         <div class="profile-bio-large" id="profile-bio-big">...</div>
         <div class="profile-stats">
           <div><div class="stat-num" id="my-posts-count">0</div><div class="stat-label">Posts</div></div>
@@ -1529,6 +1537,18 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
+
+      // Location
+      if (data.location) {
+        document.getElementById('profile-location').style.display = 'inline';
+        document.getElementById('profile-location-text').textContent = data.location;
+      }
+
+      // Joined date
+      const joined = new Date(data.created_at);
+      const month = joined.toLocaleString('default', { month: 'long' });
+      const year = joined.getFullYear();
+      document.getElementById('profile-joined-text').textContent = `Joined ${month} ${year}`;
 
       if (data.cover_url) {
         const cp = document.getElementById('cover-photo');
@@ -2886,6 +2906,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('edit-name').value = currentProfile?.full_name || '';
     document.getElementById('edit-username').value = currentProfile?.username || '';
     document.getElementById('edit-bio').value = currentProfile?.bio || '';
+    document.getElementById('edit-location').value = currentProfile?.location || '';
     document.getElementById('edit-profile-modal').style.display = 'flex';
   }
 
@@ -2897,10 +2918,11 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const name = document.getElementById('edit-name').value.trim();
     const username = document.getElementById('edit-username').value.trim().replace('@','');
     const bio = document.getElementById('edit-bio').value.trim();
+    const location = document.getElementById('edit-location').value.trim();
     if (!name || !username) { showToast('Name and username are required!'); return; }
     const btn = document.getElementById('save-profile-btn');
     btn.textContent = 'Saving...'; btn.disabled = true;
-    const { error } = await sb.from('profiles').update({ full_name: name, username, bio }).eq('id', currentUser.id);
+    const { error } = await sb.from('profiles').update({ full_name: name, username, bio, location }).eq('id', currentUser.id);
     if (error) { showToast('Error saving: ' + error.message); btn.textContent = 'Save Changes'; btn.disabled = false; return; }
     await loadProfile();
     closeEditProfile();
