@@ -1238,8 +1238,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           </div>
           <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
         </div>
-        <div id="avatar-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-        <div id="cover-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+        <div id="avatar-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
+        <div id="cover-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
         <div class="profile-name-large" id="profile-name-big">...</div>
         <div class="profile-handle-large" id="profile-handle-big">@...</div>
         <div class="profile-bio-large" id="profile-bio-big">...</div>
@@ -1249,6 +1249,19 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <div><div class="stat-num" id="my-following-count">0</div><div class="stat-label">Following</div></div>
         </div>
         <button onclick="openEditProfile()" style="margin-top:16px;width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">✏️ Edit Profile</button>
+      </div>
+      <!-- Profile Tabs -->
+      <div style="display:flex;border-bottom:1px solid var(--border);margin-top:8px">
+        <button onclick="switchProfileTab(this,'my-posts-feed')" class="feed-tab active" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--text);border:none;background:none;border-bottom:2px solid var(--gold);cursor:pointer">Posts</button>
+        <button onclick="switchProfileTab(this,'my-media-feed')" class="feed-tab" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer">Media</button>
+      </div>
+      <!-- My Posts -->
+      <div id="my-posts-feed">
+        <div class="loading-wrap"><div class="spinner"></div></div>
+      </div>
+      <!-- My Media -->
+      <div id="my-media-feed" style="display:none;padding:16px;display:none">
+        <div class="empty-wrap"><div class="empty-icon">📸</div><div class="empty-text">No media yet!</div></div>
       </div>
     </div>
 
@@ -1550,7 +1563,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const panelEl = document.getElementById(panel + '-panel');
     if (panelEl) panelEl.classList.add('active');
 
-    if (panel === 'profile') loadProfileStats();
+    if (panel === 'profile') { loadProfileStats(); loadMyProfilePosts(); }
     if (panel === 'notifs') loadNotifications();
     if (panel === 'messages') loadConversations();
     if (panel === 'saved') loadBookmarks();
@@ -1852,7 +1865,51 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   function removeImage() { document.getElementById('photo-upload').value = ''; document.getElementById('image-preview-container').style.display = 'none'; document.getElementById('image-preview').src = ''; }
 
   // PROFILE
-  async function loadProfileStats() {
+  function switchProfileTab(el, tabId) {
+    document.querySelectorAll('#profile-panel .feed-tab').forEach(t => {
+      t.style.color = 'var(--muted)';
+      t.style.borderBottomColor = 'transparent';
+    });
+    el.style.color = 'var(--text)';
+    el.style.borderBottomColor = 'var(--gold)';
+    document.getElementById('my-posts-feed').style.display = tabId === 'my-posts-feed' ? 'block' : 'none';
+    document.getElementById('my-media-feed').style.display = tabId === 'my-media-feed' ? 'block' : 'none';
+    if (tabId === 'my-media-feed') loadMyMedia();
+  }
+
+  async function loadMyProfilePosts() {
+    if (!currentUser) return;
+    const container = document.getElementById('my-posts-feed');
+    if (!container) return;
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+    container.innerHTML = '';
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No posts yet!<br>Share your first vibe!</div></div>';
+      return;
+    }
+    posts.forEach(post => container.appendChild(createPostCard(post)));
+  }
+
+  async function loadMyMedia() {
+    if (!currentUser) return;
+    const container = document.getElementById('my-media-feed');
+    container.innerHTML = '';
+    const { data: posts } = await sb.from('posts').select('*').eq('user_id', currentUser.id).not('image_url', 'is', null).order('created_at', { ascending: false }).limit(20);
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">📸</div><div class="empty-text">No photos yet!</div></div>';
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px';
+    posts.forEach(post => {
+      const img = document.createElement('div');
+      img.style.cssText = 'aspect-ratio:1;overflow:hidden;cursor:pointer';
+      img.innerHTML = `<img src="${post.image_url}" style="width:100%;height:100%;object-fit:cover">`;
+      grid.appendChild(img);
+    });
+    container.appendChild(grid);
+  }
     if (!currentUser) return;
     const [postsRes, followersRes, followingRes] = await Promise.all([
       sb.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id),
