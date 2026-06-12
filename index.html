@@ -1922,19 +1922,6 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     });
     container.appendChild(grid);
   }
-    if (!currentUser) return;
-    const [postsRes, followersRes, followingRes] = await Promise.all([
-      sb.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id),
-      sb.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', currentUser.id),
-      sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', currentUser.id)
-    ]);
-    const posts = postsRes.count || 0;
-    const followers = followersRes.count || 0;
-    const following = followingRes.count || 0;
-    document.getElementById('my-posts-count').textContent = posts;
-    document.getElementById('my-followers-count').textContent = followers;
-    document.getElementById('my-following-count').textContent = following;
-  }
 
   async function uploadCover(input) {
     const file = input.files[0];
