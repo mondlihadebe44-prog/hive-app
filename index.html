@@ -1975,8 +1975,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     });
   }
 
-  async function searchUsersForDM(query) {
-    const results = document.getElementById('dm-search-results');
+  async function searchUsersForDM(query, resultsId = 'dm-search-results') {
+    const results = document.getElementById(resultsId);
+    if (!results) return;
     if (!query || query.length < 1) { results.innerHTML = ''; return; }
     const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).neq('id', currentUser.id).limit(5);
     if (!users || users.length === 0) { results.innerHTML = '<div style="padding:12px 0;color:var(--muted);font-size:13px">No users found</div>'; return; }
@@ -1984,11 +1985,23 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;transition:background 0.2s;margin-bottom:4px';
-      div.onmouseenter = () => div.style.background = 'rgba(255,255,255,0.04)';
-      div.onmouseleave = () => div.style.background = 'transparent';
-      div.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden">${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}</div><div><div style="font-weight:700;font-size:14px">${name}</div><div style="font-size:12px;color:var(--muted)">@${u.username}</div></div>`;
-      div.onclick = () => { document.getElementById('dm-search').value = ''; results.innerHTML = ''; openChat(u); };
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:14px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:all 0.2s';
+      div.onmouseover = () => div.style.borderColor = 'var(--gold)';
+      div.onmouseout = () => div.style.borderColor = 'var(--border)';
+      div.innerHTML = `
+        <div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}</div>
+          <div style="font-size:12px;color:var(--muted)">@${u.username}</div>
+        </div>`;
+      div.onclick = () => {
+        const searchEl = document.getElementById(resultsId === 'dm-search-results' ? 'dm-search' : 'new-dm-search');
+        if (searchEl) searchEl.value = '';
+        results.innerHTML = '';
+        openChat(u);
+      };
       results.appendChild(div);
     });
   }
@@ -1997,13 +2010,18 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     currentChatUser = user;
     const name = user.full_name || user.username || 'Unknown';
     document.getElementById('conversations-view').style.display = 'none';
+    if (document.getElementById('new-dm-view')) document.getElementById('new-dm-view').style.display = 'none';
     const chatView = document.getElementById('chat-view');
     chatView.style.display = 'flex';
     document.getElementById('chat-name').textContent = name;
-    document.getElementById('chat-handle').textContent = '@' + (user.username || '');
     const avatarEl = document.getElementById('chat-avatar');
-    avatarEl.innerHTML = user.avatar_url ? `<img src="${user.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : name[0].toUpperCase();
-    avatarEl.style.background = user.avatar_url ? 'transparent' : getColor(name);
+    if (user.avatar_url) {
+      avatarEl.innerHTML = `<img src="${user.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.textContent = name[0].toUpperCase();
+      avatarEl.style.background = getColor(name);
+    }
     await loadChatMessages();
   }
 
@@ -2082,8 +2100,30 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   function showConversations() {
     currentChatUser = null;
     document.getElementById('chat-view').style.display = 'none';
+    if (document.getElementById('new-dm-view')) document.getElementById('new-dm-view').style.display = 'none';
     document.getElementById('conversations-view').style.display = 'block';
     loadConversations();
+  }
+
+  function openNewDM() {
+    document.getElementById('conversations-view').style.display = 'none';
+    document.getElementById('new-dm-view').style.display = 'block';
+    document.getElementById('chat-view').style.display = 'none';
+    setTimeout(() => document.getElementById('new-dm-search') && document.getElementById('new-dm-search').focus(), 300);
+  }
+
+  async function sendImageDM(input) {
+    if (!currentChatUser || !currentUser) return;
+    const file = input.files[0];
+    if (!file) return;
+    showToast('Sending image...');
+    const fileName = `dm-${currentUser.id}-${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('posts').upload(fileName, file);
+    if (error) { showToast('Image failed! Try again.'); return; }
+    const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+    await sb.from('messages').insert({ sender_id: currentUser.id, receiver_id: currentChatUser.id, body: '', image_url: urlData.publicUrl });
+    await loadChatMessages();
+    input.value = '';
   }
 
   async function loadRepostCount(postId, card) {
