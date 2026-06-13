@@ -2377,12 +2377,26 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>`;
   }
 
+  let currentAudio = null;
+
   function playVoiceNote(url, btn) {
+    // Stop any currently playing audio
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+      document.querySelectorAll('.voice-play-btn').forEach(b => b.textContent = '▶️');
+    }
     const audio = new Audio(url);
+    currentAudio = audio;
     btn.textContent = '⏸️';
-    audio.play();
-    audio.onended = () => btn.textContent = '▶️';
-    audio.onerror = () => { btn.textContent = '▶️'; showToast('Cannot play audio'); };
+    audio.play().catch(() => showToast('Cannot play audio on this device'));
+    audio.onended = () => { btn.textContent = '▶️'; currentAudio = null; };
+    audio.onerror = () => { btn.textContent = '▶️'; currentAudio = null; showToast('Audio error!'); };
+    // Clicking again pauses
+    btn.onclick = function() {
+      if (audio.paused) { audio.play(); btn.textContent = '⏸️'; }
+      else { audio.pause(); btn.textContent = '▶️'; }
+    };
   }
 
   // HIVE GROUPS
