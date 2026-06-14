@@ -2779,8 +2779,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     menu.remove(); activeMenu = null;
     const { error } = await sb.from('posts').delete().eq('id', postId).eq('user_id', currentUser.id);
     if (error) { showToast('Error deleting post!'); return; }
+    // Remove the card and any thread container after it
     const card = document.querySelector(`[data-post-id="${postId}"]`);
-    if (card) { card.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => card.remove(), 300); }
+    if (card) {
+      const nextEl = card.nextElementSibling;
+      card.style.animation = 'fadeOut 0.3s ease forwards';
+      setTimeout(() => {
+        card.remove();
+        // Also remove thread replies container if it follows
+        if (nextEl && nextEl.style.marginLeft === '52px') nextEl.remove();
+      }, 300);
+    }
     showToast('Post deleted! 🗑️');
   }
 
@@ -2994,21 +3003,36 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const text = document.getElementById('thread-input').value.trim();
     if (!text) { showToast('Write something first!'); return; }
 
-    // Get the thread_id of original post
     const { data: originalPost } = await sb.from('posts').select('thread_id').eq('id', currentThreadPostId).single();
     const threadId = originalPost?.thread_id || currentThreadPostId;
 
-    const { error } = await sb.from('posts').insert({
+    const { data: newReply, error } = await sb.from('posts').insert({
       user_id: currentUser.id,
       body: text,
       reply_to: currentThreadPostId,
       thread_id: threadId
-    });
+    }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
     if (error) { showToast('Error posting!'); return; }
     closeThreadModal();
     showToast('Added to thread! 🧵🐝');
-    loadPosts();
+
+    // Add reply under original post without reloading all posts
+    const originalCard = document.querySelector(`[data-post-id="${currentThreadPostId}"]`);
+    if (originalCard) {
+      let threadDiv = originalCard.nextElementSibling;
+      if (!threadDiv || threadDiv.style.marginLeft !== '52px') {
+        threadDiv = document.createElement('div');
+        threadDiv.style.cssText = 'margin-left:52px;border-left:2px solid rgba(245,197,24,0.3);padding-left:12px;margin-bottom:4px';
+        originalCard.insertAdjacentElement('afterend', threadDiv);
+      }
+      if (newReply) {
+        const replyCard = createPostCard(newReply);
+        replyCard.style.borderBottom = 'none';
+        replyCard.style.padding = '8px 20px 8px 0';
+        threadDiv.appendChild(replyCard);
+      }
+    }
   }
 
   // BOOKMARKS
