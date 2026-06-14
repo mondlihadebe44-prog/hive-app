@@ -924,6 +924,29 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   </div>
 </div>
 
+<!-- THREAD REPLY MODAL -->
+<div id="thread-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+  <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Continue thread 🧵</div>
+      <button onclick="closeThreadModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <!-- Original post preview -->
+    <div id="thread-original-post" style="padding:12px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:16px;border-left:2px solid var(--gold)"></div>
+    <!-- Thread reply compose -->
+    <div style="display:flex;gap:12px">
+      <div id="thread-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000;overflow:hidden;flex-shrink:0"></div>
+      <div style="flex:1">
+        <textarea id="thread-input" placeholder="Continue your story..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none;min-height:80px;line-height:1.6"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+          <div style="font-size:12px;color:var(--muted)"><span id="thread-char-count">0</span>/300</div>
+          <button onclick="postThreadReply()" style="padding:10px 24px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer">Post 🐝</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1648,10 +1671,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   async function loadPosts(tab = 'foryou') {
     const container = document.getElementById('posts-container');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>';
-    let query = sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)');
+    let query = sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').is('reply_to', null);
 
     if (tab === 'following' && currentUser) {
-      // Get posts from people you follow
       const { data: follows } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
       const ids = (follows || []).map(f => f.following_id);
       if (ids.length === 0) {
@@ -1659,12 +1681,6 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         return;
       }
       query = query.in('user_id', ids);
-    } else if (tab === 'trending') {
-      // Most liked posts
-      query = query.order('created_at', { ascending: false }).limit(20);
-    } else {
-      // For You - all posts
-      query = query.order('created_at', { ascending: false }).limit(20);
     }
 
     const { data: posts, error } = await query.order('created_at', { ascending: false }).limit(20);
@@ -1673,7 +1689,22 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       return;
     }
     container.innerHTML = '';
-    posts.forEach(post => container.appendChild(createPostCard(post)));
+    for (const post of posts) {
+      container.appendChild(createPostCard(post));
+      // Load thread replies
+      const { data: replies } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('reply_to', post.id).order('created_at', { ascending: true }).limit(3);
+      if (replies && replies.length > 0) {
+        const threadDiv = document.createElement('div');
+        threadDiv.style.cssText = 'margin-left:52px;border-left:2px solid rgba(245,197,24,0.3);padding-left:12px;margin-bottom:4px';
+        replies.forEach(reply => {
+          const replyCard = createPostCard(reply);
+          replyCard.style.borderBottom = 'none';
+          replyCard.style.padding = '8px 20px 8px 0';
+          threadDiv.appendChild(replyCard);
+        });
+        container.appendChild(threadDiv);
+      }
+    }
     document.getElementById('load-more-text').textContent = "You're all caught up 🐝";
   }
 
@@ -1725,7 +1756,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
             <span class="action-icon">🔖</span>
           </button>
-          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : ''}
+          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">+ Add to thread</button>`}
         </div>
         <div class="comments-section" id="comments-${post.id}">
           <div class="comments-list"></div>
@@ -2912,6 +2943,72 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   function closeVibeViewer() {
     document.getElementById('vibe-viewer').style.display = 'none';
     if (vibeTimer) clearTimeout(vibeTimer);
+  }
+
+  // THREADS
+  let currentThreadPostId = null;
+
+  async function openThreadReply(postId) {
+    currentThreadPostId = postId;
+    document.getElementById('thread-modal').style.display = 'flex';
+
+    // Show original post preview
+    const { data: post } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url)').eq('id', postId).single();
+    if (post) {
+      const p = post.profiles || {};
+      const name = p.full_name || 'Unknown';
+      document.getElementById('thread-original-post').innerHTML = `
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px">${name}</div>
+        <div style="font-size:14px;color:#aaa;line-height:1.5">${post.body || ''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${timeAgo(post.created_at)}</div>`;
+    }
+
+    // Set avatar
+    const avatarEl = document.getElementById('thread-avatar');
+    if (currentProfile?.avatar_url) {
+      avatarEl.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.textContent = (currentProfile?.full_name || 'U')[0].toUpperCase();
+      avatarEl.style.background = getColor(currentProfile?.full_name || 'User');
+    }
+
+    // Character counter
+    const input = document.getElementById('thread-input');
+    input.value = '';
+    input.oninput = function() {
+      document.getElementById('thread-char-count').textContent = this.value.length;
+      if (this.value.length > 300) this.value = this.value.substring(0, 300);
+    };
+
+    setTimeout(() => input.focus(), 300);
+  }
+
+  function closeThreadModal() {
+    document.getElementById('thread-modal').style.display = 'none';
+    currentThreadPostId = null;
+  }
+
+  async function postThreadReply() {
+    if (!currentUser || !currentThreadPostId) return;
+    const text = document.getElementById('thread-input').value.trim();
+    if (!text) { showToast('Write something first!'); return; }
+
+    // Get the thread_id of original post
+    const { data: originalPost } = await sb.from('posts').select('thread_id').eq('id', currentThreadPostId).single();
+    const threadId = originalPost?.thread_id || currentThreadPostId;
+
+    const { error } = await sb.from('posts').insert({
+      user_id: currentUser.id,
+      body: text,
+      reply_to: currentThreadPostId,
+      thread_id: threadId
+    });
+
+    if (error) { showToast('Error posting!'); return; }
+    closeThreadModal();
+    showToast('Added to thread! 🧵🐝');
+    loadPosts();
   }
 
   // BOOKMARKS
