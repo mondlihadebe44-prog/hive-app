@@ -2294,7 +2294,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      // Use mp4 on iOS, webm on Android
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' :
+                       MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       audioChunks = [];
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.start();
@@ -2324,23 +2327,16 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       document.getElementById('chat-mic-btn').style.background = '#1a1a1a';
       document.getElementById('chat-mic-btn').style.display = 'flex';
       document.getElementById('chat-send-btn').style.display = 'none';
-
       if (recordingSeconds < 1) { showToast('Recording too short!'); return; }
-
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const mimeType = audioChunks[0]?.type || 'audio/webm';
+      const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const audioBlob = new Blob(audioChunks, { type: mimeType });
       showToast('Sending voice note... 🎤');
-
-      const fileName = `voice-${currentUser.id}-${Date.now()}.webm`;
-      const { error } = await sb.storage.from('posts').upload(fileName, audioBlob);
+      const fileName = `voice-${currentUser.id}-${Date.now()}.${ext}`;
+      const { error } = await sb.storage.from('posts').upload(fileName, audioBlob, { contentType: mimeType });
       if (error) { showToast('Failed to send voice note!'); return; }
       const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
-      await sb.from('messages').insert({
-        sender_id: currentUser.id,
-        receiver_id: currentChatUser.id,
-        body: '',
-        voice_url: urlData.publicUrl,
-        voice_duration: recordingSeconds
-      });
+      await sb.from('messages').insert({ sender_id: currentUser.id, receiver_id: currentChatUser.id, body: '', voice_url: urlData.publicUrl, voice_duration: recordingSeconds });
       await loadChatMessages();
       showToast('Voice note sent! 🎤');
       mediaRecorder.stream.getTracks().forEach(t => t.stop());
