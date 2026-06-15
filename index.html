@@ -1690,16 +1690,23 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     }
     container.innerHTML = '';
     for (const post of posts) {
-      container.appendChild(createPostCard(post));
-      // Load thread replies
-      const { data: replies } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('reply_to', post.id).order('created_at', { ascending: true }).limit(3);
+      const card = createPostCard(post);
+      container.appendChild(card);
+
+      // Load thread replies ONLY for this specific post
+      const { data: replies } = await sb.from('posts')
+        .select('*, profiles(username,full_name,avatar_url,verified)')
+        .eq('reply_to', post.id)
+        .eq('user_id', post.user_id) // Only show replies from same user (thread)
+        .order('created_at', { ascending: true })
+        .limit(3);
+
       if (replies && replies.length > 0) {
         const threadDiv = document.createElement('div');
-        threadDiv.style.cssText = 'margin-left:52px;border-left:2px solid rgba(245,197,24,0.3);padding-left:12px;margin-bottom:4px';
+        threadDiv.dataset.threadFor = post.id;
+        threadDiv.style.cssText = 'border-left:2px solid rgba(245,197,24,0.3);margin-left:36px;padding-left:12px';
         replies.forEach(reply => {
-          const replyCard = createPostCard(reply);
-          replyCard.style.borderBottom = 'none';
-          replyCard.style.padding = '8px 20px 8px 0';
+          const replyCard = createPostCard(reply, true); // true = isThreadReply
           threadDiv.appendChild(replyCard);
         });
         container.appendChild(threadDiv);
@@ -1708,7 +1715,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('load-more-text').textContent = "You're all caught up 🐝";
   }
 
-  function createPostCard(post) {
+  function createPostCard(post, isThreadReply = false) {
     const p = post.profiles || {};
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
@@ -1756,7 +1763,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
             <span class="action-icon">🔖</span>
           </button>
-          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">+ Add to thread</button>`}
+          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">+ Add to thread</button>` : '')}
         </div>
         <div class="comments-section" id="comments-${post.id}">
           <div class="comments-list"></div>
@@ -3027,7 +3034,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         originalCard.insertAdjacentElement('afterend', threadDiv);
       }
       if (newReply) {
-        const replyCard = createPostCard(newReply);
+        const replyCard = createPostCard(newReply, true);
         replyCard.style.borderBottom = 'none';
         replyCard.style.padding = '8px 20px 8px 0';
         threadDiv.appendChild(replyCard);
