@@ -432,7 +432,7 @@ body {
 /* Comments */
 .comments-section { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 .comments-section.open { display: block; }
-.comment { display: flex; gap: 10px; margin-bottom: 12px; }
+.comment { display: flex; gap: 10px; margin-bottom: 12px; border-left: 2px dotted var(--muted); padding-left: 12px; margin-left: 4px; }
 .comment-avatar {
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -1704,7 +1704,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       if (replies && replies.length > 0) {
         const threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = post.id;
-        threadDiv.style.cssText = 'border-left:2px solid rgba(245,197,24,0.3);margin-left:36px;padding-left:12px';
+        threadDiv.style.cssText = 'border-left:3px solid var(--gold);margin-left:36px;padding-left:14px';
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true); // true = isThreadReply
           threadDiv.appendChild(replyCard);
