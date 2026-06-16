@@ -1763,7 +1763,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
             <span class="action-icon">🔖</span>
           </button>
-          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">+ Add to thread</button>` : '')}
+          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon">🧵</span></button>` : '')}
         </div>
         <div class="comments-section" id="comments-${post.id}">
           <div class="comments-list"></div>
