@@ -375,6 +375,21 @@ body {
   max-height: 400px; object-fit: cover;
   margin-bottom: 12px; border: 1px solid var(--border);
 }
+.post-gallery {
+  display: grid; gap: 4px; margin-bottom: 12px;
+  border-radius: 16px; overflow: hidden;
+}
+.post-gallery.count-2 { grid-template-columns: 1fr 1fr; }
+.post-gallery.count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.post-gallery.count-3 .gallery-item:first-child { grid-row: 1 / 3; }
+.post-gallery.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.gallery-item { position: relative; cursor: pointer; aspect-ratio: 1; overflow: hidden; background: #111; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-more-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px;
+}
 
 /* Post actions */
 .post-actions {
@@ -1134,19 +1149,38 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div class="compose-avatar" id="compose-avatar">?</div>
         <div class="compose-right">
           <input class="compose-input" placeholder="What's the vibe?" id="compose-text">
-          <div id="image-preview-container" style="display:none" class="image-preview-wrap">
-            <img id="image-preview">
-            <button class="remove-img" onclick="removeImage()">✕</button>
+          <div id="image-preview-container" style="display:none;margin-bottom:12px">
+            <div id="image-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px"></div>
+          </div>
+          <div id="gif-preview-container" style="display:none;position:relative;margin-bottom:12px">
+            <img id="gif-preview" style="width:100%;border-radius:16px;max-height:240px;object-fit:cover">
+            <button class="remove-img" onclick="removeGif()">✕</button>
           </div>
           <div class="compose-actions-row">
             <div class="compose-icons">
-              <button class="compose-icon-btn" onclick="document.getElementById('photo-upload').click()">🖼️</button>
-              <input type="file" id="photo-upload" accept="image/*" style="display:none" onchange="previewImage(this)">
+              <button class="compose-icon-btn" onclick="document.getElementById('photo-upload').click()" title="Add photos">🖼️</button>
+              <input type="file" id="photo-upload" accept="image/*" multiple style="display:none" onchange="previewImages(this)">
+              <button class="compose-icon-btn" onclick="openGifPicker()" title="Add GIF">GIF</button>
               <button class="compose-icon-btn">😊</button>
               <button class="compose-icon-btn">📍</button>
             </div>
             <button class="post-btn" onclick="postVibe()">Post Vibe 🐝</button>
           </div>
+        </div>
+      </div>
+
+      <!-- GIF PICKER MODAL -->
+      <div id="gif-picker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+        <div style="background:#111;border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:600px;max-height:75vh;overflow-y:auto">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Pick a GIF</div>
+            <button onclick="closeGifPicker()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+          </div>
+          <div class="search-box" style="margin-bottom:16px">
+            <span>🔍</span>
+            <input id="gif-search-input" placeholder="Search GIFs..." oninput="searchGifs(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;flex:1">
+          </div>
+          <div id="gif-results" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
         </div>
       </div>
 
@@ -1740,7 +1774,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
-        ${post.image_url ? `<img class="post-image" src="${post.image_url}">` : ''}
+        ${renderPostMedia(post)}
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
             <span class="action-icon">🐝</span><span class="like-count">0</span>
@@ -1917,24 +1951,38 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!session) { showToast('Please sign in first!'); return; }
     currentUser = session.user;
     const text = document.getElementById('compose-text').value.trim();
-    const fileInput = document.getElementById('photo-upload');
-    const file = fileInput.files[0];
-    if (!text && !file) { showToast('Write something or add a photo!'); return; }
+    if (!text && selectedImageFiles.length === 0 && !selectedGifUrl) { showToast('Write something, add photos or a GIF!'); return; }
     const btn = document.querySelector('.post-btn');
     btn.textContent = 'Posting...'; btn.disabled = true;
+
     let imageUrl = null;
-    if (file) {
-      const fileName = `${currentUser.id}-${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await sb.storage.from('posts').upload(fileName, file);
-      if (uploadError) { showToast('Image upload failed!'); btn.textContent = 'Post Vibe 🐝'; btn.disabled = false; return; }
-      const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
+    let imageUrls = [];
+
+    if (selectedGifUrl) {
+      imageUrl = selectedGifUrl;
+    } else if (selectedImageFiles.length > 0) {
+      for (const file of selectedImageFiles) {
+        const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await sb.storage.from('posts').upload(fileName, file);
+        if (uploadError) { showToast('Image upload failed!'); btn.textContent = 'Post Vibe 🐝'; btn.disabled = false; return; }
+        const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+        imageUrls.push(urlData.publicUrl);
+      }
+      imageUrl = imageUrls[0]; // keep first as fallback for old clients
     }
-    const { data, error } = await sb.from('posts').insert({ user_id: currentUser.id, body: text || '', image_url: imageUrl }).select('*, profiles(username,full_name,avatar_url,verified)').single();
+
+    const { data, error } = await sb.from('posts').insert({
+      user_id: currentUser.id,
+      body: text || '',
+      image_url: imageUrl,
+      image_urls: imageUrls.length > 0 ? imageUrls : null
+    }).select('*, profiles(username,full_name,avatar_url,verified)').single();
+
     btn.textContent = 'Post Vibe 🐝'; btn.disabled = false;
     if (error) { showToast('Error: ' + error.message); return; }
     document.getElementById('compose-text').value = '';
-    fileInput.value = ''; removeImage();
+    document.getElementById('photo-upload').value = '';
+    removeImage(); removeGif();
     const container = document.getElementById('posts-container');
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
@@ -1942,14 +1990,110 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     showToast('Vibe posted! 🐝✨');
   }
 
-  function previewImage(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => { document.getElementById('image-preview').src = e.target.result; document.getElementById('image-preview-container').style.display = 'block'; };
-    reader.readAsDataURL(file);
+  // MULTI-PHOTO + GIF
+  let selectedImageFiles = [];
+  let selectedGifUrl = null;
+
+  function previewImages(input) {
+    const files = Array.from(input.files).slice(0, 4); // max 4 photos like X
+    if (files.length === 0) return;
+    selectedImageFiles = files;
+    removeGif(); // can't mix gif + photos
+    const grid = document.getElementById('image-preview-grid');
+    grid.innerHTML = '';
+    files.forEach((file, i) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden';
+        wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">
+          <button onclick="removeOneImage(${i})" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:13px;cursor:pointer">✕</button>`;
+        grid.appendChild(wrap);
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('image-preview-container').style.display = 'block';
   }
-  function removeImage() { document.getElementById('photo-upload').value = ''; document.getElementById('image-preview-container').style.display = 'none'; document.getElementById('image-preview').src = ''; }
+
+  function removeOneImage(index) {
+    selectedImageFiles.splice(index, 1);
+    if (selectedImageFiles.length === 0) {
+      document.getElementById('image-preview-container').style.display = 'none';
+      document.getElementById('photo-upload').value = '';
+    } else {
+      const dt = new DataTransfer();
+      selectedImageFiles.forEach(f => dt.items.add(f));
+      document.getElementById('photo-upload').files = dt.files;
+      previewImages(document.getElementById('photo-upload'));
+    }
+  }
+
+  function removeImage() {
+    selectedImageFiles = [];
+    document.getElementById('photo-upload').value = '';
+    document.getElementById('image-preview-container').style.display = 'none';
+    document.getElementById('image-preview-grid').innerHTML = '';
+  }
+
+  // GIF picker - using Tenor's public free API
+  const TENOR_KEY = 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCQ'; // Tenor's public demo key
+  let gifSearchTimeout = null;
+
+  function openGifPicker() {
+    document.getElementById('gif-picker-modal').style.display = 'flex';
+    document.getElementById('gif-search-input').value = '';
+    searchGifs('trending');
+    setTimeout(() => document.getElementById('gif-search-input').focus(), 200);
+  }
+
+  function closeGifPicker() {
+    document.getElementById('gif-picker-modal').style.display = 'none';
+  }
+
+  function searchGifs(query) {
+    clearTimeout(gifSearchTimeout);
+    gifSearchTimeout = setTimeout(async () => {
+      const results = document.getElementById('gif-results');
+      results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">Searching...</div>';
+      try {
+        const endpoint = query === 'trending'
+          ? `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=20`
+          : `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_KEY}&limit=20`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        results.innerHTML = '';
+        if (!data.results || data.results.length === 0) {
+          results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">No GIFs found</div>';
+          return;
+        }
+        data.results.forEach(gif => {
+          const url = gif.media_formats?.gif?.url || gif.media_formats?.tinygif?.url;
+          if (!url) return;
+          const div = document.createElement('div');
+          div.style.cssText = 'border-radius:12px;overflow:hidden;cursor:pointer;aspect-ratio:1';
+          div.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+          div.onclick = () => selectGif(url);
+          results.appendChild(div);
+        });
+      } catch(e) {
+        results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">GIFs unavailable right now</div>';
+      }
+    }, 400);
+  }
+
+  function selectGif(url) {
+    selectedGifUrl = url;
+    removeImage(); // can't mix gif + photos
+    document.getElementById('gif-preview').src = url;
+    document.getElementById('gif-preview-container').style.display = 'block';
+    closeGifPicker();
+  }
+
+  function removeGif() {
+    selectedGifUrl = null;
+    document.getElementById('gif-preview-container').style.display = 'none';
+    document.getElementById('gif-preview').src = '';
+  }
 
   // PROFILE
   async function loadProfileStats() {
@@ -3224,6 +3368,55 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   // HELPERS
+  function renderPostMedia(post) {
+    const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
+    if (urls.length === 0) return '';
+    if (urls.length === 1) {
+      return `<img class="post-image" src="${urls[0]}" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},0)">`;
+    }
+    const shown = urls.slice(0, 4);
+    const extra = urls.length - 4;
+    const itemsHTML = shown.map((url, i) => {
+      const overlay = (i === 3 && extra > 0) ? `<div class="gallery-more-overlay">+${extra}</div>` : '';
+      return `<div class="gallery-item" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},${i})"><img src="${url}">${overlay}</div>`;
+    }).join('');
+    return `<div class="post-gallery count-${shown.length}">${itemsHTML}</div>`;
+  }
+
+  let viewerImages = [];
+  let viewerIndex = 0;
+
+  function openImageViewer(urls, startIndex) {
+    viewerImages = urls;
+    viewerIndex = startIndex;
+    let viewer = document.getElementById('image-viewer-overlay');
+    if (!viewer) {
+      viewer = document.createElement('div');
+      viewer.id = 'image-viewer-overlay';
+      viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:800;display:flex;align-items:center;justify-content:center;flex-direction:column';
+      viewer.innerHTML = `
+        <button onclick="closeImageViewer()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:2">✕</button>
+        <div id="image-viewer-counter" style="position:absolute;top:24px;left:20px;color:#fff;font-size:13px"></div>
+        <img id="image-viewer-img" style="max-width:92%;max-height:80vh;object-fit:contain;border-radius:8px">
+        <div style="display:flex;justify-content:space-between;width:100%;position:absolute;top:0;bottom:0">
+          <div onclick="viewerPrev()" style="flex:1;cursor:pointer"></div>
+          <div onclick="viewerNext()" style="flex:1;cursor:pointer"></div>
+        </div>`;
+      document.body.appendChild(viewer);
+    }
+    viewer.style.display = 'flex';
+    updateImageViewer();
+  }
+
+  function updateImageViewer() {
+    document.getElementById('image-viewer-img').src = viewerImages[viewerIndex];
+    document.getElementById('image-viewer-counter').textContent = viewerImages.length > 1 ? `${viewerIndex + 1} / ${viewerImages.length}` : '';
+  }
+
+  function viewerPrev() { if (viewerIndex > 0) { viewerIndex--; updateImageViewer(); } }
+  function viewerNext() { if (viewerIndex < viewerImages.length - 1) { viewerIndex++; updateImageViewer(); } }
+  function closeImageViewer() { const v = document.getElementById('image-viewer-overlay'); if (v) v.style.display = 'none'; }
+
   function formatBody(text) { return text.replace(/#(\w+)/g, '<span class="post-hashtag" onclick="openHashtag(\'$1\')">#$1</span>'); }
   function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
   function getColor(n) { const c=['#F5C518','#FF6B35','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD']; let h=0; for(let x of n) h=x.charCodeAt(0)+h*31; return c[Math.abs(h)%c.length]; }
@@ -3247,3 +3440,4 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 </script>
 </body>
 </html>
+=
