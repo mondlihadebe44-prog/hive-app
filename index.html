@@ -2035,8 +2035,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('image-preview-grid').innerHTML = '';
   }
 
-  // GIF picker - using Tenor's public free API
-  const TENOR_KEY = 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCQ'; // Tenor's public demo key
+  // GIF picker - using Giphy's public beta API
+  const GIPHY_KEY = 'dc6zaTOxFJmzC'; // Giphy's public beta key
   let gifSearchTimeout = null;
 
   function openGifPicker() {
@@ -2057,17 +2057,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">Searching...</div>';
       try {
         const endpoint = query === 'trending'
-          ? `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=20`
-          : `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_KEY}&limit=20`;
+          ? `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=20&rating=pg-13`
+          : `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg-13`;
         const res = await fetch(endpoint);
         const data = await res.json();
         results.innerHTML = '';
-        if (!data.results || data.results.length === 0) {
+        if (!data.data || data.data.length === 0) {
           results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">No GIFs found</div>';
           return;
         }
-        data.results.forEach(gif => {
-          const url = gif.media_formats?.gif?.url || gif.media_formats?.tinygif?.url;
+        data.data.forEach(gif => {
+          const url = gif.images?.fixed_height?.url || gif.images?.original?.url;
           if (!url) return;
           const div = document.createElement('div');
           div.style.cssText = 'border-radius:12px;overflow:hidden;cursor:pointer;aspect-ratio:1';
@@ -3440,4 +3440,3 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 </script>
 </body>
 </html>
-=
