@@ -969,6 +969,31 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   </div>
 </div>
 
+<!-- POLL CREATOR MODAL -->
+<div id="poll-creator-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+  <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Create a Poll 📊</div>
+      <button onclick="closePollCreator()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Question</label>
+      <input type="text" id="poll-question" placeholder="What's your vibe today?" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div id="poll-options-list" style="margin-bottom:8px"></div>
+    <button onclick="addPollOption()" id="add-poll-option-btn" style="background:none;border:1.5px dashed var(--border);color:var(--gold);padding:10px;border-radius:12px;width:100%;font-size:13px;cursor:pointer;margin-bottom:20px;font-family:'Syne',sans-serif;font-weight:700">+ Add option</button>
+    <div class="field" style="margin-bottom:20px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Poll runs for</label>
+      <select id="poll-duration" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <option value="1">1 day</option>
+        <option value="3" selected>3 days</option>
+        <option value="7">7 days</option>
+      </select>
+    </div>
+    <button onclick="postPoll()" id="post-poll-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Post Poll 🐝</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1165,10 +1190,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           </div>
           <div class="compose-actions-row">
             <div class="compose-icons">
-              <button class="compose-icon-btn" onclick="document.getElementById('photo-upload').click()" title="Add photos">🖼️</button>
+              <button class="compose-icon-btn" onclick="document.getElementById('photo-upload').click()" title="Add photos" style="font-size:19px">📷</button>
               <input type="file" id="photo-upload" accept="image/*" multiple style="display:none" onchange="previewImages(this)">
               <button class="compose-icon-btn" onclick="openGifPicker()" title="Add GIF">GIF</button>
-              <button class="compose-icon-btn">😊</button>
+              <button class="compose-icon-btn" onclick="openPollCreator()" title="Create a poll" style="font-size:18px">📊</button>
               <button class="compose-icon-btn">📍</button>
             </div>
             <button class="post-btn" onclick="postVibe()">Post Vibe 🐝</button>
@@ -1782,6 +1807,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
         ${renderPostMedia(post)}
+        <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
             <span class="action-icon">🐝</span><span class="like-count">0</span>
@@ -1817,6 +1843,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadLikes(post.id, card);
     loadCommentCount(post.id, card);
     loadRepostCount(post.id, card);
+    if (post.is_poll) {
+      const pollContainer = card.querySelector(`#poll-container-${post.id}`);
+      if (pollContainer) renderPoll(post, pollContainer);
+    }
     return card;
   }
 
@@ -3429,6 +3459,128 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   function viewerPrev() { if (viewerIndex > 0) { viewerIndex--; updateImageViewer(); } }
   function viewerNext() { if (viewerIndex < viewerImages.length - 1) { viewerIndex++; updateImageViewer(); } }
   function closeImageViewer() { const v = document.getElementById('image-viewer-overlay'); if (v) v.style.display = 'none'; }
+
+  // POLLS
+  let pollOptionCount = 0;
+
+  function openPollCreator() {
+    document.getElementById('poll-creator-modal').style.display = 'flex';
+    document.getElementById('poll-question').value = '';
+    document.getElementById('poll-options-list').innerHTML = '';
+    pollOptionCount = 0;
+    addPollOption();
+    addPollOption();
+  }
+
+  function closePollCreator() {
+    document.getElementById('poll-creator-modal').style.display = 'none';
+  }
+
+  function addPollOption() {
+    if (pollOptionCount >= 4) { showToast('Max 4 options!'); return; }
+    pollOptionCount++;
+    const list = document.getElementById('poll-options-list');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;align-items:center';
+    row.innerHTML = `
+      <input type="text" class="poll-option-input" placeholder="Option ${pollOptionCount}" style="flex:1;padding:10px 14px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+      <button onclick="this.parentElement.remove();pollOptionCount--" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px">✕</button>`;
+    list.appendChild(row);
+    if (pollOptionCount >= 4) document.getElementById('add-poll-option-btn').style.display = 'none';
+  }
+
+  async function postPoll() {
+    if (!currentUser) { showToast('Sign in first!'); return; }
+    const question = document.getElementById('poll-question').value.trim();
+    const optionInputs = document.querySelectorAll('.poll-option-input');
+    const options = Array.from(optionInputs).map(i => i.value.trim()).filter(v => v);
+    if (!question) { showToast('Add a question!'); return; }
+    if (options.length < 2) { showToast('Add at least 2 options!'); return; }
+
+    const days = parseInt(document.getElementById('poll-duration').value);
+    const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+    const btn = document.getElementById('post-poll-btn');
+    btn.disabled = true; btn.textContent = 'Posting...';
+
+    const { data: post, error } = await sb.from('posts').insert({
+      user_id: currentUser.id, body: question, is_poll: true, poll_ends_at: endsAt
+    }).select('*, profiles(username,full_name,avatar_url,verified)').single();
+
+    if (error) { showToast('Error creating poll!'); btn.disabled = false; btn.textContent = 'Post Poll 🐝'; return; }
+
+    const optionRows = options.map((text, i) => ({ post_id: post.id, option_text: text, position: i }));
+    await sb.from('poll_options').insert(optionRows);
+
+    closePollCreator();
+    btn.disabled = false; btn.textContent = 'Post Poll 🐝';
+    showToast('Poll posted! 📊🐝');
+
+    const container = document.getElementById('posts-container');
+    const empty = container.querySelector('.empty-wrap');
+    if (empty) container.innerHTML = '';
+    const card = createPostCard(post);
+    container.insertBefore(card, container.firstChild);
+  }
+
+  async function renderPoll(post, container) {
+    const { data: options } = await sb.from('poll_options').select('*').eq('post_id', post.id).order('position', { ascending: true });
+    if (!options || options.length === 0) return;
+
+    container.innerHTML = '';
+    const pollWrap = document.createElement('div');
+    pollWrap.style.cssText = 'margin-bottom:12px;display:flex;flex-direction:column;gap:8px';
+
+    let userVoteOptionId = null;
+    let totalVotes = 0;
+    const counts = {};
+    for (const opt of options) {
+      const { count } = await sb.from('poll_votes').select('*', { count: 'exact', head: true }).eq('poll_option_id', opt.id);
+      counts[opt.id] = count || 0;
+      totalVotes += count || 0;
+      if (currentUser) {
+        const { data: myVote } = await sb.from('poll_votes').select('id').eq('poll_option_id', opt.id).eq('user_id', currentUser.id).maybeSingle();
+        if (myVote) userVoteOptionId = opt.id;
+      }
+    }
+
+    const isExpired = post.poll_ends_at && new Date(post.poll_ends_at) < new Date();
+
+    options.forEach(opt => {
+      const pct = totalVotes > 0 ? Math.round((counts[opt.id] / totalVotes) * 100) : 0;
+      const isMyVote = userVoteOptionId === opt.id;
+      const showResults = userVoteOptionId !== null || isExpired;
+
+      const optDiv = document.createElement('div');
+      optDiv.style.cssText = `position:relative;border:1.5px solid ${isMyVote ? 'var(--gold)' : 'var(--border)'};border-radius:12px;padding:10px 14px;cursor:${showResults ? 'default' : 'pointer'};overflow:hidden`;
+      if (showResults) {
+        optDiv.innerHTML = `
+          <div style="position:absolute;inset:0;background:rgba(245,197,24,0.12);width:${pct}%;transition:width 0.4s"></div>
+          <div style="position:relative;display:flex;justify-content:space-between;align-items:center;font-size:13px">
+            <span>${isMyVote ? '✓ ' : ''}${opt.option_text}</span>
+            <span style="color:var(--muted);font-weight:700">${pct}%</span>
+          </div>`;
+      } else {
+        optDiv.innerHTML = `<div style="font-size:13px">${opt.option_text}</div>`;
+        optDiv.onclick = (e) => { e.stopPropagation(); votePoll(opt.id, post.id, container, post); };
+      }
+      pollWrap.appendChild(optDiv);
+    });
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'font-size:11px;color:var(--muted)';
+    footer.textContent = `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} · ${isExpired ? 'Poll ended' : 'Poll active'}`;
+    pollWrap.appendChild(footer);
+
+    container.appendChild(pollWrap);
+  }
+
+  async function votePoll(optionId, postId, container, post) {
+    if (!currentUser) { showToast('Sign in to vote!'); return; }
+    await sb.from('poll_votes').insert({ poll_option_id: optionId, user_id: currentUser.id });
+    await renderPoll(post, container);
+    showToast('Vote counted! 🐝');
+  }
 
   function formatBody(text) { return text.replace(/#(\w+)/g, '<span class="post-hashtag" onclick="openHashtag(\'$1\')">#$1</span>'); }
   function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
