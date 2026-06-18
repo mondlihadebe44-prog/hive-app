@@ -2035,8 +2035,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('image-preview-grid').innerHTML = '';
   }
 
-  // GIF picker - using Giphy's public beta API
-  const GIPHY_KEY = 'dc6zaTOxFJmzC'; // Giphy's public beta key
+  // GIF picker - using Klipy's free GIF API
+  const KLIPY_KEY = 'MqEXDUUN54Dm8AqFAukMWhnpKroU006rXnyOvN7cuOObtLE66ELwtM4LVve7xTC3';
+  const KLIPY_CUSTOMER_ID = 'hive-app-user'; // any consistent string works as the customer id
   let gifSearchTimeout = null;
 
   function openGifPicker() {
@@ -2055,19 +2056,24 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     gifSearchTimeout = setTimeout(async () => {
       const results = document.getElementById('gif-results');
       results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">Searching...</div>';
+      if (!KLIPY_KEY || KLIPY_KEY === 'YOUR_KLIPY_API_KEY') {
+        results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">GIF search not set up yet — add a Klipy API key</div>';
+        return;
+      }
       try {
         const endpoint = query === 'trending'
-          ? `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=20&rating=pg-13`
-          : `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg-13`;
+          ? `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/trending?customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`
+          : `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search?q=${encodeURIComponent(query)}&customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`;
         const res = await fetch(endpoint);
         const data = await res.json();
+        const items = data.data?.data || data.data || [];
         results.innerHTML = '';
-        if (!data.data || data.data.length === 0) {
+        if (!items || items.length === 0) {
           results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">No GIFs found</div>';
           return;
         }
-        data.data.forEach(gif => {
-          const url = gif.images?.fixed_height?.url || gif.images?.original?.url;
+        items.forEach(gif => {
+          const url = gif.file?.md?.gif?.url || gif.file?.sm?.gif?.url || gif.images?.fixed_height?.url;
           if (!url) return;
           const div = document.createElement('div');
           div.style.cssText = 'border-radius:12px;overflow:hidden;cursor:pointer;aspect-ratio:1';
