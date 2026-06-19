@@ -3757,10 +3757,24 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
   function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 
-  // Register PWA Service Worker
+  // Register PWA Service Worker - with auto-update detection
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(() => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       console.log('Hive PWA ready! 🐝');
+
+      // Check for a new version every time the app opens
+      reg.update();
+
+      // If a new service worker takes over, the old cached app is now stale - reload once
+      let hasRefreshed = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hasRefreshed) return;
+        hasRefreshed = true;
+        window.location.reload();
+      });
+
+      // Also poll for updates periodically while the app stays open
+      setInterval(() => reg.update(), 60000);
     });
   }
 </script>
