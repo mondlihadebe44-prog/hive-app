@@ -994,6 +994,30 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   </div>
 </div>
 
+<!-- GLOBAL SEARCH OVERLAY -->
+<div id="global-search-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:500;flex-direction:column">
+  <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+    <div style="flex:1;display:flex;align-items:center;gap:10px;background:#111;border:1.5px solid var(--gold);border-radius:50px;padding:10px 16px">
+      <span style="color:var(--gold);font-size:16px">🔍</span>
+      <input id="global-search-input" placeholder="Search Hive..." autofocus oninput="globalSearch(this.value)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none">
+      <button id="global-search-clear" onclick="clearGlobalSearch()" style="display:none;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <button onclick="closeGlobalSearch()" style="background:none;border:none;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">Cancel</button>
+  </div>
+  <!-- Tabs -->
+  <div style="display:flex;border-bottom:1px solid var(--border)">
+    <button class="search-tab active" onclick="switchSearchTab(this,'search-people')" style="flex:1;padding:12px 0;background:none;border:none;border-bottom:2px solid var(--gold);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">People</button>
+    <button class="search-tab" onclick="switchSearchTab(this,'search-posts')" style="flex:1;padding:12px 0;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Posts</button>
+    <button class="search-tab" onclick="switchSearchTab(this,'search-tags')" style="flex:1;padding:12px 0;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Tags</button>
+  </div>
+  <!-- Results -->
+  <div style="flex:1;overflow-y:auto;scrollbar-width:none">
+    <div id="search-people" style="padding:8px 0"></div>
+    <div id="search-posts" style="display:none;padding:8px 0"></div>
+    <div id="search-tags" style="display:none;padding:16px 20px"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1117,8 +1141,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     <button class="nav-item active" onclick="setNav(this,'feed')" id="nav-feed">
       <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
     </button>
-    <button class="nav-item" onclick="setNav(this,'explore')" id="nav-explore">
-      <span class="nav-icon">🔍</span><span class="nav-label">Explore</span>
+    <button class="nav-item" onclick="openGlobalSearch()" id="nav-explore">
+      <span class="nav-icon">🔍</span><span class="nav-label">Search</span>
     </button>
     <button class="nav-item" onclick="setNav(this,'notifs')" id="nav-notifs">
       <span class="nav-icon">🔔</span><span class="nav-label">Notifications</span>
@@ -1506,8 +1530,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   <button class="mobile-nav-item active" onclick="setNav(this,'feed')">
     <span class="mobile-nav-icon">🏠</span>Home
   </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'explore')">
-    <span class="mobile-nav-icon">🔍</span>Explore
+  <button class="mobile-nav-item" onclick="openGlobalSearch()">
+    <span class="mobile-nav-icon">🔍</span>Search
   </button>
   <button class="mobile-nav-item" onclick="setNav(this,'notifs')">
     <span class="mobile-nav-icon">🔔</span>Alerts
@@ -3281,6 +3305,115 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
       container.appendChild(div);
     });
+  }
+
+  // GLOBAL SEARCH
+  let searchTimeout = null;
+  let currentSearchTab = 'search-people';
+
+  function openGlobalSearch() {
+    document.getElementById('global-search-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('global-search-input').focus(), 100);
+    showSearchPlaceholder();
+  }
+
+  function closeGlobalSearch() {
+    document.getElementById('global-search-overlay').style.display = 'none';
+    document.getElementById('global-search-input').value = '';
+    showSearchPlaceholder();
+  }
+
+  function clearGlobalSearch() {
+    document.getElementById('global-search-input').value = '';
+    document.getElementById('global-search-clear').style.display = 'none';
+    showSearchPlaceholder();
+  }
+
+  function showSearchPlaceholder() {
+    document.getElementById('search-people').innerHTML = `<div style="padding:48px 20px;text-align:center;color:var(--muted)"><div style="font-size:48px;margin-bottom:12px">🔍</div><div style="font-size:15px">Search people, posts or hashtags</div></div>`;
+    document.getElementById('search-posts').innerHTML = '';
+    document.getElementById('search-tags').innerHTML = '';
+  }
+
+  function switchSearchTab(el, tabId) {
+    document.querySelectorAll('.search-tab').forEach(t => { t.style.borderBottomColor = 'transparent'; t.style.color = 'var(--muted)'; });
+    el.style.borderBottomColor = 'var(--gold)'; el.style.color = 'var(--text)';
+    ['search-people','search-posts','search-tags'].forEach(id => document.getElementById(id).style.display = id === tabId ? 'block' : 'none');
+    currentSearchTab = tabId;
+    const query = document.getElementById('global-search-input').value.trim();
+    if (query) globalSearch(query);
+  }
+
+  function globalSearch(query) {
+    document.getElementById('global-search-clear').style.display = query ? 'block' : 'none';
+    if (!query || query.length < 1) { showSearchPlaceholder(); return; }
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+      if (currentSearchTab === 'search-people') await searchPeopleGlobal(query);
+      else if (currentSearchTab === 'search-posts') await searchPostsGlobal(query);
+      else await searchHashtagsGlobal(query);
+    }, 300);
+  }
+
+  async function searchPeopleGlobal(query) {
+    const container = document.getElementById('search-people');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
+    container.innerHTML = '';
+    if (!users || users.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No people found for "${query}"</div>`; return; }
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s';
+      div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.03)';
+      div.onmouseout = () => div.style.background = 'transparent';
+      div.innerHTML = `
+        <div style="width:48px;height:48px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#000;overflow:hidden;flex-shrink:0">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
+          ${u.bio ? `<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.bio}</div>` : ''}
+        </div>`;
+      div.onclick = () => { closeGlobalSearch(); openUserProfile(u.id); };
+      container.appendChild(div);
+    });
+  }
+
+  async function searchPostsGlobal(query) {
+    const container = document.getElementById('search-posts');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', `%${query}%`).is('reply_to', null).order('created_at', { ascending: false }).limit(15);
+    container.innerHTML = '';
+    if (!posts || posts.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No posts found for "${query}"</div>`; return; }
+    posts.forEach(post => container.appendChild(createPostCard(post)));
+  }
+
+  async function searchHashtagsGlobal(query) {
+    const container = document.getElementById('search-tags');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const tag = query.replace('#','').trim();
+    const { data: posts } = await sb.from('posts').select('body').ilike('body', `%#%`).limit(100);
+    const tagCounts = {};
+    (posts || []).forEach(p => {
+      const matches = p.body?.match(/#(\w+)/g) || [];
+      matches.forEach(t => { const c = t.toLowerCase(); if (c.includes(tag.toLowerCase())) tagCounts[c] = (tagCounts[c] || 0) + 1; });
+    });
+    const sorted = Object.entries(tagCounts).sort((a,b) => b[1]-a[1]);
+    container.innerHTML = '';
+    if (sorted.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No hashtags found for "#${tag}"</div>`; return; }
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:16px 20px';
+    sorted.forEach(([t, count]) => {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'padding:8px 16px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:50px;color:var(--gold);font-size:14px;cursor:pointer;font-family:"DM Sans",sans-serif';
+      btn.innerHTML = `${t} <span style="color:var(--muted);font-size:12px">${count}</span>`;
+      btn.onclick = () => { closeGlobalSearch(); openHashtag(t.replace('#','')); };
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
   }
 
   async function searchUsers(query) {
