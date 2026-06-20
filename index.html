@@ -2057,9 +2057,12 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (selectedGifUrl) {
       imageUrl = selectedGifUrl;
     } else if (selectedImageFiles.length > 0) {
+      btn.textContent = 'Compressing...';
       for (const file of selectedImageFiles) {
-        const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${file.name.split('.').pop()}`;
-        const { error: uploadError } = await sb.storage.from('posts').upload(fileName, file);
+        const compressed = await compressImage(file);
+        const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+        btn.textContent = 'Posting...';
+        const { error: uploadError } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
         if (uploadError) { showToast('Image upload failed!'); btn.textContent = 'Post Vibe 🐝'; btn.disabled = false; return; }
         const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
         imageUrls.push(urlData.publicUrl);
@@ -2098,6 +2101,46 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   let selectedImageFiles = [];
   let selectedGifUrl = null;
   let startingThread = false;
+
+  // Compress an image client-side before upload: resize to fit within maxDimension,
+  // re-encode as JPEG at the given quality. Returns a new File object.
+  function compressImage(file, maxDimension = 1600, quality = 0.8) {
+    return new Promise((resolve) => {
+      // Don't try to compress GIFs - canvas re-encoding kills animation
+      if (file.type === 'image/gif') { resolve(file); return; }
+
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round(height * (maxDimension / width));
+              width = maxDimension;
+            } else {
+              width = Math.round(width * (maxDimension / height));
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (!blob) { resolve(file); return; } // fall back to original if compression fails
+            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+            resolve(compressedFile);
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => resolve(file); // fall back to original if it can't even load
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
 
   function startNewThread() {
     startingThread = !startingThread;
@@ -2286,11 +2329,13 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const file = input.files[0];
     if (!file) return;
     const status = document.getElementById('cover-upload-status');
-    status.textContent = 'Uploading cover...';
+    status.textContent = 'Compressing...';
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return;
-    const fileName = `cover-${session.user.id}.${file.name.split('.').pop()}`;
-    const { error } = await sb.storage.from('covers').upload(fileName, file, { upsert: true });
+    const compressed = await compressImage(file, 1600, 0.8);
+    status.textContent = 'Uploading cover...';
+    const fileName = `cover-${session.user.id}.jpg`;
+    const { error } = await sb.storage.from('covers').upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
     if (error) { status.textContent = 'Upload failed!'; return; }
     const { data: urlData } = sb.storage.from('covers').getPublicUrl(fileName);
     await sb.from('profiles').update({ cover_url: urlData.publicUrl }).eq('id', session.user.id);
@@ -2305,11 +2350,13 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const file = input.files[0];
     if (!file) return;
     const status = document.getElementById('avatar-upload-status');
-    status.textContent = 'Uploading...';
+    status.textContent = 'Compressing...';
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return;
-    const fileName = `avatar-${session.user.id}.${file.name.split('.').pop()}`;
-    const { error } = await sb.storage.from('avatars').upload(fileName, file, { upsert: true });
+    const compressed = await compressImage(file, 500, 0.85);
+    status.textContent = 'Uploading...';
+    const fileName = `avatar-${session.user.id}.jpg`;
+    const { error } = await sb.storage.from('avatars').upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
     if (error) { status.textContent = 'Upload failed: ' + error.message; return; }
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
     await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', session.user.id);
@@ -2571,8 +2618,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const file = input.files[0];
     if (!file) return;
     showToast('Sending image...');
-    const fileName = `dm-${currentUser.id}-${Date.now()}.${file.name.split('.').pop()}`;
-    const { error } = await sb.storage.from('posts').upload(fileName, file);
+    const compressed = await compressImage(file);
+    const fileName = `dm-${currentUser.id}-${Date.now()}.jpg`;
+    const { error } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
     if (error) { showToast('Image failed! Try again.'); return; }
     const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
     await sb.from('messages').insert({ sender_id: currentUser.id, receiver_id: currentChatUser.id, body: '', image_url: urlData.publicUrl });
@@ -2722,8 +2770,11 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
     let imageUrl = null;
     if (quoteImageFile) {
-      const fileName = `${currentUser.id}-${Date.now()}-quote.${quoteImageFile.name.split('.').pop()}`;
-      const { error: uploadError } = await sb.storage.from('posts').upload(fileName, quoteImageFile);
+      btn.textContent = 'Compressing...';
+      const compressed = await compressImage(quoteImageFile);
+      btn.textContent = 'Posting...';
+      const fileName = `${currentUser.id}-${Date.now()}-quote.jpg`;
+      const { error: uploadError } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
       if (!uploadError) {
         const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
