@@ -1229,6 +1229,11 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div class="compose-box">
         <div class="compose-avatar" id="compose-avatar">?</div>
         <div class="compose-right">
+          <div id="thread-mode-banner" style="display:none;align-items:center;gap:6px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:50px;padding:5px 12px;margin-bottom:8px;width:fit-content">
+            <span style="font-size:13px">🧵</span>
+            <span style="font-size:12px;color:var(--gold);font-weight:600">Starting a thread</span>
+            <button onclick="cancelNewThread()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 0 0 4px">✕</button>
+          </div>
           <input class="compose-input" placeholder="What's the vibe?" id="compose-text">
           <div id="image-preview-container" style="display:none;margin-bottom:12px">
             <div id="image-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px"></div>
@@ -1243,7 +1248,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
               <input type="file" id="photo-upload" accept="image/*" multiple style="display:none" onchange="previewImages(this)">
               <button class="compose-icon-btn" onclick="openGifPicker()" title="Add GIF">GIF</button>
               <button class="compose-icon-btn" onclick="openPollCreator()" title="Create a poll" style="font-size:18px">📊</button>
-              <button class="compose-icon-btn">📍</button>
+              <button class="compose-icon-btn" onclick="startNewThread()" title="Start a thread" style="font-size:18px">🧵</button>
             </div>
             <button class="post-btn" onclick="postVibe()">Post Vibe 🐝</button>
           </div>
@@ -2078,12 +2083,38 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
     container.insertBefore(createPostCard(data), container.firstChild);
-    showToast('Vibe posted! 🐝✨');
+
+    if (startingThread) {
+      startingThread = false;
+      document.getElementById('thread-mode-banner').style.display = 'none';
+      showToast('Posted! Add the next part 🧵');
+      setTimeout(() => openThreadReply(data.id), 400);
+    } else {
+      showToast('Vibe posted! 🐝✨');
+    }
   }
 
   // MULTI-PHOTO + GIF
   let selectedImageFiles = [];
   let selectedGifUrl = null;
+  let startingThread = false;
+
+  function startNewThread() {
+    startingThread = !startingThread;
+    document.getElementById('thread-mode-banner').style.display = startingThread ? 'flex' : 'none';
+    if (startingThread) {
+      document.getElementById('compose-text').placeholder = "Start your thread...";
+      document.getElementById('compose-text').focus();
+    } else {
+      document.getElementById('compose-text').placeholder = "What's the vibe?";
+    }
+  }
+
+  function cancelNewThread() {
+    startingThread = false;
+    document.getElementById('thread-mode-banner').style.display = 'none';
+    document.getElementById('compose-text').placeholder = "What's the vibe?";
+  }
 
   function previewImages(input) {
     const files = Array.from(input.files).slice(0, 4); // max 4 photos like X
