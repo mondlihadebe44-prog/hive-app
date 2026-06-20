@@ -947,6 +947,31 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 </div>
 
 <!-- THREAD REPLY MODAL -->
+<!-- QUOTE COMPOSER MODAL -->
+<div id="quote-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+  <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Quote post ✏️</div>
+      <button onclick="closeQuoteComposer()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:14px">
+      <div id="quote-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000;overflow:hidden;flex-shrink:0"></div>
+      <div style="flex:1">
+        <textarea id="quote-input" placeholder="Add a comment..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none;min-height:70px;line-height:1.6"></textarea>
+        <div id="quote-image-preview-container" style="display:none;position:relative;margin-bottom:8px">
+          <img id="quote-image-preview" style="width:100%;border-radius:14px;max-height:200px;object-fit:cover">
+          <button onclick="removeQuoteImage()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+        </div>
+        <button onclick="document.getElementById('quote-image-upload').click()" style="background:none;border:none;color:var(--gold);font-size:18px;cursor:pointer;padding:6px 0" title="Add photo">🖼️</button>
+        <input type="file" id="quote-image-upload" accept="image/*" style="display:none" onchange="previewQuoteImage(this)">
+      </div>
+    </div>
+    <!-- Original post preview -->
+    <div id="quote-original-post" style="padding:12px;border:1px solid var(--border);border-radius:14px;margin-bottom:16px"></div>
+    <button onclick="postQuote()" id="post-quote-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Post 🐝</button>
+  </div>
+</div>
+
 <div id="thread-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
   <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1830,6 +1855,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
+        <div class="quote-container" id="quote-container-${post.id}"></div>
         ${renderPostMedia(post)}
         <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
@@ -1848,7 +1874,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           <button class="action-btn" onclick="toggleComments(this,'${post.id}')">
             <span class="action-icon">💬</span><span class="comment-count">0</span>
           </button>
-          <button class="action-btn repost-btn" onclick="toggleRepost(this,'${post.id}')">
+          <button class="action-btn repost-btn" onclick="event.stopPropagation();showRepostMenu(this,'${post.id}')">
             <span class="action-icon">🔁</span><span class="repost-count">0</span>
           </button>
           <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
@@ -1870,6 +1896,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (post.is_poll) {
       const pollContainer = card.querySelector(`#poll-container-${post.id}`);
       if (pollContainer) renderPoll(post, pollContainer);
+    }
+    if (post.quoted_post_id) {
+      const quoteContainer = card.querySelector(`#quote-container-${post.id}`);
+      if (quoteContainer) renderQuotedPost(post, quoteContainer);
     }
     return card;
   }
@@ -2548,6 +2578,176 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       }
       showToast('Rebuzzed! 🔁🐝');
     }
+  }
+
+  // REPOST MENU (Rebuzz vs Quote)
+  let activeRepostMenu = null;
+
+  function showRepostMenu(btn, postId) {
+    if (!currentUser) { showToast('Sign in to share posts!'); return; }
+    if (activeRepostMenu) { activeRepostMenu.remove(); activeRepostMenu = null; }
+
+    const isReposted = btn.style.color === 'rgb(78, 205, 196)';
+    const menu = document.createElement('div');
+    menu.style.cssText = 'position:absolute;bottom:38px;left:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:170px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+
+    const rebuzzBtn = document.createElement('button');
+    rebuzzBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    rebuzzBtn.innerHTML = isReposted ? '🔁 Undo Rebuzz' : '🔁 Rebuzz';
+    rebuzzBtn.onmouseover = () => rebuzzBtn.style.background = 'rgba(255,255,255,0.06)';
+    rebuzzBtn.onmouseout = () => rebuzzBtn.style.background = 'none';
+    rebuzzBtn.onclick = (e) => { e.stopPropagation(); toggleRepost(btn, postId); menu.remove(); activeRepostMenu = null; };
+    menu.appendChild(rebuzzBtn);
+
+    const quoteBtn = document.createElement('button');
+    quoteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    quoteBtn.innerHTML = '✏️ Quote';
+    quoteBtn.onmouseover = () => quoteBtn.style.background = 'rgba(255,255,255,0.06)';
+    quoteBtn.onmouseout = () => quoteBtn.style.background = 'none';
+    quoteBtn.onclick = (e) => { e.stopPropagation(); menu.remove(); activeRepostMenu = null; openQuoteComposer(postId); };
+    menu.appendChild(quoteBtn);
+
+    btn.parentElement.style.position = 'relative';
+    btn.parentElement.appendChild(menu);
+    activeRepostMenu = menu;
+
+    setTimeout(() => {
+      document.addEventListener('click', function closeRepostMenu(e) {
+        if (!menu.contains(e.target) && e.target !== btn) {
+          menu.remove(); activeRepostMenu = null;
+          document.removeEventListener('click', closeRepostMenu);
+        }
+      });
+    }, 100);
+  }
+
+  // QUOTE POST
+  let currentQuotePostId = null;
+  let quoteImageFile = null;
+
+  async function openQuoteComposer(postId) {
+    currentQuotePostId = postId;
+    document.getElementById('quote-modal').style.display = 'flex';
+
+    const { data: post } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('id', postId).single();
+    if (post) {
+      const p = post.profiles || {};
+      const name = p.full_name || 'Unknown';
+      const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
+      document.getElementById('quote-original-post').innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}</div>
+        </div>
+        <div style="font-size:14px;color:#aaa;line-height:1.5">${post.body || ''}</div>
+        ${post.image_url ? `<img src="${post.image_url}" style="width:100%;border-radius:10px;margin-top:8px;max-height:160px;object-fit:cover">` : ''}`;
+    }
+
+    const avatarEl = document.getElementById('quote-avatar');
+    if (currentProfile?.avatar_url) {
+      avatarEl.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.textContent = (currentProfile?.full_name || 'U')[0].toUpperCase();
+      avatarEl.style.background = getColor(currentProfile?.full_name || 'User');
+    }
+
+    document.getElementById('quote-input').value = '';
+    document.getElementById('quote-image-preview-container').style.display = 'none';
+    quoteImageFile = null;
+    setTimeout(() => document.getElementById('quote-input').focus(), 300);
+  }
+
+  function closeQuoteComposer() {
+    document.getElementById('quote-modal').style.display = 'none';
+    currentQuotePostId = null;
+  }
+
+  function previewQuoteImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    quoteImageFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('quote-image-preview').src = e.target.result;
+      document.getElementById('quote-image-preview-container').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeQuoteImage() {
+    quoteImageFile = null;
+    document.getElementById('quote-image-upload').value = '';
+    document.getElementById('quote-image-preview-container').style.display = 'none';
+  }
+
+  async function postQuote() {
+    if (!currentUser || !currentQuotePostId) return;
+    const text = document.getElementById('quote-input').value.trim();
+    if (!text && !quoteImageFile) { showToast('Add a comment or photo!'); return; }
+
+    const btn = document.getElementById('post-quote-btn');
+    btn.disabled = true; btn.textContent = 'Posting...';
+
+    let imageUrl = null;
+    if (quoteImageFile) {
+      const fileName = `${currentUser.id}-${Date.now()}-quote.${quoteImageFile.name.split('.').pop()}`;
+      const { error: uploadError } = await sb.storage.from('posts').upload(fileName, quoteImageFile);
+      if (!uploadError) {
+        const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
+    const { data: newPost, error } = await sb.from('posts').insert({
+      user_id: currentUser.id,
+      body: text,
+      image_url: imageUrl,
+      quoted_post_id: currentQuotePostId
+    }).select('*, profiles(username,full_name,avatar_url,verified)').single();
+
+    btn.disabled = false; btn.textContent = 'Post 🐝';
+    if (error) { showToast('Error posting quote!'); return; }
+
+    const { data: originalPost } = await sb.from('posts').select('user_id').eq('id', currentQuotePostId).single();
+    if (originalPost && originalPost.user_id !== currentUser.id) {
+      await sb.from('notifications').insert({ user_id: originalPost.user_id, from_user_id: currentUser.id, type: 'repost', post_id: currentQuotePostId });
+    }
+
+    closeQuoteComposer();
+    showToast('Quoted! 🐝✨');
+
+    const container = document.getElementById('posts-container');
+    const empty = container.querySelector('.empty-wrap');
+    if (empty) container.innerHTML = '';
+    const card = createPostCard(newPost);
+    container.insertBefore(card, container.firstChild);
+  }
+
+  async function renderQuotedPost(post, container) {
+    if (!post.quoted_post_id) return;
+    const { data: quoted } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('id', post.quoted_post_id).maybeSingle();
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;cursor:pointer';
+    wrap.onclick = (e) => { e.stopPropagation(); if (quoted) jumpToPost(quoted.id); };
+    if (!quoted) {
+      wrap.innerHTML = `<div style="color:var(--muted);font-size:13px">Original post not available</div>`;
+      container.appendChild(wrap);
+      return;
+    }
+    const p = quoted.profiles || {};
+    const name = p.full_name || 'Unknown';
+    const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
+    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:11px">🐝</span>' : '';
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:24px;height:24px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${verified}</div>
+        <div style="font-size:11px;color:var(--muted)">${timeAgo(quoted.created_at)}</div>
+      </div>
+      <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
+      ${quoted.image_url ? `<img src="${quoted.image_url}" style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">` : ''}`;
+    container.appendChild(wrap);
   }
 
   // VOICE NOTES
