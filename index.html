@@ -1824,7 +1824,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       if (replies && replies.length > 0) {
         const threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = post.id;
-        threadDiv.style.cssText = 'border-left:3px solid var(--gold);margin-left:36px;padding-left:14px';
+        threadDiv.className = 'thread-connector';
+        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:21px;padding-left:20px;margin-bottom:4px';
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true); // true = isThreadReply
           threadDiv.appendChild(replyCard);
@@ -3549,15 +3550,16 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const originalCard = document.querySelector(`[data-post-id="${currentThreadPostId}"]`);
     if (originalCard) {
       let threadDiv = originalCard.nextElementSibling;
-      if (!threadDiv || threadDiv.style.marginLeft !== '52px') {
+      const hasMatchingThreadDiv = threadDiv && threadDiv.classList?.contains('thread-connector') && threadDiv.dataset.threadFor === currentThreadPostId;
+      if (!hasMatchingThreadDiv) {
         threadDiv = document.createElement('div');
-        threadDiv.style.cssText = 'margin-left:52px;border-left:2px solid rgba(245,197,24,0.3);padding-left:12px;margin-bottom:4px';
+        threadDiv.dataset.threadFor = currentThreadPostId;
+        threadDiv.className = 'thread-connector';
+        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:21px;padding-left:20px;margin-bottom:4px';
         originalCard.insertAdjacentElement('afterend', threadDiv);
       }
       if (newReply) {
         const replyCard = createPostCard(newReply, true);
-        replyCard.style.borderBottom = 'none';
-        replyCard.style.padding = '8px 20px 8px 0';
         threadDiv.appendChild(replyCard);
       }
     }
