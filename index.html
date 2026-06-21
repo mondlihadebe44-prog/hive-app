@@ -1825,7 +1825,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         const threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = post.id;
         threadDiv.className = 'thread-connector';
-        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:21px;padding-left:20px;margin-bottom:4px';
+        threadDiv.style.cssText = 'border-left:1px solid var(--border);margin-left:41px;margin-bottom:4px';
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true); // true = isThreadReply
           threadDiv.appendChild(replyCard);
@@ -3555,7 +3555,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = currentThreadPostId;
         threadDiv.className = 'thread-connector';
-        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:21px;padding-left:20px;margin-bottom:4px';
+        threadDiv.style.cssText = 'border-left:1px solid var(--border);margin-left:41px;margin-bottom:4px';
         originalCard.insertAdjacentElement('afterend', threadDiv);
       }
       if (newReply) {
