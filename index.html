@@ -1825,12 +1825,19 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         const threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = post.id;
         threadDiv.className = 'thread-connector';
-        threadDiv.style.cssText = 'border-left:1px solid var(--border);margin-left:41px;margin-bottom:4px';
+        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:41px;margin-top:-12px';
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true); // true = isThreadReply
+          replyCard.style.paddingTop = '4px';
           threadDiv.appendChild(replyCard);
         });
         container.appendChild(threadDiv);
+        // Separator marking the end of this thread before the next unrelated post
+        const sep = document.createElement('div');
+        sep.className = 'thread-end-separator';
+        sep.dataset.threadFor = post.id;
+        sep.style.cssText = 'height:1px;background:linear-gradient(90deg, var(--gold), transparent 60%);margin:0 20px';
+        container.appendChild(sep);
       }
     }
     document.getElementById('load-more-text').textContent = "You're all caught up 🐝";
@@ -3555,11 +3562,22 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         threadDiv = document.createElement('div');
         threadDiv.dataset.threadFor = currentThreadPostId;
         threadDiv.className = 'thread-connector';
-        threadDiv.style.cssText = 'border-left:1px solid var(--border);margin-left:41px;margin-bottom:4px';
+        threadDiv.style.cssText = 'border-left:2px solid var(--gold);margin-left:41px;margin-top:-12px';
         originalCard.insertAdjacentElement('afterend', threadDiv);
+
+        // Only add the "thread ends here" separator if one doesn't already exist for this thread
+        const existingSep = document.querySelector(`.thread-end-separator[data-thread-for="${currentThreadPostId}"]`);
+        if (!existingSep) {
+          const sep = document.createElement('div');
+          sep.className = 'thread-end-separator';
+          sep.dataset.threadFor = currentThreadPostId;
+          sep.style.cssText = 'height:1px;background:linear-gradient(90deg, var(--gold), transparent 60%);margin:0 20px';
+          threadDiv.insertAdjacentElement('afterend', sep);
+        }
       }
       if (newReply) {
         const replyCard = createPostCard(newReply, true);
+        replyCard.style.paddingTop = '4px';
         threadDiv.appendChild(replyCard);
       }
     }
