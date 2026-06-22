@@ -1827,17 +1827,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         card.dataset.threadStart = post.id;
         let lastReplyCard = card;
         replies.forEach(reply => {
-          const replyCard = createPostCard(reply, true); // true = isThreadReply
+          const replyCard = createPostCard(reply, true);
           container.appendChild(replyCard);
           lastReplyCard = replyCard;
         });
-        // Separator marking the end of this thread before the next unrelated post
+        lastReplyCard.dataset.threadEnd = post.id;
+        // Gold horizontal line marking end of thread
         const sep = document.createElement('div');
         sep.className = 'thread-end-separator';
         sep.dataset.threadFor = post.id;
-        sep.style.cssText = 'height:1px;background:linear-gradient(90deg, var(--gold), transparent 60%);margin:0 20px';
+        sep.style.cssText = 'height:1.5px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:0 20px 0 20px';
         container.appendChild(sep);
-        lastReplyCard.dataset.threadEnd = post.id;
       }
     }
     document.getElementById('load-more-text').textContent = "You're all caught up 🐝";
@@ -1869,10 +1869,12 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
         const line = document.createElement('div');
         line.className = 'hive-thread-line';
-        const startY = fromRect.bottom - containerRect.top;
-        const endY = toRect.top - containerRect.top;
+        const gap = 6; // small gap between line and each avatar
+        const startY = fromRect.bottom - containerRect.top + gap;
+        const endY = toRect.top - containerRect.top - gap;
         const xCenter = fromRect.left - containerRect.left + (fromRect.width / 2);
-        line.style.cssText = `position:absolute;top:${startY}px;left:${xCenter}px;width:2px;height:${Math.max(0, endY - startY)}px;background:var(--gold);transform:translateX(-50%);pointer-events:none;z-index:1`;
+        const height = Math.max(0, endY - startY);
+        line.style.cssText = `position:absolute;top:${startY}px;left:${xCenter}px;width:2px;height:${height}px;background:var(--gold);transform:translateX(-50%);pointer-events:none;z-index:1;border-radius:2px`;
         chain[i].parentElement.appendChild(line);
       }
     });
@@ -1896,6 +1898,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const card = document.createElement('div');
     card.className = 'post-card';
     card.dataset.postId = post.id;
+    // Remove the grey dividing line between thread reply cards
+    if (isThreadReply) card.style.borderBottom = 'none';
     card.innerHTML = `
       <div class="post-card-avatar" style="background:${getColor(name)};color:#000;cursor:pointer" onclick="openUserProfile('${post.user_id}')">${avatarHTML}</div>
       <div class="post-card-right">
@@ -3602,7 +3606,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       // or the last reply card before the gold separator
       let insertAfter = originalCard;
       let walker = originalCard.nextElementSibling;
-      while (walker && walker.dataset.postId && !walker.classList.contains('thread-end-separator')) {
+      while (walker && walker.dataset.postId) {
         insertAfter = walker;
         walker = walker.nextElementSibling;
       }
@@ -3615,16 +3619,6 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       originalCard.dataset.threadStart = threadStartId;
       delete insertAfter.dataset.threadEnd;
       replyCard.dataset.threadEnd = threadStartId;
-
-      // Add the gold separator after this reply if one doesn't already exist for this thread
-      let sep = document.querySelector(`.thread-end-separator[data-thread-for="${threadStartId}"]`);
-      if (!sep) {
-        sep = document.createElement('div');
-        sep.className = 'thread-end-separator';
-        sep.dataset.threadFor = threadStartId;
-        sep.style.cssText = 'height:1px;background:linear-gradient(90deg, var(--gold), transparent 60%);margin:0 20px';
-      }
-      replyCard.insertAdjacentElement('afterend', sep);
 
       requestAnimationFrame(measureAndDrawThreadLines);
     }
