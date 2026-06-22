@@ -446,6 +446,7 @@ body {
 }
 .follow-btn:hover { background: rgba(245,197,24,0.1); }
 .follow-btn.following { background: var(--gold); color: #000; }
+.follow-btn.following:hover { background: #ff4444; color: #fff; border-color: #ff4444; }
 
 /* Comments */
 .comments-section { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
@@ -1951,6 +1952,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadLikes(post.id, card);
     loadCommentCount(post.id, card);
     loadRepostCount(post.id, card);
+    if (!isOwn && currentUser) loadFollowStatus(post.user_id, card);
     if (post.is_poll) {
       const pollContainer = card.querySelector(`#poll-container-${post.id}`);
       if (pollContainer) renderPoll(post, pollContainer);
@@ -2041,15 +2043,30 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     }
   }
 
+  async function loadFollowStatus(userId, card) {
+    if (!currentUser || userId === currentUser.id) return;
+    const btn = card.querySelector('.follow-btn');
+    if (!btn) return;
+    const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
+    if (data) {
+      btn.classList.add('following');
+      btn.textContent = 'Following';
+    } else {
+      btn.classList.remove('following');
+      btn.textContent = 'Follow';
+    }
+  }
+
   async function toggleFollow(btn, userId) {
     if (!currentUser) { showToast('Sign in to follow!'); return; }
     const isFollowing = btn.classList.contains('following');
     btn.classList.toggle('following');
-    btn.textContent = isFollowing ? 'Follow' : 'Following';
     if (isFollowing) {
+      btn.textContent = 'Follow';
       await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
       showToast('Unfollowed');
     } else {
+      btn.textContent = 'Following';
       await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
       if (userId !== currentUser.id) await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
       showToast('Now following! 🐝');
