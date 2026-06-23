@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hive 🐝</title>
 <meta name="description" content="Hive - Your community. Your vibe.">
 <meta name="theme-color" content="#F5C518">
@@ -693,7 +693,9 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,0.95); backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
-  padding: 8px 0; z-index: 100;
+  padding: 8px 0;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  z-index: 100;
   justify-content: space-around;
 }
 .mobile-nav-item {
@@ -714,7 +716,7 @@ body {
 @media (max-width: 768px) {
   .sidebar { display: none !important; }
   .mobile-nav { display: flex !important; }
-  .main-content { margin-left: 0 !important; max-width: 100% !important; border-right: none !important; padding-bottom: 70px; }
+  .main-content { margin-left: 0 !important; max-width: 100% !important; border-right: none !important; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   .right-sidebar { display: none !important; }
   .post-card { padding: 14px 16px; gap: 10px; }
   .compose-box { padding: 14px 16px; gap: 10px; }
@@ -1384,7 +1386,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <!-- Messages area -->
         <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:6px;scrollbar-width:none;min-height:0"></div>
         <!-- Input - always fixed at bottom -->
-        <div style="flex-shrink:0;padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg)">
+        <div style="flex-shrink:0;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg)">
           <div id="chat-input-wrap" style="flex:1;display:flex;align-items:center;background:#111;border:1.5px solid var(--border);border-radius:50px;padding:8px 14px;gap:8px">
             <input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-width:0">
             <button onclick="document.getElementById('dm-image-upload').click()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;line-height:1">🖼️</button>
