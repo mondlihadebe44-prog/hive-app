@@ -448,6 +448,8 @@ body {
 .follow-btn.following { background: var(--gold); color: #000; }
 .follow-btn.following:hover { background: #ff4444; color: #fff; border-color: #ff4444; }
 
+.post-card.thread-card { border-bottom: none !important; }
+
 /* Comments */
 .comments-section { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 .comments-section.open { display: block; }
@@ -1828,6 +1830,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
       if (replies && replies.length > 0) {
         card.dataset.threadStart = post.id;
+        card.classList.add('thread-card'); // remove grey border so vertical line flows through cleanly
         let lastReplyCard = card;
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true);
@@ -1902,7 +1905,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     card.className = 'post-card';
     card.dataset.postId = post.id;
     // Remove the grey dividing line between thread reply cards
-    if (isThreadReply) card.style.borderBottom = 'none';
+    if (isThreadReply) card.classList.add('thread-card');
     card.innerHTML = `
       <div class="post-card-avatar" style="background:${getColor(name)};color:#000;cursor:pointer" onclick="openUserProfile('${post.user_id}')">${avatarHTML}</div>
       <div class="post-card-right">
