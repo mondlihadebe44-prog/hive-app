@@ -881,6 +881,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
     </div>
 
+    <!-- Image upload -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Add a photo (optional)</div>
+      <div id="vibe-image-preview-container" style="display:none;position:relative;margin-bottom:8px">
+        <img id="vibe-image-preview" style="width:100%;border-radius:12px;max-height:160px;object-fit:cover">
+        <button onclick="removeVibeImage()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+      </div>
+      <button onclick="document.getElementById('vibe-image-upload').click()" style="width:100%;padding:10px;background:#1a1a1a;border:1.5px dashed var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer">📷 Add photo</button>
+      <input type="file" id="vibe-image-upload" accept="image/*" style="display:none" onchange="previewVibeImage(this)">
+    </div>
+
     <button onclick="postVibeCheck()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="post-vibe-btn">Share Vibe Check 🐝</button>
   </div>
 </div>
@@ -900,8 +911,9 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <button onclick="event.stopPropagation();closeVibeViewer()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
     </div>
     <!-- Content -->
-    <div id="viewer-emoji" style="font-size:96px"></div>
-    <div id="viewer-text" style="font-family:'Syne',sans-serif;font-weight:700;font-size:24px;color:#fff;text-align:center;padding:0 32px"></div>
+    <div id="viewer-emoji" style="font-size:80px"></div>
+    <img id="viewer-image" style="display:none;max-width:85%;max-height:45vh;border-radius:16px;object-fit:cover">
+    <div id="viewer-text" style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;color:#fff;text-align:center;padding:0 32px"></div>
   </div>
 </div>
 
@@ -3434,39 +3446,49 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   let currentVibeEmoji = '😎';
   let currentVibeBg = '#F5C518';
   let vibeChecks = [];
+  let vibeUserGroups = [];
+  let currentGroupIndex = 0;
   let currentVibeIndex = 0;
   let vibeTimer = null;
+  let vibeImageFile = null;
 
   function openAddVibeCheck() {
     document.getElementById('vibe-check-modal').style.display = 'flex';
-    currentVibeEmoji = '😎';
-    currentVibeBg = '#F5C518';
-    updateVibePreview();
+    currentVibeEmoji = '😎'; currentVibeBg = '#F5C518'; updateVibePreview();
   }
 
   function closeVibeCheck() {
     document.getElementById('vibe-check-modal').style.display = 'none';
-    document.getElementById('vibe-text').value = '';
+    document.getElementById('vibe-text').value = ''; removeVibeImage();
+  }
+
+  function previewVibeImage(input) {
+    const file = input.files[0]; if (!file) return;
+    vibeImageFile = file;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('vibe-image-preview').src = e.target.result; document.getElementById('vibe-image-preview-container').style.display = 'block'; };
+    reader.readAsDataURL(file);
+  }
+
+  function removeVibeImage() {
+    vibeImageFile = null;
+    const inp = document.getElementById('vibe-image-upload'); if (inp) inp.value = '';
+    const c = document.getElementById('vibe-image-preview-container'); if (c) c.style.display = 'none';
   }
 
   function pickVibeEmoji(el, emoji) {
     document.querySelectorAll('.vibe-emoji-opt').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    currentVibeEmoji = emoji;
-    updateVibePreview();
+    el.classList.add('selected'); currentVibeEmoji = emoji; updateVibePreview();
   }
 
   function pickVibeColor(el, color) {
     document.querySelectorAll('.vibe-color-opt').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    currentVibeBg = color;
-    updateVibePreview();
+    el.classList.add('selected'); currentVibeBg = color; updateVibePreview();
   }
 
   function updateVibePreview() {
     const text = document.getElementById('vibe-text').value || "What's your vibe?";
-    const preview = document.getElementById('vibe-preview');
-    preview.style.background = currentVibeBg;
+    document.getElementById('vibe-preview').style.background = currentVibeBg;
     document.getElementById('vibe-preview-emoji').textContent = currentVibeEmoji;
     document.getElementById('vibe-preview-text').textContent = text;
     document.getElementById('vibe-preview-text').style.color = currentVibeBg === '#1a1a1a' ? '#fff' : '#000';
@@ -3476,16 +3498,24 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!currentUser) { showToast('Sign in first!'); return; }
     const btn = document.getElementById('post-vibe-btn');
     btn.disabled = true; btn.textContent = 'Sharing...';
-    const text = document.getElementById('vibe-text').value.trim();
+    const content = document.getElementById('vibe-text').value.trim();
+
+    let mediaUrl = null;
+    if (vibeImageFile) {
+      const compressed = await compressImage(vibeImageFile, 1200, 0.8);
+      const fileName = `vibe-${currentUser.id}-${Date.now()}.jpg`;
+      const { error: upErr } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
+      if (!upErr) { const { data: u } = sb.storage.from('posts').getPublicUrl(fileName); mediaUrl = u.publicUrl; }
+    }
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const { error } = await sb.from('vibe_checks').insert({
-      user_id: currentUser.id, content: text,
-      emoji: currentVibeEmoji, bg_color: currentVibeBg
+      user_id: currentUser.id, content, emoji: currentVibeEmoji,
+      bg_color: currentVibeBg, media_url: mediaUrl, expires_at: expiresAt
     });
-    if (error) { showToast('Error! Try again.'); btn.disabled = false; btn.textContent = 'Share Vibe Check 🐝'; return; }
-    closeVibeCheck();
     btn.disabled = false; btn.textContent = 'Share Vibe Check 🐝';
-    showToast('Vibe Check shared! 🐝🔥');
-    loadVibeChecks();
+    if (error) { showToast('Error! Try again.'); return; }
+    closeVibeCheck(); showToast('Vibe Check shared! 🐝🔥'); loadVibeChecks();
   }
 
   async function loadVibeChecks() {
@@ -3493,46 +3523,54 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!bar) return;
 
     const { data: vibes } = await sb.from('vibe_checks')
-      .select('*, profiles(username, full_name, avatar_url)')
+      .select('*, profiles(id, username, full_name, avatar_url)')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(15);
+      .limit(50);
 
     vibeChecks = vibes || [];
 
-    // Keep the add button
-    const addBtn = bar.children[0];
-    bar.innerHTML = '';
-    bar.appendChild(addBtn);
+    // Group by user — one circle per person
+    const groupMap = {};
+    vibeChecks.forEach(vibe => {
+      const uid = vibe.user_id;
+      if (!groupMap[uid]) groupMap[uid] = { profile: vibe.profiles, vibes: [] };
+      groupMap[uid].vibes.push(vibe);
+    });
+    vibeUserGroups = Object.values(groupMap);
 
-    // Update my vibe avatar
-    if (currentProfile && currentProfile.avatar_url) {
+    const addBtn = bar.children[0];
+    bar.innerHTML = ''; bar.appendChild(addBtn);
+
+    if (currentProfile?.avatar_url) {
       document.getElementById('my-vibe-avatar').innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #000">+</div>`;
     }
 
-    // Add vibe items
-    vibes && vibes.forEach((vibe, index) => {
-      const p = vibe.profiles || {};
+    vibeUserGroups.forEach((group, gIdx) => {
+      const p = group.profile || {};
       const name = (p.full_name || p.username || 'User').split(' ')[0];
+      const firstVibe = group.vibes[0];
       const item = document.createElement('div');
       item.className = 'story-item';
-      item.onclick = () => openVibeViewer(index);
+      item.onclick = () => { currentGroupIndex = gIdx; currentVibeIndex = 0; openVibeViewer(firstVibe, group.vibes, gIdx); };
+      const avatarInner = p.avatar_url
+        ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : `<span style="font-size:22px">${firstVibe.emoji}</span>`;
       item.innerHTML = `
-        <div class="story-avatar has-vibe" style="background:${vibe.bg_color};font-size:26px;border-color:var(--gold)">
-          ${vibe.emoji}
+        <div class="story-avatar has-vibe" style="background:${firstVibe.bg_color};border-color:var(--gold);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative">
+          ${avatarInner}
+          ${group.vibes.length > 1 ? `<div style="position:absolute;bottom:-2px;right:-2px;background:var(--gold);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;border:1.5px solid #000">${group.vibes.length}</div>` : ''}
         </div>
         <div class="story-name">${name}</div>`;
       bar.appendChild(item);
     });
   }
 
-  function openVibeViewer(index) {
-    currentVibeIndex = index;
-    const vibe = vibeChecks[index];
-    if (!vibe) return;
-
+  function openVibeViewer(vibe, groupVibes, groupIdx) {
+    currentVibeIndex = groupVibes.indexOf(vibe);
     const viewer = document.getElementById('vibe-viewer');
     viewer.style.display = 'block';
+    viewer.dataset.groupIdx = groupIdx;
     document.getElementById('vibe-viewer-bg').style.background = vibe.bg_color;
 
     const p = vibe.profiles || {};
@@ -3541,36 +3579,55 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     document.getElementById('viewer-time').textContent = timeAgo(vibe.created_at);
     document.getElementById('viewer-emoji').textContent = vibe.emoji;
     document.getElementById('viewer-text').textContent = vibe.content || '';
-    document.getElementById('viewer-text').style.color = vibe.bg_color === '#1a1a1a' ? '#fff' : '#000';
-    document.getElementById('viewer-emoji').style.filter = vibe.bg_color === '#1a1a1a' ? 'none' : 'none';
 
-    // Avatar
+    const imgEl = document.getElementById('viewer-image');
+    if (vibe.media_url) { imgEl.src = vibe.media_url; imgEl.style.display = 'block'; }
+    else { imgEl.style.display = 'none'; }
+
     const avatarEl = document.getElementById('viewer-avatar');
-    if (p.avatar_url) {
-      avatarEl.innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    } else {
-      avatarEl.textContent = name[0].toUpperCase();
-      avatarEl.style.background = getColor(name);
-    }
+    if (p.avatar_url) { avatarEl.innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
+    else { avatarEl.textContent = name[0].toUpperCase(); avatarEl.style.background = getColor(name); }
 
-    // Progress bars
     const barsEl = document.getElementById('vibe-progress-bars');
     barsEl.innerHTML = '';
-    vibeChecks.forEach((_, i) => {
-      const bar = document.createElement('div');
-      bar.style.cssText = `flex:1;height:3px;background:${i < index ? 'rgba(255,255,255,0.8)' : i === index ? 'transparent' : 'rgba(255,255,255,0.3)'};border-radius:2px;overflow:hidden`;
-      if (i === index) {
-        bar.innerHTML = '<div style="height:100%;background:rgba(255,255,255,0.9);border-radius:2px;animation:vibeProgress 5s linear forwards"></div>';
-      }
-      barsEl.appendChild(bar);
+    groupVibes.forEach((_, i) => {
+      const b = document.createElement('div');
+      b.style.cssText = `flex:1;height:3px;background:${i < currentVibeIndex ? 'rgba(255,255,255,0.8)' : i === currentVibeIndex ? 'transparent' : 'rgba(255,255,255,0.3)'};border-radius:2px;overflow:hidden`;
+      if (i === currentVibeIndex) b.innerHTML = '<div style="height:100%;background:rgba(255,255,255,0.9);border-radius:2px;animation:vibeProgress 5s linear forwards"></div>';
+      barsEl.appendChild(b);
     });
 
-    // Auto advance
     if (vibeTimer) clearTimeout(vibeTimer);
     vibeTimer = setTimeout(() => {
-      if (currentVibeIndex < vibeChecks.length - 1) openVibeViewer(currentVibeIndex + 1);
-      else closeVibeViewer();
+      const nextIdx = currentVibeIndex + 1;
+      if (nextIdx < groupVibes.length) {
+        currentVibeIndex = nextIdx;
+        openVibeViewer(groupVibes[nextIdx], groupVibes, groupIdx);
+      } else {
+        const nextG = groupIdx + 1;
+        if (nextG < vibeUserGroups.length) {
+          currentGroupIndex = nextG; currentVibeIndex = 0;
+          const ng = vibeUserGroups[nextG];
+          openVibeViewer(ng.vibes[0], ng.vibes, nextG);
+        } else { closeVibeViewer(); }
+      }
     }, 5000);
+  }
+
+  function handleViewerTap(e) {
+    if (e.target.closest('button')) return;
+    if (vibeTimer) clearTimeout(vibeTimer);
+    const groupIdx = parseInt(document.getElementById('vibe-viewer').dataset.groupIdx || 0);
+    const group = vibeUserGroups[groupIdx];
+    if (!group) { closeVibeViewer(); return; }
+    if (e.clientX < window.innerWidth / 2) {
+      if (currentVibeIndex > 0) { currentVibeIndex--; openVibeViewer(group.vibes[currentVibeIndex], group.vibes, groupIdx); }
+      else if (groupIdx > 0) { const pg = vibeUserGroups[groupIdx-1]; currentGroupIndex = groupIdx-1; currentVibeIndex = pg.vibes.length-1; openVibeViewer(pg.vibes[currentVibeIndex], pg.vibes, groupIdx-1); }
+    } else {
+      if (currentVibeIndex < group.vibes.length - 1) { currentVibeIndex++; openVibeViewer(group.vibes[currentVibeIndex], group.vibes, groupIdx); }
+      else if (groupIdx < vibeUserGroups.length - 1) { const ng = vibeUserGroups[groupIdx+1]; currentGroupIndex = groupIdx+1; currentVibeIndex = 0; openVibeViewer(ng.vibes[0], ng.vibes, groupIdx+1); }
+      else { closeVibeViewer(); }
+    }
   }
 
   function closeVibeViewer() {
