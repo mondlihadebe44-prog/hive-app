@@ -2885,7 +2885,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!post.quoted_post_id) return;
     const { data: quoted } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('id', post.quoted_post_id).maybeSingle();
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;cursor:pointer';
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;cursor:pointer;overflow:hidden';
     wrap.onclick = (e) => { e.stopPropagation(); if (quoted) jumpToPost(quoted.id); };
     if (!quoted) {
       wrap.innerHTML = `<div style="color:var(--muted);font-size:13px">Original post not available</div>`;
@@ -2896,6 +2896,27 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const name = p.full_name || 'Unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
     const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:11px">🐝</span>' : '';
+
+    // Build media section — use full image_urls array if available, fall back to single image_url
+    const urls = (quoted.image_urls && quoted.image_urls.length > 0)
+      ? quoted.image_urls
+      : (quoted.image_url ? [quoted.image_url] : []);
+
+    let mediaHTML = '';
+    if (urls.length === 1) {
+      mediaHTML = `<img src="${urls[0]}" style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">`;
+    } else if (urls.length > 1) {
+      const shown = urls.slice(0, 4);
+      const extra = urls.length - 4;
+      const items = shown.map((url, i) => `
+        <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#111">
+          <img src="${url}" style="width:100%;height:100%;object-fit:cover">
+          ${i === 3 && extra > 0 ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:18px">+${extra}</div>` : ''}
+        </div>`).join('');
+      const cols = shown.length === 2 ? '1fr 1fr' : shown.length === 3 ? '1fr 1fr' : '1fr 1fr';
+      mediaHTML = `<div style="display:grid;grid-template-columns:${cols};gap:4px;margin-top:8px;border-radius:10px;overflow:hidden">${items}</div>`;
+    }
+
     wrap.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="width:24px;height:24px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
@@ -2903,7 +2924,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div style="font-size:11px;color:var(--muted)">${timeAgo(quoted.created_at)}</div>
       </div>
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
-      ${quoted.image_url ? `<img src="${quoted.image_url}" style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">` : ''}`;
+      ${mediaHTML}`;
     container.appendChild(wrap);
   }
 
