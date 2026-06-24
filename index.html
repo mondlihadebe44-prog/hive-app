@@ -1802,7 +1802,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     const tab = el.textContent.trim();
     if (tab === 'For You') loadPosts('foryou');
     if (tab === 'Following') loadPosts('following');
-    if (tab === 'Trending') loadPosts('trending');
+    if (tab === 'Trending') loadTrending();
   }
   function toggleTheme() { document.body.classList.toggle('light'); document.getElementById('theme-btn').textContent = document.body.classList.contains('light') ? '☀️' : '🌙'; }
 
@@ -1862,7 +1862,61 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     requestAnimationFrame(measureAndDrawThreadLines);
   }
 
-  // Measures the real on-screen position of each avatar in a thread and draws
+  async function loadTrending() {
+    const container = document.getElementById('posts-container');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Finding what\'s hot... 🔥</div>';
+
+    // Get posts from last 48 hours
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data: posts } = await sb.from('posts')
+      .select('*, profiles(username,full_name,avatar_url,verified)')
+      .is('reply_to', null)
+      .gt('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔥</div><div class="empty-text">Nothing trending yet!<br>Be the first to post something 🐝</div></div>';
+      return;
+    }
+
+    // Score each post: likes×3 + comments×2 + reposts×2 + recency bonus
+    const scored = await Promise.all(posts.map(async post => {
+      const [likesRes, commentsRes, repostsRes] = await Promise.all([
+        sb.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
+        sb.from('comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
+        sb.from('reposts').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
+      ]);
+      const likes = likesRes.count || 0;
+      const comments = commentsRes.count || 0;
+      const reposts = repostsRes.count || 0;
+      // Recency bonus: newer posts get a small boost (max 10 points for a brand new post)
+      const ageHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
+      const recencyBonus = Math.max(0, 10 - ageHours);
+      const score = likes * 3 + comments * 2 + reposts * 2 + recencyBonus;
+      return { post, score, likes, comments, reposts };
+    }));
+
+    // Sort by score descending
+    scored.sort((a, b) => b.score - a.score);
+
+    container.innerHTML = '';
+
+    // Show a small "Trending" badge on each post with rank
+    scored.forEach(({ post, score, likes, comments, reposts }, rank) => {
+      const card = createPostCard(post);
+      // Add trending badge to top of card
+      const badge = document.createElement('div');
+      badge.style.cssText = 'padding:6px 20px 0;display:flex;align-items:center;gap:6px';
+      badge.innerHTML = `
+        <span style="color:var(--gold);font-size:12px;font-weight:700">#${rank + 1} Trending</span>
+        <span style="color:var(--muted);font-size:11px">· 🐝 ${likes} · 💬 ${comments} · 🔁 ${reposts}</span>`;
+      card.insertBefore(badge, card.firstChild);
+      container.appendChild(card);
+    });
+
+    document.getElementById('load-more-text').textContent = '🔥 Top trending in the last 48 hours';
+  }
   // a precisely-sized line connecting avatar-bottom to avatar-top, so it always
   // lands exactly on the avatar regardless of screen width or post text length.
   function measureAndDrawThreadLines() {
