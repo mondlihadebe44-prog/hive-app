@@ -1536,9 +1536,13 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div class="compose-avatar" id="group-compose-avatar">?</div>
       <div class="compose-right">
         <input class="compose-input" placeholder="Share with the group..." id="group-compose-text">
+        <div id="group-image-preview-container" style="display:none;position:relative;margin-bottom:8px">
+          <img id="group-image-preview" style="width:100%;border-radius:12px;max-height:200px;object-fit:cover">
+          <button onclick="removeGroupImage()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+        </div>
         <div class="compose-actions-row">
           <div class="compose-icons">
-            <button class="compose-icon-btn" onclick="document.getElementById('group-photo-upload').click()">🖼️</button>
+            <button class="compose-icon-btn" onclick="document.getElementById('group-photo-upload').click()">📷</button>
             <input type="file" id="group-photo-upload" accept="image/*" style="display:none" onchange="previewGroupImage(this)">
           </div>
           <button class="post-btn" onclick="postToGroup()">Post 🐝</button>
@@ -3365,13 +3369,53 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     return card;
   }
 
+  let groupImageFile = null;
+
+  function previewGroupImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    groupImageFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('group-image-preview').src = e.target.result;
+      document.getElementById('group-image-preview-container').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeGroupImage() {
+    groupImageFile = null;
+    document.getElementById('group-photo-upload').value = '';
+    document.getElementById('group-image-preview-container').style.display = 'none';
+  }
+
   async function postToGroup() {
     if (!currentUser || !currentGroupId) return;
     const text = document.getElementById('group-compose-text').value.trim();
-    if (!text) { showToast('Write something first!'); return; }
-    const { error } = await sb.from('group_posts').insert({ group_id: currentGroupId, user_id: currentUser.id, body: text });
+    if (!text && !groupImageFile) { showToast('Write something or add a photo!'); return; }
+
+    const btn = document.querySelector('#group-compose .post-btn');
+    btn.disabled = true; btn.textContent = 'Posting...';
+
+    let imageUrl = null;
+    if (groupImageFile) {
+      const compressed = await compressImage(groupImageFile);
+      const fileName = `group-${currentGroupId}-${Date.now()}.jpg`;
+      const { error: upErr } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
+      if (!upErr) {
+        const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
+    const { error } = await sb.from('group_posts').insert({
+      group_id: currentGroupId, user_id: currentUser.id, body: text, image_url: imageUrl
+    });
+
+    btn.disabled = false; btn.textContent = 'Post 🐝';
     if (error) { showToast('Error posting!'); return; }
     document.getElementById('group-compose-text').value = '';
+    removeGroupImage();
     showToast('Posted! 🐝');
     await loadGroupPosts();
   }
