@@ -1452,16 +1452,15 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <!-- Profile Tabs -->
       <div style="display:flex;border-bottom:1px solid var(--border);margin-top:8px">
         <button onclick="switchProfileTab(this,'my-posts-feed')" class="feed-tab active" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--text);border:none;background:none;border-bottom:2px solid var(--gold);cursor:pointer">Posts</button>
+        <button onclick="switchProfileTab(this,'my-replies-feed')" class="feed-tab" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer">Replies</button>
         <button onclick="switchProfileTab(this,'my-media-feed')" class="feed-tab" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer">Media</button>
       </div>
       <!-- My Posts -->
       <div id="my-posts-feed">
         <div class="loading-wrap"><div class="spinner"></div></div>
       </div>
-      <!-- My Media -->
-      <div id="my-media-feed" style="display:none;padding:16px;display:none">
-        <div class="empty-wrap"><div class="empty-icon">📸</div><div class="empty-text">No media yet!</div></div>
-      </div>
+      <div id="my-replies-feed" style="display:none"></div>
+      <div id="my-media-feed" style="display:none"></div>
     </div>
 
   <!-- USER PROFILE PANEL -->
@@ -2495,8 +2494,63 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     el.style.color = 'var(--text)';
     el.style.borderBottomColor = 'var(--gold)';
     document.getElementById('my-posts-feed').style.display = tabId === 'my-posts-feed' ? 'block' : 'none';
+    document.getElementById('my-replies-feed').style.display = tabId === 'my-replies-feed' ? 'block' : 'none';
     document.getElementById('my-media-feed').style.display = tabId === 'my-media-feed' ? 'block' : 'none';
     if (tabId === 'my-media-feed') loadMyMedia();
+    if (tabId === 'my-replies-feed') loadMyReplies();
+  }
+
+  async function loadMyReplies() {
+    if (!currentUser) return;
+    const container = document.getElementById('my-replies-feed');
+    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+
+    // Get posts that are replies (have reply_to set)
+    const { data: replies } = await sb.from('posts')
+      .select('*, profiles(username,full_name,avatar_url,verified)')
+      .eq('user_id', currentUser.id)
+      .not('reply_to', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    container.innerHTML = '';
+
+    if (!replies || replies.length === 0) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🧵</div><div class="empty-text">No replies yet!<br>Start a thread to see them here</div></div>';
+      return;
+    }
+
+    // For each reply, also load the original post it replied to
+    for (const reply of replies) {
+      // Load original post context
+      const { data: original } = await sb.from('posts')
+        .select('*, profiles(username,full_name,avatar_url,verified)')
+        .eq('id', reply.reply_to)
+        .maybeSingle();
+
+      // Show original post as a small preview, then the reply below it
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'border-bottom:1px solid var(--border)';
+
+      if (original) {
+        const origCard = createPostCard(original, false);
+        origCard.style.borderBottom = 'none';
+        origCard.style.opacity = '0.6';
+        origCard.style.paddingBottom = '4px';
+        wrapper.appendChild(origCard);
+      }
+
+      // Gold connector line between original and reply
+      const connector = document.createElement('div');
+      connector.style.cssText = 'border-left:2px solid var(--gold);margin-left:41px;height:12px';
+      wrapper.appendChild(connector);
+
+      const replyCard = createPostCard(reply, true);
+      replyCard.style.borderBottom = 'none';
+      wrapper.appendChild(replyCard);
+
+      container.appendChild(wrapper);
+    }
   }
 
   async function loadMyProfilePosts() {
