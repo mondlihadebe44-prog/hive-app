@@ -1269,7 +1269,23 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
               <button class="compose-icon-btn" onclick="openPollCreator()" title="Create a poll" style="font-size:18px">📊</button>
               <button class="compose-icon-btn" onclick="startNewThread()" title="Start a thread" style="font-size:18px">🧵</button>
             </div>
-            <button class="post-btn" onclick="postVibe()">Post Vibe 🐝</button>
+            <button class="post-btn" onclick="postVibe()" title="Post Vibe" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Bee body -->
+                <ellipse cx="12" cy="11" rx="5" ry="7" fill="#F5C518" stroke="#000" stroke-width="1.2"/>
+                <!-- Stripes -->
+                <rect x="7" y="9" width="10" height="2" rx="1" fill="#1a1a1a"/>
+                <rect x="7" y="13" width="10" height="2" rx="1" fill="#1a1a1a"/>
+                <!-- Wings -->
+                <ellipse cx="6" cy="8" rx="3.5" ry="2" fill="rgba(255,255,255,0.7)" stroke="#aaa" stroke-width="0.8" transform="rotate(-20 6 8)"/>
+                <ellipse cx="18" cy="8" rx="3.5" ry="2" fill="rgba(255,255,255,0.7)" stroke="#aaa" stroke-width="0.8" transform="rotate(20 18 8)"/>
+                <!-- Stinger -->
+                <path d="M12 18 L10.5 22 L12 21 L13.5 22 Z" fill="#1a1a1a"/>
+                <!-- Eyes -->
+                <circle cx="10" cy="7" r="1" fill="#000"/>
+                <circle cx="14" cy="7" r="1" fill="#000"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
