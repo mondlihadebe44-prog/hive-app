@@ -1758,7 +1758,74 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     setTimeout(loadWhoToFollow, 1000);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
+    startRealtimeSubscriptions();
     showToast('Welcome to Hive! 🐝');
+  }
+
+  function startRealtimeSubscriptions() {
+    // Real-time new posts — show a "New posts" pill when someone posts
+    sb.channel('public:posts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+        const newPost = payload.new;
+        // Don't show the pill for your own posts (you already see them instantly)
+        if (newPost.user_id === currentUser?.id) return;
+        // Only show if on the feed and For You tab is active
+        const feedPanel = document.getElementById('feed-panel');
+        if (!feedPanel?.classList.contains('active')) return;
+        showNewPostsPill();
+      })
+      .subscribe();
+
+    // Real-time notifications badge
+    sb.channel('public:notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${currentUser?.id}` }, () => {
+        checkUnreadNotifications();
+      })
+      .subscribe();
+
+    // Real-time DM badge
+    sb.channel('public:messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUser?.id}` }, (payload) => {
+        // If chat with that sender is open, reload messages
+        if (currentChatUser && payload.new.sender_id === currentChatUser.id) {
+          loadChatMessages();
+        } else {
+          // Show unread badge on DM nav
+          const dmBadge = document.getElementById('dm-badge');
+          if (!dmBadge) {
+            const navDm = document.querySelector('[onclick*="messages"]');
+            if (navDm) {
+              const badge = document.createElement('div');
+              badge.id = 'dm-badge';
+              badge.style.cssText = 'position:absolute;top:4px;right:8px;width:8px;height:8px;background:#ff4444;border-radius:50%';
+              navDm.style.position = 'relative';
+              navDm.appendChild(badge);
+            }
+          }
+        }
+      })
+      .subscribe();
+  }
+
+  let newPostsPillTimeout = null;
+
+  function showNewPostsPill() {
+    let pill = document.getElementById('new-posts-pill');
+    if (!pill) {
+      pill = document.createElement('div');
+      pill.id = 'new-posts-pill';
+      pill.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;padding:8px 20px;border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:13px;cursor:pointer;z-index:300;box-shadow:0 4px 20px rgba(245,197,24,0.4);transition:all 0.3s;white-space:nowrap';
+      pill.innerHTML = '↑ New posts — tap to refresh';
+      pill.onclick = () => {
+        pill.remove();
+        loadPosts();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      document.body.appendChild(pill);
+    }
+    // Auto-hide after 10 seconds if not tapped
+    if (newPostsPillTimeout) clearTimeout(newPostsPillTimeout);
+    newPostsPillTimeout = setTimeout(() => { if (pill) pill.remove(); }, 10000);
   }
 
   // NAV
