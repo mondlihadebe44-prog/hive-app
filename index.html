@@ -38,26 +38,30 @@ body {
 /* ===== SPLASH ===== */
 #splash {
   position: fixed; inset: 0;
-  background: #000;
+  background: radial-gradient(ellipse at center, #1a1200 0%, #000 70%);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  z-index: 1000; gap: 16px;
+  z-index: 1000; gap: 0; overflow: hidden;
 }
 .splash-logo {
   font-family: 'Syne', sans-serif;
-  font-size: 64px; font-weight: 800;
+  font-size: 72px; font-weight: 800;
   color: var(--gold);
   display: flex; align-items: center; gap: 12px;
-  animation: popIn 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+  animation: popIn 0.8s cubic-bezier(0.34,1.56,0.64,1) both 0.3s;
+  letter-spacing: -2px;
 }
 .splash-tagline {
-  color: #555; font-size: 15px;
+  color: rgba(245,197,24,0.5); font-size: 13px;
   letter-spacing: 3px; text-transform: uppercase;
-  animation: fadeUp 0.6s ease both 0.4s;
+  animation: fadeUp 0.6s ease both 0.8s;
+  margin-top: 8px;
 }
 @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
 @keyframes fadeUp { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
-@keyframes beeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+@keyframes beeFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-14px) rotate(5deg)} }
+@keyframes splashPulse { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.05)} }
+@keyframes loadBar { from{width:0%} to{width:100%} }
 @keyframes beeFly {
   0%{transform:translate(-100px,-50px) rotate(-10deg);opacity:0}
   20%{opacity:1}
@@ -1093,18 +1097,30 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
 <!-- SPLASH -->
 <div id="splash">
-  <div style="position:absolute;inset:0;overflow:hidden">
-    <div class="splash-ring" style="width:300px;height:300px;animation-delay:0s"></div>
-    <div class="splash-ring" style="width:450px;height:450px;animation-delay:0.3s"></div>
-    <div class="splash-ring" style="width:600px;height:600px;animation-delay:0.6s"></div>
+  <!-- Honeycomb background pattern -->
+  <div style="position:absolute;inset:0;opacity:0.06;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2252%22><polygon points=%2215,2 45,2 58,25 45,48 15,48 2,25%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.5%22/></svg>');background-size:60px 52px"></div>
+
+  <!-- Glow behind bee -->
+  <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(245,197,24,0.15),transparent 70%);animation:splashPulse 2s ease-in-out infinite"></div>
+
+  <!-- Rings -->
+  <div style="position:absolute;width:280px;height:280px;border-radius:50%;border:1px solid rgba(245,197,24,0.1);animation:splashPulse 3s ease-in-out infinite 0.3s"></div>
+  <div style="position:absolute;width:420px;height:420px;border-radius:50%;border:1px solid rgba(245,197,24,0.06);animation:splashPulse 3s ease-in-out infinite 0.6s"></div>
+
+  <!-- Bee and logo -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;position:relative;z-index:2">
+    <div style="font-size:80px;animation:beeFloat 2s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(245,197,24,0.6))">🐝</div>
+    <div class="splash-logo">Hive</div>
+    <div class="splash-tagline">Share your vibe. Discover your people.</div>
   </div>
-  <div id="flying-bee" style="position:absolute;font-size:40px;animation:beeFly 3s ease-in-out infinite">🐝</div>
-  <div class="splash-logo" style="flex-direction:column;gap:8px;text-align:center">
-    <div style="font-size:72px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
-    <div style="font-size:56px">Hive</div>
+
+  <!-- Loading bar -->
+  <div style="position:absolute;bottom:60px;width:120px;height:2px;background:rgba(245,197,24,0.2);border-radius:2px;overflow:hidden;animation:fadeUp 0.6s ease both 1s">
+    <div style="height:100%;background:var(--gold);border-radius:2px;animation:loadBar 1.5s ease both 0.5s"></div>
   </div>
-  <div class="splash-tagline" style="font-size:16px;color:rgba(255,255,255,0.6);margin-top:8px">Share your vibe. Discover your people.</div>
-  <div style="margin-top:24px;color:rgba(255,255,255,0.3);font-size:13px;animation:fadeUp 1s ease both 1s">Your community. Your vibe. 🍯</div>
+
+  <!-- Version -->
+  <div style="position:absolute;bottom:32px;color:rgba(245,197,24,0.3);font-size:11px;letter-spacing:2px;font-family:'Syne',sans-serif;animation:fadeUp 0.6s ease both 1.2s">HIVE • BETA</div>
 </div>
 
 <!-- AUTH -->
@@ -1269,23 +1285,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
               <button class="compose-icon-btn" onclick="openPollCreator()" title="Create a poll" style="font-size:18px">📊</button>
               <button class="compose-icon-btn" onclick="startNewThread()" title="Start a thread" style="font-size:18px">🧵</button>
             </div>
-            <button class="post-btn" onclick="postVibe()" title="Post Vibe" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Bee body -->
-                <ellipse cx="12" cy="11" rx="5" ry="7" fill="#F5C518" stroke="#000" stroke-width="1.2"/>
-                <!-- Stripes -->
-                <rect x="7" y="9" width="10" height="2" rx="1" fill="#1a1a1a"/>
-                <rect x="7" y="13" width="10" height="2" rx="1" fill="#1a1a1a"/>
-                <!-- Wings -->
-                <ellipse cx="6" cy="8" rx="3.5" ry="2" fill="rgba(255,255,255,0.7)" stroke="#aaa" stroke-width="0.8" transform="rotate(-20 6 8)"/>
-                <ellipse cx="18" cy="8" rx="3.5" ry="2" fill="rgba(255,255,255,0.7)" stroke="#aaa" stroke-width="0.8" transform="rotate(20 18 8)"/>
-                <!-- Stinger -->
-                <path d="M12 18 L10.5 22 L12 21 L13.5 22 Z" fill="#1a1a1a"/>
-                <!-- Eyes -->
-                <circle cx="10" cy="7" r="1" fill="#000"/>
-                <circle cx="14" cy="7" r="1" fill="#000"/>
-              </svg>
-            </button>
+            <button class="post-btn" onclick="postVibe()" title="Post Vibe" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;font-weight:300;line-height:1">+</button>
           </div>
         </div>
       </div>
