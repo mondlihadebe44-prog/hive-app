@@ -1893,9 +1893,18 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   function toggleTheme() { document.body.classList.toggle('light'); document.getElementById('theme-btn').textContent = document.body.classList.contains('light') ? '☀️' : '🌙'; }
 
   // POSTS
-  async function loadPosts(tab = 'foryou') {
+  let currentPostsPage = 0;
+  const POSTS_PER_PAGE = 20;
+  let allPostsLoaded = false;
+  let currentFeedTab = 'foryou';
+
+  async function loadPosts(tab = 'foryou', append = false) {
+    if (!append) { currentPostsPage = 0; allPostsLoaded = false; currentFeedTab = tab; }
     const container = document.getElementById('posts-container');
-    container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>';
+    if (!append) container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>';
+
+    const from = currentPostsPage * POSTS_PER_PAGE;
+    const to = from + POSTS_PER_PAGE - 1;
     let query = sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').is('reply_to', null);
 
     if (tab === 'following' && currentUser) {
@@ -1908,27 +1917,26 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       query = query.in('user_id', ids);
     }
 
-    const { data: posts, error } = await query.order('created_at', { ascending: false }).limit(20);
+    const { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
+    if (!append) container.innerHTML = '';
+
     if (error || !posts || posts.length === 0) {
-      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No vibes yet!</div></div>';
+      if (!append) container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No vibes yet!</div></div>';
+      allPostsLoaded = true;
+      updateLoadMoreBtn();
       return;
     }
-    container.innerHTML = '';
+
     for (const post of posts) {
       const card = createPostCard(post);
       container.appendChild(card);
-
-      // Load thread replies ONLY for this specific post
       const { data: replies } = await sb.from('posts')
         .select('*, profiles(username,full_name,avatar_url,verified)')
-        .eq('reply_to', post.id)
-        .eq('user_id', post.user_id) // Only show replies from same user (thread)
-        .order('created_at', { ascending: true })
-        .limit(3);
-
+        .eq('reply_to', post.id).eq('user_id', post.user_id)
+        .order('created_at', { ascending: true }).limit(3);
       if (replies && replies.length > 0) {
         card.dataset.threadStart = post.id;
-        card.classList.add('thread-card'); // remove grey border so vertical line flows through cleanly
+        card.classList.add('thread-card');
         let lastReplyCard = card;
         replies.forEach(reply => {
           const replyCard = createPostCard(reply, true);
@@ -1936,16 +1944,28 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
           lastReplyCard = replyCard;
         });
         lastReplyCard.dataset.threadEnd = post.id;
-        // Gold horizontal line marking end of thread
         const sep = document.createElement('div');
         sep.className = 'thread-end-separator';
         sep.dataset.threadFor = post.id;
-        sep.style.cssText = 'height:1.5px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:0 20px 0 20px';
+        sep.style.cssText = 'height:1.5px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:0 20px';
         container.appendChild(sep);
       }
     }
-    document.getElementById('load-more-text').textContent = "You're all caught up 🐝";
+
+    if (posts.length === POSTS_PER_PAGE) { currentPostsPage++; allPostsLoaded = false; }
+    else { allPostsLoaded = true; }
+    updateLoadMoreBtn();
     requestAnimationFrame(measureAndDrawThreadLines);
+  }
+
+  function updateLoadMoreBtn() {
+    const el = document.getElementById('load-more-text');
+    if (!el) return;
+    if (allPostsLoaded) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">You\'re all caught up 🐝</div>';
+    } else {
+      el.innerHTML = `<button onclick="loadPosts(currentFeedTab, true)" style="padding:10px 28px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">Load more 🐝</button>`;
+    }
   }
 
   async function loadTrending() {
