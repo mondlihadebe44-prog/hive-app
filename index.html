@@ -1277,10 +1277,17 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
             <img id="gif-preview" style="width:100%;border-radius:16px;max-height:240px;object-fit:cover">
             <button class="remove-img" onclick="removeGif()">✕</button>
           </div>
+          <div id="video-preview-container" style="display:none;position:relative;margin-bottom:12px">
+            <video id="video-preview" style="width:100%;border-radius:16px;max-height:300px;background:#000" controls playsinline></video>
+            <button onclick="removeVideo()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+            <div id="video-duration-warning" style="display:none;background:rgba(255,50,50,0.9);color:#fff;font-size:12px;padding:6px 12px;border-radius:8px;margin-top:4px;text-align:center">⚠️ Video must be 60 seconds or less</div>
+          </div>
           <div class="compose-actions-row">
             <div class="compose-icons">
               <button class="compose-icon-btn" onclick="document.getElementById('photo-upload').click()" title="Add photos" style="font-size:19px">📷</button>
               <input type="file" id="photo-upload" accept="image/*" multiple style="display:none" onchange="previewImages(this)">
+              <button class="compose-icon-btn" onclick="document.getElementById('video-upload').click()" title="Add video" style="font-size:18px">🎬</button>
+              <input type="file" id="video-upload" accept="video/*" style="display:none" onchange="previewVideo(this)">
               <button class="compose-icon-btn" onclick="openGifPicker()" title="Add GIF">GIF</button>
               <button class="compose-icon-btn" onclick="openPollCreator()" title="Create a poll" style="font-size:18px">📊</button>
               <button class="compose-icon-btn" onclick="startNewThread()" title="Start a thread" style="font-size:18px">🧵</button>
@@ -2294,41 +2301,52 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!session) { showToast('Please sign in first!'); return; }
     currentUser = session.user;
     const text = document.getElementById('compose-text').value.trim();
-    if (!text && selectedImageFiles.length === 0 && !selectedGifUrl) { showToast('Write something, add photos or a GIF!'); return; }
+    if (!text && selectedImageFiles.length === 0 && !selectedGifUrl && !selectedVideoFile) { showToast('Write something, add photos, video or a GIF!'); return; }
     const btn = document.querySelector('.post-btn');
-    btn.textContent = 'Posting...'; btn.disabled = true;
+    btn.textContent = '...'; btn.disabled = true;
 
     let imageUrl = null;
     let imageUrls = [];
+    let videoUrl = null;
 
-    if (selectedGifUrl) {
+    if (selectedVideoFile) {
+      btn.textContent = '0%';
+      try {
+        videoUrl = await uploadVideoToCloudinary(selectedVideoFile, (pct) => {
+          btn.textContent = `${pct}%`;
+        });
+      } catch(e) {
+        showToast('Video upload failed! Try a shorter clip.');
+        btn.innerHTML = '+'; btn.disabled = false; return;
+      }
+    } else if (selectedGifUrl) {
       imageUrl = selectedGifUrl;
     } else if (selectedImageFiles.length > 0) {
-      btn.textContent = 'Compressing...';
+      btn.textContent = '...';
       for (const file of selectedImageFiles) {
         const compressed = await compressImage(file);
         const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
-        btn.textContent = 'Posting...';
         const { error: uploadError } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
-        if (uploadError) { showToast('Image upload failed!'); btn.textContent = 'Post Vibe 🐝'; btn.disabled = false; return; }
+        if (uploadError) { showToast('Image upload failed!'); btn.innerHTML = '+'; btn.disabled = false; return; }
         const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
         imageUrls.push(urlData.publicUrl);
       }
-      imageUrl = imageUrls[0]; // keep first as fallback for old clients
+      imageUrl = imageUrls[0];
     }
 
     const { data, error } = await sb.from('posts').insert({
       user_id: currentUser.id,
       body: text || '',
       image_url: imageUrl,
-      image_urls: imageUrls.length > 0 ? imageUrls : null
+      image_urls: imageUrls.length > 0 ? imageUrls : null,
+      video_url: videoUrl
     }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
-    btn.textContent = 'Post Vibe 🐝'; btn.disabled = false;
+    btn.innerHTML = '+'; btn.disabled = false;
     if (error) { showToast('Error: ' + error.message); return; }
     document.getElementById('compose-text').value = '';
     document.getElementById('photo-upload').value = '';
-    removeImage(); removeGif();
+    removeImage(); removeGif(); removeVideo();
     const container = document.getElementById('posts-container');
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
@@ -2344,7 +2362,71 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     }
   }
 
-  // MULTI-PHOTO + GIF
+  // VIDEO UPLOAD via Cloudinary
+  const CLOUDINARY_CLOUD = 'dsljdbrrc';
+  const CLOUDINARY_PRESET = 'Hiveapp upload';
+  let selectedVideoFile = null;
+
+  function previewVideo(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Check duration before accepting
+    const video = document.getElementById('video-preview');
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.onloadedmetadata = () => {
+      if (video.duration > 60) {
+        document.getElementById('video-duration-warning').style.display = 'block';
+        selectedVideoFile = null;
+        input.value = '';
+        return;
+      }
+      document.getElementById('video-duration-warning').style.display = 'none';
+      selectedVideoFile = file;
+      removeImage(); removeGif(); // can't mix with photos or GIFs
+      document.getElementById('image-preview-container').style.display = 'none';
+      document.getElementById('video-preview-container').style.display = 'block';
+    };
+  }
+
+  function removeVideo() {
+    selectedVideoFile = null;
+    document.getElementById('video-upload').value = '';
+    document.getElementById('video-preview').src = '';
+    document.getElementById('video-preview-container').style.display = 'none';
+    document.getElementById('video-duration-warning').style.display = 'none';
+  }
+
+  async function uploadVideoToCloudinary(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_PRESET);
+      formData.append('resource_type', 'video');
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          onProgress(pct);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data.secure_url);
+        } else {
+          reject(new Error('Upload failed'));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(formData);
+    });
+  }
   let selectedImageFiles = [];
   let selectedGifUrl = null;
   let startingThread = false;
@@ -4271,6 +4353,12 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
   // HELPERS
   function renderPostMedia(post) {
+    // Video takes priority
+    if (post.video_url) {
+      return `<div style="position:relative;margin-bottom:12px;border-radius:16px;overflow:hidden;background:#000;max-height:400px">
+        <video src="${post.video_url}" style="width:100%;max-height:400px;object-fit:contain;display:block" controls playsinline preload="metadata"></video>
+      </div>`;
+    }
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
     if (urls.length === 0) return '';
     if (urls.length === 1) {
