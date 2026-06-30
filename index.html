@@ -1968,7 +1968,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       const { data: follows } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
       const ids = (follows || []).map(f => f.following_id);
       if (ids.length === 0) {
-        container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">👥</div><div class="empty-text">Follow people to see their posts here!</div></div>';
+        container.innerHTML = '';
+        await renderSuggestedPeopleCard(container, "You're not following anyone yet", "Follow a few people to see their posts here");
         return;
       }
       query = query.in('user_id', ids);
@@ -1978,7 +1979,10 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     if (!append) container.innerHTML = '';
 
     if (error || !posts || posts.length === 0) {
-      if (!append) container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No vibes yet!</div></div>';
+      if (!append) {
+        container.innerHTML = '';
+        await renderSuggestedPeopleCard(container, "Welcome to Hive! 🐝", "Follow some people to fill up your feed");
+      }
       allPostsLoaded = true;
       updateLoadMoreBtn();
       return;
@@ -4191,6 +4195,63 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   // WHO TO FOLLOW
+  async function renderSuggestedPeopleCard(container, title, subtitle) {
+    const card = document.createElement('div');
+    card.style.cssText = 'padding:32px 20px 24px';
+
+    card.innerHTML = `
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:44px;margin-bottom:10px">🐝</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:4px">${title}</div>
+        <div style="color:var(--muted);font-size:13px">${subtitle}</div>
+      </div>
+      <div id="feed-suggested-people"></div>`;
+    container.appendChild(card);
+
+    const listEl = card.querySelector('#feed-suggested-people');
+    listEl.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+
+    if (!currentUser) { listEl.innerHTML = ''; return; }
+
+    const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+    const followingIds = (following || []).map(f => f.following_id);
+    followingIds.push(currentUser.id);
+
+    const { data: users } = await sb.from('profiles')
+      .select('id,username,full_name,avatar_url,verified,bio,location')
+      .not('id', 'in', `(${followingIds.join(',')})`)
+      .limit(8);
+
+    if (!users || users.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0">No one else has joined Hive yet — invite your friends! 🐝</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:12px">🐝</span>' : '';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:16px;margin-bottom:10px';
+      row.innerHTML = `
+        <div style="width:46px;height:46px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px;flex-shrink:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${verified}</div>
+          <div style="font-size:12px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
+        </div>
+        <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
+      listEl.appendChild(row);
+    });
+
+    // CTA back to the full feed once they've followed someone
+    const refreshRow = document.createElement('div');
+    refreshRow.style.cssText = 'text-align:center;margin-top:16px';
+    refreshRow.innerHTML = `<button onclick="loadPosts('foryou')" style="padding:10px 24px;border-radius:50px;border:none;background:var(--gold);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">See what's happening on Hive 🐝</button>`;
+    listEl.appendChild(refreshRow);
+  }
+
   async function loadWhoToFollow() {
     const container = document.getElementById('who-to-follow');
     if (!container || !currentUser) return;
