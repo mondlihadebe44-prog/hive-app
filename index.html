@@ -8,6 +8,18 @@
 <meta name="theme-color" content="#F5C518">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- OneSignal Push Notifications -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "c5b58f90-7901-4e3e-a125-cf8488da780e",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
+  });
+</script>
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Hive">
 <link rel="manifest" href="manifest.json">
@@ -1782,6 +1794,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
     loadVibeChecks();
     setTimeout(loadProfileStats, 500);
     setTimeout(loadWhoToFollow, 1000);
+    setTimeout(initPushNotifications, 2000);
+    setTimeout(showNotifPermissionPrompt, 6000);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
     startRealtimeSubscriptions();
@@ -3235,6 +3249,59 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
       ${mediaHTML}`;
     container.appendChild(wrap);
+  }
+
+  // PUSH NOTIFICATIONS via OneSignal
+  async function initPushNotifications() {
+    if (!window.OneSignal) return;
+    try {
+      // Set external user ID so OneSignal knows who this is
+      if (currentUser) {
+        OneSignalDeferred.push(async (OneSignal) => {
+          await OneSignal.login(currentUser.id);
+        });
+      }
+    } catch(e) { console.log('OneSignal init error:', e); }
+  }
+
+  async function requestPushPermission() {
+    if (!window.OneSignalDeferred) { showToast('Push notifications not available'); return; }
+    OneSignalDeferred.push(async (OneSignal) => {
+      try {
+        const permission = await OneSignal.Notifications.requestPermission();
+        if (permission) {
+          showToast('🔔 Push notifications enabled!');
+          // Store that this user has notifications enabled
+          await sb.from('profiles').update({ push_enabled: true }).eq('id', currentUser.id);
+        } else {
+          showToast('Notifications blocked — enable in browser settings');
+        }
+      } catch(e) {
+        showToast('Could not enable notifications');
+      }
+    });
+  }
+
+  function showNotifPermissionPrompt() {
+    // Show a friendly prompt asking user to enable notifications
+    const existing = document.getElementById('notif-prompt');
+    if (existing) return;
+    const prompt = document.createElement('div');
+    prompt.id = 'notif-prompt';
+    prompt.style.cssText = 'position:fixed;bottom:90px;left:16px;right:16px;background:#111;border:1px solid var(--gold);border-radius:20px;padding:16px 20px;z-index:400;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
+    prompt.innerHTML = `
+      <div style="font-size:28px">🔔</div>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:2px">Stay in the loop!</div>
+        <div style="font-size:12px;color:var(--muted)">Get notified when someone follows, buzzes or messages you</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="requestPushPermission();document.getElementById('notif-prompt').remove()" style="padding:6px 14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer">Enable</button>
+        <button onclick="document.getElementById('notif-prompt').remove()" style="padding:6px 14px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:50px;font-size:12px;cursor:pointer">Later</button>
+      </div>`;
+    document.body.appendChild(prompt);
+    // Auto dismiss after 8 seconds
+    setTimeout(() => { if (prompt.parentNode) prompt.remove(); }, 8000);
   }
 
   // VOICE NOTES
