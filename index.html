@@ -85,13 +85,14 @@ body {
 #auth {
   position: fixed; inset: 0;
   display: none;
-  background: #000;
+  background: radial-gradient(ellipse at top, #0d0a00 0%, #000 60%);
   z-index: 999;
+  overflow-y: auto;
 }
 .auth-inner {
   max-width: 400px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 24px 60px;
   min-height: 100vh;
   display: flex; flex-direction: column; align-items: center;
 }
@@ -104,9 +105,9 @@ body {
 }
 .auth-tagline { color: #555; font-size: 14px; margin-bottom: 40px; }
 .auth-tabs {
-  display: flex; background: #111;
+  display: flex; background: #0a0a0a;
   border-radius: 14px; padding: 4px;
-  width: 100%; margin-bottom: 32px;
+  width: 100%; margin-bottom: 24px;
   border: 1px solid var(--border);
 }
 .auth-tab {
@@ -124,12 +125,12 @@ body {
 }
 .field input {
   width: 100%; padding: 14px 16px;
-  background: #111; border: 1.5px solid var(--border);
+  background: #0a0a0a; border: 1.5px solid #1a1a1a;
   border-radius: 12px; color: var(--text);
   font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
   transition: border-color 0.2s;
 }
-.field input:focus { border-color: var(--gold); }
+.field input:focus { border-color: var(--gold); background: #0d0a00; }
 .field input::placeholder { color: #333; }
 .btn-primary {
   width: 100%; padding: 15px;
@@ -138,9 +139,10 @@ body {
   font-family: 'Syne', sans-serif;
   font-size: 15px; font-weight: 700;
   cursor: pointer; margin-top: 8px; transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(245,197,24,0.3);
 }
-.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(245,197,24,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .auth-error {
   background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.2);
   border-radius: 10px; padding: 10px 14px; color: #ff6b6b;
@@ -1160,12 +1162,15 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
 <!-- AUTH -->
 <div id="auth">
+  <!-- Subtle honeycomb background -->
+  <div style="position:fixed;inset:0;opacity:0.04;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2252%22><polygon points=%2215,2 45,2 58,25 45,48 15,48 2,25%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.5%22/></svg>');background-size:60px 52px;pointer-events:none"></div>
   <div class="auth-inner">
     <!-- Logo -->
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:36px;animation:beeFloat 2s ease-in-out infinite;display:inline-block">🐝</div>
-      <div class="auth-logo" style="justify-content:center;margin-bottom:4px;font-size:28px">Hive</div>
-      <div style="color:#555;font-size:13px">Join the Hive — connect with your community.<br><span style="color:var(--gold)">Share your vibe. Discover your people.</span></div>
+    <div style="text-align:center;margin-bottom:28px;animation:fadeUp 0.6s ease both">
+      <div style="font-size:52px;animation:beeFloat 2s ease-in-out infinite;display:inline-block;filter:drop-shadow(0 0 16px rgba(245,197,24,0.5))">🐝</div>
+      <div class="auth-logo" style="justify-content:center;margin-bottom:6px">Hive</div>
+      <div style="color:#444;font-size:13px;letter-spacing:0.3px">Your community. Your vibe.</div>
+      <div style="color:var(--gold);font-size:13px;margin-top:3px;opacity:0.8">Share your vibe. Discover your people.</div>
     </div>
 
     <div class="auth-tabs">
@@ -1242,6 +1247,26 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <span style="color:#555;font-size:13px;cursor:pointer;text-decoration:underline" onclick="showToast('Password reset coming soon! 🐝')">Forgot password?</span>
       </div>
     </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid #111;width:100%">
+      <div style="display:flex;justify-content:center;gap:20px;margin-bottom:12px">
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--gold)">🐝</div>
+          <div style="font-size:11px;color:#444">Real people</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--gold)">🍯</div>
+          <div style="font-size:11px;color:#444">Your community</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--gold)">🔥</div>
+          <div style="font-size:11px;color:#444">Your vibes</div>
+        </div>
+      </div>
+      <div style="color:#333;font-size:11px">By joining you agree to our Terms & Privacy Policy</div>
+    </div>
+
   </div>
 </div>
 
