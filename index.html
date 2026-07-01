@@ -784,8 +784,30 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
     </div>
 
-    <!-- Step 2 - Location -->
+    <!-- Step 2 - Avatar -->
     <div id="onboard-2" style="display:none">
+      <div style="margin-bottom:24px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:8px">📸 Add a photo</div>
+        <div style="color:#555;font-size:14px">Show the Hive who you are — add a profile photo</div>
+      </div>
+      <!-- Avatar preview -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:32px">
+        <div id="onboard-avatar-preview" onclick="document.getElementById('onboard-avatar-upload').click()" style="width:120px;height:120px;border-radius:50%;background:var(--gold);border:3px dashed rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;transition:all 0.2s">
+          <div id="onboard-avatar-placeholder" style="text-align:center">
+            <div style="font-size:36px">📷</div>
+            <div style="font-size:12px;color:rgba(0,0,0,0.6);font-weight:600;margin-top:4px">Tap to add</div>
+          </div>
+          <img id="onboard-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover">
+        </div>
+        <input type="file" id="onboard-avatar-upload" accept="image/*" style="display:none" onchange="previewOnboardAvatar(this)">
+        <div id="onboard-avatar-status" style="font-size:13px;color:var(--muted);min-height:18px"></div>
+      </div>
+      <button onclick="goOnboard(3)" id="onboard-skip-avatar" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
+      <button onclick="goOnboard(3)" style="width:100%;padding:12px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;margin-top:8px">Skip for now</button>
+    </div>
+
+    <!-- Step 3 - Location -->
+    <div id="onboard-3" style="display:none">
       <div style="margin-bottom:24px">
         <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:8px">📍 Where are you from?</div>
         <div style="color:#555;font-size:14px">Find your local Hive community</div>
@@ -798,11 +820,11 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div class="onboard-option" onclick="selectOption(this,'location')">💎 Port Elizabeth</div>
         <div class="onboard-option" onclick="selectOption(this,'location')">🌍 Other</div>
       </div>
-      <button onclick="goOnboard(3)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
+      <button onclick="goOnboard(4)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
     </div>
 
-    <!-- Step 3 - Interests -->
-    <div id="onboard-3" style="display:none">
+    <!-- Step 4 - Interests -->
+    <div id="onboard-4" style="display:none">
       <div style="margin-bottom:24px">
         <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:8px">🎯 What are you into?</div>
         <div style="color:#555;font-size:14px">Pick your interests (choose as many as you like!)</div>
@@ -821,13 +843,13 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
         <div class="onboard-option" onclick="selectOption(this,'interest')">💼 Business</div>
         <div class="onboard-option" onclick="selectOption(this,'interest')">🌿 Nature</div>
       </div>
-      <button onclick="goOnboard(4)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
+      <button onclick="goOnboard(5)" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
     </div>
 
-    <!-- Step 4 - All done -->
-    <div id="onboard-4" style="display:none">
+    <!-- Step 5 - All done -->
+    <div id="onboard-5" style="display:none">
       <div style="text-align:center;padding:40px 0">
-        <div style="font-size:80px;margin-bottom:16px;animation:popIn 0.6s cubic-bezier(0.34,1.56,0.64,1)">🍯</div>
+        <div id="onboard-final-avatar" style="width:80px;height:80px;border-radius:50%;background:var(--gold);margin:0 auto 16px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px">🐝</div>
         <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:var(--gold);margin-bottom:12px">You're in the Hive!</div>
         <div style="color:#555;font-size:16px;line-height:1.7;margin-bottom:40px">Your community is waiting for you. Start sharing your vibes! 🐝</div>
         <button onclick="finishOnboarding()" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Enter the Hive 🐝</button>
@@ -840,6 +862,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div id="dot-2" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
       <div id="dot-3" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
       <div id="dot-4" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
+      <div id="dot-5" style="width:8px;height:8px;border-radius:50%;background:#333;transition:all 0.3s"></div>
     </div>
 
   </div>
@@ -4457,10 +4480,51 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   function goOnboard(step) {
-    [1,2,3,4].forEach(i => {
+    [1,2,3,4,5].forEach(i => {
       document.getElementById('onboard-'+i).style.display = i === step ? 'block' : 'none';
       document.getElementById('dot-'+i).style.background = i === step ? 'var(--gold)' : '#333';
     });
+    // Show final avatar on step 5
+    if (step === 5) {
+      const img = document.getElementById('onboard-avatar-img');
+      const finalAvatar = document.getElementById('onboard-final-avatar');
+      if (img && img.src && img.style.display !== 'none') {
+        finalAvatar.innerHTML = `<img src="${img.src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      }
+    }
+  }
+
+  function previewOnboardAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const img = document.getElementById('onboard-avatar-img');
+      const placeholder = document.getElementById('onboard-avatar-placeholder');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+
+      // Upload right away
+      const status = document.getElementById('onboard-avatar-status');
+      status.textContent = 'Uploading...';
+      try {
+        const compressed = await compressImage(file, 500, 0.85);
+        const fileName = `avatar-${currentUser.id}.jpg`;
+        const { error } = await sb.storage.from('avatars').upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
+        if (error) { status.textContent = 'Upload failed — try again'; return; }
+        const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
+        await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', currentUser.id);
+        await loadProfile();
+        status.textContent = '✅ Looking great!';
+        // Update next button text
+        const nextBtn = document.getElementById('onboard-skip-avatar');
+        if (nextBtn) nextBtn.textContent = 'Next →';
+      } catch(e) {
+        status.textContent = 'Upload failed — try again';
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   function selectOption(el, type) {
@@ -4473,9 +4537,8 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   }
 
   async function finishOnboarding() {
-    // Save location and interests
     const selectedLocation = document.querySelector('#location-grid .onboard-option.selected');
-    const selectedInterests = document.querySelectorAll('#onboard-3 .onboard-option.selected');
+    const selectedInterests = document.querySelectorAll('#onboard-4 .onboard-option.selected');
     const location = selectedLocation ? selectedLocation.textContent.trim() : '';
     const interests = Array.from(selectedInterests).map(el => el.textContent.trim()).join(', ');
     if (currentUser && (location || interests)) {
