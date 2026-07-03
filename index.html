@@ -1258,6 +1258,48 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
   </div>
 </div>
 
+<!-- PASSWORD RESET MODAL -->
+<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:700;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Reset Password 🔑</div>
+      <button onclick="closePasswordReset()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6">Enter your email address and we'll send you a link to reset your password.</div>
+    <div class="field" style="margin-bottom:20px">
+      <label>Email Address</label>
+      <input type="email" id="reset-email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div id="reset-message" style="display:none;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:10px 14px;color:#00FF88;font-size:13px;margin-bottom:16px"></div>
+    <div id="reset-error" style="display:none;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:10px 14px;color:#ff6b6b;font-size:13px;margin-bottom:16px"></div>
+    <button onclick="sendPasswordReset()" id="reset-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Send Reset Link 🐝</button>
+  </div>
+</div>
+
+<!-- NEW PASSWORD MODAL (shown after clicking reset link) -->
+<div id="new-password-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:800;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:400px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:48px;margin-bottom:12px">🔑</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:6px">Set New Password</div>
+      <div style="color:var(--muted);font-size:13px">Choose a strong password for your Hive account</div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>New Password</label>
+      <div style="position:relative">
+        <input type="password" id="new-password" placeholder="Min. 8 characters" style="width:100%;padding:14px 44px 14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <button type="button" onclick="togglePassVisibility('new-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:16px;cursor:pointer">👁</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:24px">
+      <label>Confirm Password</label>
+      <input type="password" id="confirm-password" placeholder="Repeat your password" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div id="new-password-error" style="display:none;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:10px 14px;color:#ff6b6b;font-size:13px;margin-bottom:16px"></div>
+    <button onclick="saveNewPassword()" id="save-password-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Save New Password 🐝</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1399,7 +1441,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       </div>
       <button class="btn-primary" id="signin-btn" onclick="signIn()">Sign In →</button>
       <div style="text-align:center;margin-top:16px">
-        <span style="color:#555;font-size:13px;cursor:pointer;text-decoration:underline" onclick="showToast('Password reset coming soon! 🐝')">Forgot password?</span>
+        <span style="color:#555;font-size:13px;cursor:pointer;text-decoration:underline" onclick="openPasswordReset()">Forgot password?</span>
       </div>
     </div>
 
@@ -1874,6 +1916,7 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
 
   // INIT
   setTimeout(function() {
+    checkPasswordReset();
     document.getElementById('splash').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
     sb.auth.getSession().then(function(result) {
@@ -3500,6 +3543,84 @@ body.light .mobile-nav { background: rgba(255,255,255,0.95); }
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
       ${mediaHTML}`;
     container.appendChild(wrap);
+  }
+
+  // PASSWORD RESET
+  function openPasswordReset() {
+    document.getElementById('reset-modal').style.display = 'flex';
+    document.getElementById('reset-email').value = '';
+    document.getElementById('reset-message').style.display = 'none';
+    document.getElementById('reset-error').style.display = 'none';
+  }
+
+  function closePasswordReset() {
+    document.getElementById('reset-modal').style.display = 'none';
+  }
+
+  async function sendPasswordReset() {
+    const email = document.getElementById('reset-email').value.trim();
+    if (!email) { showResetError('Please enter your email address'); return; }
+
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://mondlihadebe44-prog.github.io/hive-app/?reset=true'
+    });
+
+    btn.disabled = false; btn.textContent = 'Send Reset Link 🐝';
+
+    if (error) {
+      showResetError(error.message);
+    } else {
+      document.getElementById('reset-error').style.display = 'none';
+      const msg = document.getElementById('reset-message');
+      msg.textContent = '✅ Reset link sent! Check your email inbox (and spam folder just in case)';
+      msg.style.display = 'block';
+      setTimeout(() => closePasswordReset(), 4000);
+    }
+  }
+
+  function showResetError(msg) {
+    const el = document.getElementById('reset-error');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  async function saveNewPassword() {
+    const newPass = document.getElementById('new-password').value;
+    const confirmPass = document.getElementById('confirm-password').value;
+    const errEl = document.getElementById('new-password-error');
+
+    if (newPass.length < 8) {
+      errEl.textContent = 'Password must be at least 8 characters'; errEl.style.display = 'block'; return;
+    }
+    if (newPass !== confirmPass) {
+      errEl.textContent = 'Passwords do not match'; errEl.style.display = 'block'; return;
+    }
+
+    const btn = document.getElementById('save-password-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const { error } = await sb.auth.updateUser({ password: newPass });
+
+    btn.disabled = false; btn.textContent = 'Save New Password 🐝';
+
+    if (error) {
+      errEl.textContent = error.message; errEl.style.display = 'block';
+    } else {
+      document.getElementById('new-password-modal').style.display = 'none';
+      showToast('Password updated! Welcome back 🐝');
+      showApp();
+    }
+  }
+
+  // Check if returning from password reset link
+  function checkPasswordReset() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === 'true') {
+      document.getElementById('new-password-modal').style.display = 'flex';
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }
 
   // PAYFAST PAYMENT
