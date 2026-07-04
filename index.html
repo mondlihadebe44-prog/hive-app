@@ -297,6 +297,29 @@ body {
   min-height: 100vh;
 }
 
+/* ===== MOBILE TOP BAR (Hive wordmark + theme toggle) ===== */
+.mobile-topbar {
+  display: none;
+  align-items: center; justify-content: space-between;
+  padding: 4px 2px 14px;
+}
+.mobile-topbar-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 22px; color: var(--gold);
+  margin: 0 auto;
+}
+.mobile-topbar-btn {
+  position: absolute; right: 16px;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text); font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+@media (max-width: 768px) {
+  .mobile-topbar { display: flex; position: relative; }
+}
+
 /* ===== FEED HEADER ===== */
 .feed-header {
   position: sticky; top: 0;
@@ -310,6 +333,7 @@ body {
   font-size: 20px; font-weight: 800;
   color: var(--text); margin-bottom: 16px;
 }
+@media (max-width: 768px) { .feed-title { display: none; } }
 
 /* Stories */
 .stories-bar {
@@ -424,6 +448,12 @@ body {
   font-family: 'Syne', sans-serif; font-weight: 700;
   font-size: 15px; color: var(--text);
 }
+.badge-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--gold); color: #000; font-size: 9px; font-weight: 900;
+}
+.badge-crown { font-size: 13px; filter: drop-shadow(0 0 3px rgba(245,197,24,0.6)); }
 .post-handle { font-size: 13px; color: var(--muted); }
 .post-dot { color: var(--muted); font-size: 12px; }
 .post-more {
@@ -491,7 +521,8 @@ body {
   padding: 4px; border-radius: 50%;
 }
 .reaction-opt:hover { transform: scale(1.4) translateY(-4px); }
-.like-btn.liked { color: var(--gold) !important; }
+.like-btn .action-icon { color: #FF3B5C; }
+.like-btn.liked { color: #FF3B5C !important; }
 .like-btn.liked .action-icon { animation: buzzAnim 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes buzzAnim {
   0%{transform:scale(1) rotate(0)} 25%{transform:scale(1.4) rotate(-15deg)}
@@ -884,6 +915,7 @@ body.light .auth-inner { background: transparent; }
 body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
 body.light .icon-btn { color: #444; }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
+body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 </style>
 </head>
 <body>
@@ -1569,6 +1601,10 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     <!-- FEED -->
     <div id="feed-panel" class="panel active">
       <div class="feed-header">
+        <div class="mobile-topbar">
+          <div class="mobile-topbar-logo"><span>🐝</span><span>Hive</span></div>
+          <button class="mobile-topbar-btn" onclick="toggleTheme()" id="mobile-theme-btn" title="Light/Dark mode">🌙</button>
+        </div>
         <div class="feed-title">Your Hive 🍯</div>
         <div class="stories-bar" id="vibe-check-bar">
           <!-- Add Vibe Check button -->
@@ -1583,7 +1619,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div class="feed-tabs">
           <button class="feed-tab active" onclick="switchTab(this)">For You</button>
           <button class="feed-tab" onclick="switchTab(this)">Following</button>
-          <button class="feed-tab" onclick="switchTab(this)">Trending</button>
+          <button class="feed-tab" onclick="switchTab(this)">Trending 🔥</button>
         </div>
       </div>
 
@@ -2102,7 +2138,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
       document.getElementById('nav-name').textContent = data.full_name || '';
       document.getElementById('nav-handle').textContent = '@' + (data.username || '');
-      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
+      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + renderBadges(data);
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
 
@@ -2250,9 +2286,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const tab = el.textContent.trim();
     if (tab === 'For You') loadPosts('foryou');
     if (tab === 'Following') loadPosts('following');
-    if (tab === 'Trending') loadTrending();
+    if (tab.indexOf('Trending') === 0) loadTrending();
   }
-  function toggleTheme() { document.body.classList.toggle('light'); document.getElementById('theme-btn').textContent = document.body.classList.contains('light') ? '☀️' : '🌙'; }
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    document.querySelectorAll('#theme-btn,#mobile-theme-btn').forEach(b => { if (b) b.textContent = isLight ? '☀️' : '🌙'; });
+  }
 
   // POSTS
   let currentPostsPage = 0;
@@ -2382,7 +2422,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       badge.style.cssText = 'padding:6px 20px 0;display:flex;align-items:center;gap:6px';
       badge.innerHTML = `
         <span style="color:var(--gold);font-size:12px;font-weight:700">#${rank + 1} Trending</span>
-        <span style="color:var(--muted);font-size:11px">· 🐝 ${likes} · 💬 ${comments} · 🔁 ${reposts}</span>`;
+        <span style="color:var(--muted);font-size:11px">· ❤️ ${likes} · 💬 ${comments} · 🔁 ${reposts}</span>`;
       card.insertBefore(badge, card.firstChild);
       container.appendChild(card);
     });
@@ -2430,13 +2470,22 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     threadLineResizeTimeout = setTimeout(measureAndDrawThreadLines, 150);
   });
 
+  // Renders the check + crown badges shown next to a name, matching brand style
+  function renderBadges(p) {
+    if (!p) return '';
+    let html = '';
+    if (p.verified) html += ' <span class="badge-check" title="Verified">✓</span>';
+    if (p.is_pro) html += ' <span class="badge-crown" title="Hive Pro">👑</span>';
+    return html;
+  }
+
   function createPostCard(post, isThreadReply = false) {
     const p = post.profiles || {};
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
     const initial = name[0].toUpperCase();
     const isOwn = currentUser && post.user_id === currentUser.id;
-    const verified = p.verified ? '<span style="display:inline-block;font-size:14px;filter:drop-shadow(0 0 4px #4A90D9) drop-shadow(0 0 8px #4A90D9)">🐝</span>' : '';
+    const badges = renderBadges(p);
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial;
 
     const card = document.createElement('div');
@@ -2449,7 +2498,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name} ${verified}</span>
+            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name}${badges}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
@@ -2462,7 +2511,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
-            <span class="action-icon">🐝</span><span class="like-count">0</span>
+            <span class="action-icon">🤍</span><span class="like-count">0</span>
             <div class="particles"></div>
             <div class="reactions-popup" id="reactions-${post.id}">
               <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','buzz',this.closest('.like-btn'))">🐝</span>
@@ -2479,8 +2528,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           <button class="action-btn repost-btn" onclick="event.stopPropagation();showRepostMenu(this,'${post.id}')">
             <span class="action-icon">🔁</span><span class="repost-count">0</span>
           </button>
-          <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
+          <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')">
             <span class="action-icon">🔖</span>
+          </button>
+          <button class="action-btn" onclick="event.stopPropagation();sharePost('${post.id}')" title="Share">
+            <span class="action-icon">↗️</span>
           </button>
           ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon">🧵</span></button>` : '')}
         </div>
@@ -2507,13 +2559,21 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     return card;
   }
 
+  function sharePost(postId) {
+    navigator.clipboard.writeText(window.location.href);
+    showToast('Link copied! 🔗');
+  }
+
   async function loadLikes(postId, card) {
     const { count } = await sb.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
     const el = card.querySelector('.like-count');
     if (el) el.textContent = count || 0;
     if (currentUser) {
       const { data } = await sb.from('likes').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
-      if (data) { const btn = card.querySelector('.like-btn'); if (btn) btn.classList.add('liked'); }
+      if (data) {
+        const btn = card.querySelector('.like-btn');
+        if (btn) { btn.classList.add('liked'); const icon = btn.querySelector('.action-icon'); if (icon) icon.textContent = '❤️'; }
+      }
     }
   }
 
@@ -2578,7 +2638,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const count = parseInt(countEl.textContent) || 0;
     if (isLiked) {
       btn.classList.remove('liked');
-      btn.querySelector('.action-icon').textContent = '🐝';
+      btn.querySelector('.action-icon').textContent = '🤍';
       countEl.textContent = Math.max(0, count - 1);
       await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
@@ -3117,8 +3177,8 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const { data: notifs } = await sb.from('notifications').select('*, profiles!notifications_from_user_id_fkey(username,full_name,avatar_url)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
     if (!notifs || notifs.length === 0) { list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔔</div><div class="empty-text">No notifications yet</div></div>'; return; }
     list.innerHTML = '';
-    const icons = { like: '🐝', follow: '👤', comment: '💬', message: '✉️', repost: '🔁' };
-    const msgs = { like: 'buzzed your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message', repost: 'rebuzzed your post' };
+    const icons = { like: '❤️', follow: '👤', comment: '💬', message: '✉️', repost: '🔁' };
+    const msgs = { like: 'liked your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message', repost: 'reposted your post' };
     notifs.forEach(n => {
       const p = n.profiles || {};
       const name = p.full_name || 'Someone';
@@ -3563,7 +3623,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const p = quoted.profiles || {};
     const name = p.full_name || 'Unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:11px">🐝</span>' : '';
+    const badges = renderBadges(p);
 
     // Build media section — use full image_urls array if available, fall back to single image_url
     const urls = (quoted.image_urls && quoted.image_urls.length > 0)
@@ -3588,7 +3648,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     wrap.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="width:24px;height:24px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${verified}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${badges}</div>
         <div style="font-size:11px;color:var(--muted)">${timeAgo(quoted.created_at)}</div>
       </div>
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
@@ -4106,7 +4166,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
+    const badges = renderBadges(p);
     const isOwn = currentUser && post.user_id === currentUser.id;
 
     const card = document.createElement('div');
@@ -4116,7 +4176,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name">${name}${verified}</span>
+            <span class="post-name">${name}${badges}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
@@ -4237,10 +4297,10 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     const name = profile.full_name || profile.username || 'Unknown';
     const initial = name[0].toUpperCase();
-    const verified = profile.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:18px">🐝</span>' : '';
+    const badges = renderBadges(profile);
 
     document.getElementById('user-profile-title').textContent = name;
-    document.getElementById('user-name-large').innerHTML = name + verified;
+    document.getElementById('user-name-large').innerHTML = name + badges;
     document.getElementById('user-handle-large').textContent = '@' + (profile.username || '');
     document.getElementById('user-bio-large').textContent = profile.bio || '';
 
@@ -4765,7 +4825,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     listEl.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:12px">🐝</span>' : '';
+      const badges = renderBadges(u);
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:16px;margin-bottom:10px';
       row.innerHTML = `
@@ -4773,7 +4833,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${verified}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${badges}</div>
           <div style="font-size:12px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
@@ -4798,7 +4858,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     container.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' 🐝' : '';
+      const badges = renderBadges(u);
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px';
       div.innerHTML = `
@@ -4806,7 +4866,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${verified}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${badges}</div>
           <div style="font-size:11px;color:var(--muted)">@${u.username}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
@@ -4870,7 +4930,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (!users || users.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No people found for "${query}"</div>`; return; }
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
+      const badges = renderBadges(u);
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s';
       div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.03)';
@@ -4880,7 +4940,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
           ${u.bio ? `<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.bio}</div>` : ''}
         </div>`;
@@ -4931,7 +4991,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     results.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' 🐝' : '';
+      const badges = renderBadges(u);
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:all 0.2s';
       div.onmouseover = () => div.style.borderColor = 'var(--gold)';
@@ -4941,7 +5001,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
         </div>`;
       results.appendChild(div);
@@ -4959,7 +5019,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     results.innerHTML = `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:12px">People from ${location} 📍</div>`;
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' 🐝' : '';
+      const badges = renderBadges(u);
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);margin-bottom:8px';
       div.innerHTML = `
@@ -4967,7 +5027,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:6px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Follow</button>`;
@@ -5238,7 +5298,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const showResults = userVoteOptionId !== null || isExpired;
 
       const optDiv = document.createElement('div');
-      optDiv.style.cssText = `position:relative;border:1.5px solid ${isMyVote ? 'var(--gold)' : 'var(--border)'};border-radius:12px;padding:10px 14px;cursor:${showResults ? 'default' : 'pointer'};overflow:hidden`;
+      optDiv.style.cssText = `position:relative;border:1.5px solid ${isMyVote ? 'var(--gold)' : 'var(--border)'};border-radius:50px;padding:11px 18px;cursor:${showResults ? 'default' : 'pointer'};overflow:hidden`;
       if (showResults) {
         optDiv.innerHTML = `
           <div style="position:absolute;inset:0;background:rgba(245,197,24,0.12);width:${pct}%;transition:width 0.4s"></div>
@@ -5254,8 +5314,16 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     });
 
     const footer = document.createElement('div');
-    footer.style.cssText = 'font-size:11px;color:var(--muted)';
-    footer.textContent = `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} · ${isExpired ? 'Poll ended' : 'Poll active'}`;
+    footer.style.cssText = 'font-size:11px;color:var(--muted);padding:0 6px';
+    let statusText = 'Poll ended';
+    if (!isExpired && post.poll_ends_at) {
+      const msLeft = new Date(post.poll_ends_at).getTime() - Date.now();
+      const daysLeft = Math.max(1, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+      statusText = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+    } else if (!isExpired) {
+      statusText = 'Poll active';
+    }
+    footer.textContent = `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} · ${statusText}`;
     pollWrap.appendChild(footer);
 
     container.appendChild(pollWrap);
