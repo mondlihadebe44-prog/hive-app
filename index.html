@@ -824,15 +824,66 @@ body.theme-pride .mobile-nav { border-top: 2px solid transparent; border-image: 
 
 /* Light mode */
 body.light {
-  --bg: #ffffff; --card: #f7f7f7; --border: #e5e5e5;
-  --text: #0f0f0f; --muted: #888;
+  --bg: #f5f5f5; --card: #ffffff; --border: #e0e0e0;
+  --text: #0a0a0a; --muted: #888;
+  background: #f5f5f5; color: #0a0a0a;
 }
-body.light .sidebar { background: #fff; }
-body.light .feed-header { background: rgba(255,255,255,0.9); }
-body.light .chat-header { background: rgba(255,255,255,0.9); }
-body.light .panel-header { background: rgba(255,255,255,0.9); }
+body.light .sidebar { background: #fff; border-right: 1px solid #e0e0e0; }
+body.light .feed-header { background: rgba(255,255,255,0.95); border-bottom: 1px solid #e0e0e0; }
+body.light .chat-header { background: rgba(255,255,255,0.95); border-bottom: 1px solid #e0e0e0; }
+body.light .panel-header { background: rgba(255,255,255,0.95); border-bottom: 1px solid #e0e0e0; }
+body.light .mobile-nav { background: rgba(255,255,255,0.97); border-top: 1px solid #e0e0e0; }
+body.light .post-card { background: #fff; border-bottom: 1px solid #ebebeb; }
+body.light .post-card:hover { background: #fafafa; }
+body.light .post-card.thread-card { border-bottom: none !important; }
+body.light .compose-box { background: #fff; border-bottom: 1px solid #ebebeb; }
+body.light .compose-input { color: #0a0a0a; }
+body.light .compose-input::placeholder { color: #aaa; }
+body.light .panel { background: #f5f5f5; }
+body.light .action-btn { color: #888; }
+body.light .action-btn:hover { background: rgba(245,197,24,0.1); }
+body.light .post-name { color: #0a0a0a; }
+body.light .post-body { color: #222; }
+body.light .nav-item { color: #444; }
+body.light .nav-item.active { color: var(--gold); }
+body.light .nav-item:hover { background: rgba(0,0,0,0.04); }
+body.light .mobile-nav-item { color: #444; }
+body.light .mobile-nav-item.active { color: var(--gold); }
+body.light .vibe-check-bar { background: #fff; border-bottom: 1px solid #ebebeb; }
+body.light .group-card { background: #fff; border-color: #e0e0e0; }
+body.light .right-sidebar { background: #fff; border-left: 1px solid #e0e0e0; }
+body.light .search-box { background: #f0f0f0; border: 1px solid #e0e0e0; }
+body.light .search-box input { color: #0a0a0a; }
+body.light .search-box input::placeholder { color: #aaa; }
+body.light #global-search-overlay { background: rgba(255,255,255,0.98); }
+body.light #chat-view { background: #f5f5f5; }
+body.light #chat-messages { background: #f5f5f5; }
 body.light .chat-input-area { background: #fff; }
-body.light .mobile-nav { background: rgba(255,255,255,0.95); }
+body.light .post-card-avatar { border-color: #f5f5f5 !important; }
+body.light .profile-avatar-large { border-color: #f5f5f5 !important; }
+body.light .comments-section { border-top: 1px solid #ebebeb; }
+body.light .comment { border-left-color: #ddd; }
+body.light .field input { background: #fff; border-color: #ddd; color: #0a0a0a; }
+body.light .field input::placeholder { color: #bbb; }
+body.light .field input:focus { border-color: var(--gold); background: #fffdf0; }
+body.light .auth-tabs { background: #f0f0f0; border-color: #ddd; }
+body.light .auth-tab { color: #888; }
+body.light .auth-tab.active { background: var(--gold); color: #000; }
+body.light .user-name { color: #0a0a0a; }
+body.light .user-handle { color: #888; }
+body.light .trending-title { color: #0a0a0a; }
+body.light #splash { background: radial-gradient(ellipse at center, #fff8e0, #f5f5f5) !important; }
+body.light .splash-tagline { color: #888; }
+body.light .load-more { color: #888; }
+body.light .empty-wrap { color: #888; }
+body.light .loading-wrap { color: #888; }
+body.light .profile-bio-large { color: #555; }
+body.light .post-hashtag { color: var(--gold); }
+body.light #auth { background: radial-gradient(ellipse at top, #fff8e0, #f5f5f5); }
+body.light .auth-inner { background: transparent; }
+body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
+body.light .icon-btn { color: #444; }
+body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 </style>
 </head>
 <body>
