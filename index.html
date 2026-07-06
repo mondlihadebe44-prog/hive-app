@@ -4619,9 +4619,17 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const btn = document.getElementById('save-edit-post-btn');
     btn.disabled = true; btn.textContent = 'Saving...';
     const editedAt = new Date().toISOString();
-    const { error } = await sb.from('posts').update({ body: text, edited_at: editedAt }).eq('id', editingPostId).eq('user_id', currentUser.id);
+    const { data, error } = await sb.from('posts')
+      .update({ body: text, edited_at: editedAt })
+      .eq('id', editingPostId)
+      .eq('user_id', currentUser.id)
+      .select();
     btn.disabled = false; btn.textContent = 'Save changes';
-    if (error) { showToast('Error saving edit'); return; }
+    if (error) { showToast('Error saving edit: ' + error.message); return; }
+    if (!data || data.length === 0) {
+      showToast("Couldn't save — check that the update permission (RLS policy) exists for posts");
+      return;
+    }
 
     // Update the card in place if it's currently on screen
     const card = document.querySelector(`[data-post-id="${editingPostId}"]`);
