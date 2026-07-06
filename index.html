@@ -1186,6 +1186,19 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </div>
 </div>
 
+<!-- EDIT POST MODAL -->
+<div id="edit-post-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+  <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Edit post ✏️</div>
+      <button onclick="closeEditPostModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <textarea id="edit-post-input" placeholder="What's the vibe?" style="width:100%;background:#1a1a1a;border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;resize:none;min-height:100px;line-height:1.6;margin-bottom:16px"></textarea>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Edited posts show a small "edited" note — this keeps things transparent for anyone who already saw it.</div>
+    <button onclick="saveEditedPost()" id="save-edit-post-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Save changes</button>
+  </div>
+</div>
+
 <div id="thread-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
   <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -2542,6 +2555,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
+            ${post.edited_at ? '<span class="post-dot">·</span><span class="post-handle edited-marker">edited</span>' : ''}
           </div>
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}','${post.user_id}',${isOwn})">···</button>
         </div>
@@ -4574,6 +4588,63 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     showToast('Report submitted — thanks for helping keep Hive safe 🐝');
   }
 
+  // EDIT POST
+  let editingPostId = null;
+
+  async function openEditPostModal(postId) {
+    editingPostId = postId;
+    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    let currentBody = '';
+    if (card) {
+      const bodyEl = card.querySelector('.post-body');
+      if (bodyEl) currentBody = bodyEl.textContent || '';
+    } else {
+      const { data: post } = await sb.from('posts').select('body').eq('id', postId).maybeSingle();
+      currentBody = post?.body || '';
+    }
+    document.getElementById('edit-post-input').value = currentBody;
+    document.getElementById('edit-post-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('edit-post-input').focus(), 200);
+  }
+
+  function closeEditPostModal() {
+    document.getElementById('edit-post-modal').style.display = 'none';
+    editingPostId = null;
+  }
+
+  async function saveEditedPost() {
+    if (!editingPostId || !currentUser) return;
+    const text = document.getElementById('edit-post-input').value.trim();
+    if (!text) { showToast('Post can\'t be empty!'); return; }
+    const btn = document.getElementById('save-edit-post-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const editedAt = new Date().toISOString();
+    const { error } = await sb.from('posts').update({ body: text, edited_at: editedAt }).eq('id', editingPostId).eq('user_id', currentUser.id);
+    btn.disabled = false; btn.textContent = 'Save changes';
+    if (error) { showToast('Error saving edit'); return; }
+
+    // Update the card in place if it's currently on screen
+    const card = document.querySelector(`[data-post-id="${editingPostId}"]`);
+    if (card) {
+      const bodyEl = card.querySelector('.post-body');
+      if (bodyEl) bodyEl.innerHTML = formatBody(text);
+      const nameRow = card.querySelector('.post-name-row');
+      if (nameRow && !nameRow.querySelector('.edited-marker')) {
+        const dot = document.createElement('span');
+        dot.className = 'post-dot';
+        dot.textContent = '·';
+        const marker = document.createElement('span');
+        marker.className = 'post-handle edited-marker';
+        marker.textContent = 'edited';
+        nameRow.appendChild(dot);
+        nameRow.appendChild(marker);
+      }
+    }
+
+    closeEditPostModal();
+    showToast('Post updated! ✏️');
+  }
+
   // POST OPTIONS MENU
   let activeMenu = null;
 
@@ -4596,6 +4667,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     }
 
     if (isOwn) {
+      addItem('✏️ Edit post', 'var(--text)', () => { menu.remove(); activeMenu = null; openEditPostModal(postId); });
       addItem('🗑️ Delete post', '#ff4444', () => deletePost(postId, menu));
     }
 
