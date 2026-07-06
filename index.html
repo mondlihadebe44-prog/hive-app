@@ -1412,6 +1412,38 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </div>
 </div>
 
+<!-- REPORT MODAL -->
+<div id="report-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:420px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Report 🚩</div>
+      <button onclick="closeReportModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:16px">Your report is sent privately to Hive's moderation team — the person won't be notified.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="report-reason-list">
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Spam')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Spam</button>
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Harassment or bullying')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Harassment or bullying</button>
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Hate speech')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Hate speech</button>
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Nudity or sexual content')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Nudity or sexual content</button>
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Impersonation')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Impersonation</button>
+      <button class="report-reason-btn" onclick="selectReportReason(this,'Other')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Other</button>
+    </div>
+    <textarea id="report-details" placeholder="Add details (optional)" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;min-height:70px;margin-bottom:16px"></textarea>
+    <button onclick="submitReport()" id="submit-report-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Submit Report</button>
+  </div>
+</div>
+
+<!-- BLOCKED ACCOUNTS MODAL -->
+<div id="blocked-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Blocked Accounts 🚫</div>
+      <button onclick="document.getElementById('blocked-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="blocked-list"><div class="loading-wrap"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
 <!-- SPLASH -->
 <div id="splash">
   <!-- Honeycomb background pattern -->
@@ -1583,6 +1615,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Light/Dark mode">🌙</button>
         <button class="icon-btn" onclick="openThemePicker()" title="Change theme">🎨</button>
         <button class="icon-btn" onclick="showProModal()" title="Hive Pro">👑</button>
+        <button class="icon-btn" onclick="openBlockedList()" title="Blocked accounts">🚫</button>
         <button class="icon-btn" onclick="signOut()" title="Sign out">↩</button>
       </div>
       <div class="user-card" onclick="setNav(document.getElementById('nav-profile'),'profile')">
@@ -1838,6 +1871,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           <button onclick="openThemePicker()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">🎨 Themes</button>
           <button onclick="showProModal()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid rgba(245,197,24,0.4);background:rgba(245,197,24,0.08);color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">👑 Pro</button>
         </div>
+        <button onclick="openBlockedList()" style="margin-top:10px;width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">🚫 Blocked Accounts</button>
       </div>
       <!-- Profile Tabs -->
       <div style="display:flex;border-bottom:1px solid var(--border);margin-top:8px">
@@ -1868,7 +1902,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <!-- Avatar properly overlapping cover -->
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:-46px;margin-bottom:12px">
         <div id="user-avatar-large" style="width:92px;height:92px;border-radius:50%;background:var(--gold);border:4px solid var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:#000;overflow:hidden;flex-shrink:0;position:relative;z-index:2"></div>
-        <button id="user-follow-btn" onclick="toggleFollowUser(this)" style="padding:8px 24px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:4px">Follow</button>
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <button id="user-block-btn" onclick="blockUser(viewingUserId, document.getElementById('user-name-large').textContent)" style="padding:8px 14px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🚫</button>
+          <button id="user-follow-btn" onclick="toggleFollowUser(this)" style="padding:8px 24px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Follow</button>
+        </div>
       </div>
       <div id="user-name-large" style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:2px"></div>
       <div id="user-handle-large" style="color:var(--muted);font-size:14px;margin-bottom:8px"></div>
@@ -2165,7 +2202,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     document.getElementById('auth').style.display = 'none';
     document.getElementById('splash').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    loadPosts();
+    loadBlockedUsers().then(() => loadPosts());
     loadVibeChecks();
     setTimeout(loadProfileStats, 500);
     setTimeout(loadWhoToFollow, 1000);
@@ -2271,7 +2308,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     document.getElementById('hashtag-title').textContent = '#' + tag;
     const container = document.getElementById('hashtag-posts');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading #' + tag + '...</div>';
-    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', '%#' + tag + '%').order('created_at', { ascending: false }).limit(20);
+    let { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', '%#' + tag + '%').order('created_at', { ascending: false }).limit(20);
+    posts = filterBlocked(posts);
     if (!posts || posts.length === 0) {
       container.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔍</div><div class="empty-text">No posts with #${tag} yet! Be first!</div></div>`;
       return;
@@ -2320,7 +2358,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       query = query.in('user_id', ids);
     }
 
-    const { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
+    let { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
+    posts = filterBlocked(posts);
     if (!append) container.innerHTML = '';
 
     if (error || !posts || posts.length === 0) {
@@ -2380,12 +2419,13 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
     // Get posts from last 48 hours
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data: posts } = await sb.from('posts')
+    let { data: posts } = await sb.from('posts')
       .select('*, profiles(username,full_name,avatar_url,verified)')
       .is('reply_to', null)
       .gt('created_at', cutoff)
       .order('created_at', { ascending: false })
       .limit(50);
+    posts = filterBlocked(posts);
 
     if (!posts || posts.length === 0) {
       container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔥</div><div class="empty-text">Nothing trending yet!<br>Be the first to post something 🐝</div></div>';
@@ -2503,7 +2543,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
           </div>
-          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
+          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}','${post.user_id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
@@ -3251,7 +3291,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: msgsData } = await sb.from('messages').select('*, sender:profiles!messages_sender_id_fkey(id,username,full_name,avatar_url), receiver:profiles!messages_receiver_id_fkey(id,username,full_name,avatar_url)').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`).order('created_at', { ascending: false });
     if (!msgsData || msgsData.length === 0) { list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">✉️</div><div class="empty-text">No messages yet!</div></div>'; return; }
     const seen = new Set(); const convs = [];
-    msgsData.forEach(m => { const other = m.sender_id === currentUser.id ? m.receiver : m.sender; if (other && !seen.has(other.id)) { seen.add(other.id); convs.push({ user: other, lastMsg: m }); } });
+    msgsData.forEach(m => { const other = m.sender_id === currentUser.id ? m.receiver : m.sender; if (other && !seen.has(other.id) && !blockedUserIds.has(other.id)) { seen.add(other.id); convs.push({ user: other, lastMsg: m }); } });
     list.innerHTML = '';
     convs.forEach(c => {
       const name = c.user.full_name || c.user.username || 'Unknown';
@@ -3297,6 +3337,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   }
 
   async function openChat(user) {
+    if (blockedUserIds.has(user.id)) { showToast("You've blocked this person — unblock them to message"); return; }
     currentChatUser = user;
     const name = user.full_name || user.username || 'Unknown';
     document.getElementById('conversations-view').style.display = 'none';
@@ -4338,10 +4379,13 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     // Follow button
     const followBtn = document.getElementById('user-follow-btn');
     followBtn.dataset.userId = userId;
+    const blockBtn = document.getElementById('user-block-btn');
     if (currentUser && userId === currentUser.id) {
       followBtn.style.display = 'none';
+      if (blockBtn) blockBtn.style.display = 'none';
     } else {
       followBtn.style.display = 'block';
+      if (blockBtn) blockBtn.style.display = 'block';
       if (currentUser) {
         const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
         if (data) {
@@ -4398,41 +4442,179 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     await loadProfileStats();
   }
 
+  // BLOCKING & REPORTING
+  let blockedUserIds = new Set();
+
+  async function loadBlockedUsers() {
+    if (!currentUser) return;
+    const { data } = await sb.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+    blockedUserIds = new Set((data || []).map(b => b.blocked_id));
+  }
+
+  // Removes any already-rendered posts from a blocked user out of the current view
+  function purgeBlockedFromDOM(userId) {
+    document.querySelectorAll(`[data-post-id]`).forEach(card => {
+      const avatarBtn = card.querySelector('.post-card-avatar');
+      if (avatarBtn && avatarBtn.getAttribute('onclick') === `openUserProfile('${userId}')`) {
+        card.remove();
+      }
+    });
+  }
+
+  // Filters a post array to remove anything from someone you've blocked
+  function filterBlocked(posts) {
+    if (!posts) return posts;
+    return posts.filter(p => !blockedUserIds.has(p.user_id));
+  }
+
+  async function blockUser(userId, name, fromPostId) {
+    if (!currentUser) { showToast('Sign in first!'); return; }
+    if (!userId) { showToast('Could not identify user'); return; }
+    if (userId === currentUser.id) { showToast("You can't block yourself!"); return; }
+    const label = name ? name : 'this user';
+    if (!confirm(`Block ${label}? They won't be able to message you, and you won't see their posts.`)) return;
+
+    const { error } = await sb.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
+    if (error && !error.message.includes('duplicate')) { showToast('Error blocking user'); return; }
+
+    blockedUserIds.add(userId);
+    purgeBlockedFromDOM(userId);
+
+    // If we blocked them from a specific post, also remove that post immediately
+    if (fromPostId) {
+      const card = document.querySelector(`[data-post-id="${fromPostId}"]`);
+      if (card) card.remove();
+    }
+
+    // If currently viewing their profile, bounce back to feed
+    if (viewingUserId === userId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('feed-panel').classList.add('active');
+    }
+
+    // If they're the open DM, close that chat
+    if (currentChatUser && currentChatUser.id === userId) {
+      showConversations();
+    }
+
+    showToast(`Blocked${name ? ' ' + name : ''} 🚫`);
+  }
+
+  async function unblockUser(userId, btn) {
+    if (!currentUser) return;
+    await sb.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
+    blockedUserIds.delete(userId);
+    if (btn) { const row = btn.closest('.blocked-row'); if (row) row.remove(); }
+    showToast('Unblocked');
+  }
+
+  async function openBlockedList() {
+    document.getElementById('blocked-modal').style.display = 'flex';
+    const list = document.getElementById('blocked-list');
+    list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    const { data } = await sb.from('blocks').select('blocked_id, profiles!blocks_blocked_id_fkey(id,username,full_name,avatar_url)').eq('blocker_id', currentUser.id);
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🚫</div><div class="empty-text">No blocked accounts</div></div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.forEach(row => {
+      const p = row.profiles || {};
+      const name = p.full_name || p.username || 'Unknown';
+      const div = document.createElement('div');
+      div.className = 'blocked-row';
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:14px;margin-bottom:8px';
+      div.innerHTML = `
+        <div style="width:42px;height:42px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:16px;flex-shrink:0">
+          ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}</div><div style="font-size:12px;color:var(--muted)">@${p.username || ''}</div></div>
+        <button onclick="unblockUser('${row.blocked_id}', this)" style="padding:6px 14px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Unblock</button>`;
+      list.appendChild(div);
+    });
+  }
+
+  // Reporting
+  let reportContext = { postId: null, userId: null, reason: null };
+
+  function openReportModal(postId, userId) {
+    reportContext = { postId, userId, reason: null };
+    document.getElementById('report-details').value = '';
+    document.querySelectorAll('.report-reason-btn').forEach(b => { b.style.background = 'transparent'; b.style.borderColor = 'var(--border)'; });
+    document.getElementById('report-modal').style.display = 'flex';
+  }
+
+  function closeReportModal() {
+    document.getElementById('report-modal').style.display = 'none';
+  }
+
+  function selectReportReason(btn, reason) {
+    document.querySelectorAll('.report-reason-btn').forEach(b => { b.style.background = 'transparent'; b.style.borderColor = 'var(--border)'; });
+    btn.style.background = 'rgba(245,197,24,0.1)';
+    btn.style.borderColor = 'var(--gold)';
+    reportContext.reason = reason;
+  }
+
+  async function submitReport() {
+    if (!currentUser) { showToast('Sign in to report!'); return; }
+    if (!reportContext.reason) { showToast('Please select a reason'); return; }
+    const details = document.getElementById('report-details').value.trim();
+    const btn = document.getElementById('submit-report-btn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    const { error } = await sb.from('reports').insert({
+      reporter_id: currentUser.id,
+      reported_user_id: reportContext.userId,
+      post_id: reportContext.postId,
+      reason: reportContext.reason,
+      details: details || null
+    });
+    btn.disabled = false; btn.textContent = 'Submit Report';
+    if (error) { showToast('Error submitting report'); return; }
+    closeReportModal();
+    showToast('Report submitted — thanks for helping keep Hive safe 🐝');
+  }
+
   // POST OPTIONS MENU
   let activeMenu = null;
 
-  function showPostMenu(btn, postId, isOwn) {
+  function showPostMenu(btn, postId, authorId, isOwn) {
     // Close any existing menu
     if (activeMenu) { activeMenu.remove(); activeMenu = null; }
 
     const menu = document.createElement('div');
-    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
 
-    if (isOwn) {
-      const deleteBtn = document.createElement('button');
-      deleteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-      deleteBtn.innerHTML = '🗑️ Delete post';
-      deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255,68,68,0.1)';
-      deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
-      deleteBtn.onclick = () => deletePost(postId, menu);
-      menu.appendChild(deleteBtn);
+    function addItem(label, color, onClick) {
+      const b = document.createElement('button');
+      b.style.cssText = `display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:${color};font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s;text-align:left`;
+      b.innerHTML = label;
+      b.onmouseover = () => b.style.background = 'rgba(255,255,255,0.06)';
+      b.onmouseout = () => b.style.background = 'none';
+      b.onclick = onClick;
+      menu.appendChild(b);
+      return b;
     }
 
-    const copyBtn = document.createElement('button');
-    copyBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    copyBtn.innerHTML = '🔗 Copy link';
-    copyBtn.onmouseover = () => copyBtn.style.background = 'rgba(255,255,255,0.05)';
-    copyBtn.onmouseout = () => copyBtn.style.background = 'none';
-    copyBtn.onclick = () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; };
-    menu.appendChild(copyBtn);
+    if (isOwn) {
+      addItem('🗑️ Delete post', '#ff4444', () => deletePost(postId, menu));
+    }
 
-    const reportBtn = document.createElement('button');
-    reportBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--muted);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    reportBtn.innerHTML = '🚩 Report';
-    reportBtn.onmouseover = () => reportBtn.style.background = 'rgba(255,255,255,0.05)';
-    reportBtn.onmouseout = () => reportBtn.style.background = 'none';
-    reportBtn.onclick = () => { showToast('Reported! 🚩'); menu.remove(); activeMenu = null; };
-    menu.appendChild(reportBtn);
+    addItem('🔗 Copy link', 'var(--text)', () => {
+      navigator.clipboard.writeText(window.location.href);
+      showToast('Link copied! 🔗');
+      menu.remove(); activeMenu = null;
+    });
+
+    if (!isOwn) {
+      addItem('🚫 Block user', '#ff4444', () => {
+        menu.remove(); activeMenu = null;
+        blockUser(authorId, null, postId);
+      });
+      addItem('🚩 Report post', 'var(--muted)', () => {
+        menu.remove(); activeMenu = null;
+        openReportModal(postId, authorId);
+      });
+    }
 
     btn.parentElement.style.position = 'relative';
     btn.parentElement.appendChild(menu);
@@ -4784,9 +4966,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     if (!container) return;
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
     const { data } = await sb.from('bookmarks').select('*, posts(*, profiles(username,full_name,avatar_url,verified))').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔖</div><div class="empty-text">No saved posts yet! Tap 🔖 on any post.</div></div>'; return; }
+    const filtered = (data || []).filter(b => b.posts && !blockedUserIds.has(b.posts.user_id));
+    if (filtered.length === 0) { container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔖</div><div class="empty-text">No saved posts yet! Tap 🔖 on any post.</div></div>'; return; }
     container.innerHTML = '';
-    data.forEach(b => { if (b.posts) container.appendChild(createPostCard(b.posts)); });
+    filtered.forEach(b => container.appendChild(createPostCard(b.posts)));
   }
 
   // WHO TO FOLLOW
@@ -4811,6 +4994,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
     const followingIds = (following || []).map(f => f.following_id);
     followingIds.push(currentUser.id);
+    blockedUserIds.forEach(id => followingIds.push(id));
 
     const { data: users } = await sb.from('profiles')
       .select('id,username,full_name,avatar_url,verified,bio,location')
@@ -4853,6 +5037,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
     const followingIds = (following || []).map(f => f.following_id);
     followingIds.push(currentUser.id);
+    blockedUserIds.forEach(id => followingIds.push(id));
     const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified').not('id', 'in', `(${followingIds.join(',')})`).limit(4);
     if (!users || users.length === 0) { container.innerHTML = '<div style="color:var(--muted);font-size:13px">No suggestions yet!</div>'; return; }
     container.innerHTML = '';
@@ -4925,7 +5110,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   async function searchPeopleGlobal(query) {
     const container = document.getElementById('search-people');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
+    let { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
+    users = (users || []).filter(u => !blockedUserIds.has(u.id));
     container.innerHTML = '';
     if (!users || users.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No people found for "${query}"</div>`; return; }
     users.forEach(u => {
@@ -4952,7 +5138,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   async function searchPostsGlobal(query) {
     const container = document.getElementById('search-posts');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', `%${query}%`).is('reply_to', null).order('created_at', { ascending: false }).limit(15);
+    let { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', `%${query}%`).is('reply_to', null).order('created_at', { ascending: false }).limit(15);
+    posts = filterBlocked(posts);
     container.innerHTML = '';
     if (!posts || posts.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No posts found for "${query}"</div>`; return; }
     posts.forEach(post => container.appendChild(createPostCard(post)));
