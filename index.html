@@ -23,7 +23,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Hive">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -677,6 +678,8 @@ body {
   flex: 1; overflow-y: auto; padding: 20px;
   display: flex; flex-direction: column; gap: 10px;
   scrollbar-width: none;
+  background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2252%22><polygon points=%2215,2 45,2 58,25 45,48 15,48 2,25%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221%22 opacity=%220.06%22/></svg>');
+  background-size: 60px 52px;
 }
 .chat-input-area {
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -741,6 +744,48 @@ body {
 @keyframes waveAnim {
   0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)}
 }
+
+/* "Listening..." style recording pill */
+.voice-pill {
+  position: absolute; left: 50%; bottom: 84px;
+  transform: translateX(-50%);
+  background: rgba(38,26,16,0.94);
+  backdrop-filter: blur(16px);
+  border-radius: 50px;
+  padding: 12px 14px 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 60; min-width: 300px;
+  animation: pillIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes pillIn { from{opacity:0;transform:translateX(-50%) translateY(12px) scale(0.9)} to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} }
+.voice-pill-cancel {
+  background:none;border:none;color:rgba(255,255,255,0.5);
+  font-size:18px;cursor:pointer;padding:0;flex-shrink:0;
+}
+.voice-pill-text {
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;
+  white-space:nowrap;flex-shrink:0;
+}
+.voice-pill-mic { color: var(--gold); font-size:17px;flex-shrink:0; }
+.voice-pill-matrix {
+  display:grid; grid-template-columns:repeat(5,1fr); grid-auto-rows:5px;
+  gap:3px; flex:1; min-width:70px;
+}
+.voice-pill-dot {
+  width:5px;height:5px;border-radius:50%;
+  background: var(--gold); opacity:0.2;
+  animation: voicePillDot 1.1s ease-in-out infinite;
+}
+@keyframes voicePillDot { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.15)} }
+.voice-pill-time { color:rgba(255,255,255,0.6); font-size:12px; flex-shrink:0; min-width:32px; }
+.voice-pill-stop {
+  width:36px;height:36px;border-radius:11px;
+  background: var(--gold); border:none; cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.voice-pill-stop span { width:13px;height:13px;background:#000;border-radius:3px;display:block; }
 /* Theme picker */
 .theme-swatch {
   width: 52px; height: 52px; border-radius: 16px;
@@ -1843,10 +1888,14 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           <button id="chat-mic-btn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="width:44px;height:44px;min-width:44px;border-radius:50%;background:#1a1a1a;border:1.5px solid var(--border);color:#fff;font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center">🎤</button>
         </div>
         <!-- Recording indicator -->
-        <div id="recording-indicator" style="display:none;flex-shrink:0;padding:8px 16px;background:rgba(255,50,50,0.1);border-top:1px solid rgba(255,50,50,0.2);align-items:center;gap:10px">
-          <div style="width:10px;height:10px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite"></div>
-          <div style="color:#ff4444;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">Recording... <span id="recording-time">0:00</span></div>
-          <button onclick="cancelRecording()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer">Cancel</button>
+        <!-- Recording indicator: floating "Listening..." style pill -->
+        <div id="recording-indicator" class="voice-pill" style="display:none">
+          <button class="voice-pill-cancel" onclick="cancelRecording()" title="Cancel">✕</button>
+          <span class="voice-pill-text">Listening...</span>
+          <span class="voice-pill-mic">🎙️</span>
+          <div class="voice-pill-matrix" id="voice-pill-matrix"></div>
+          <span class="voice-pill-time" id="recording-time">0:00</span>
+          <button class="voice-pill-stop" onclick="stopRecording()" title="Stop and send"><span></span></button>
         </div>
       </div>
     </div>
@@ -3433,7 +3482,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
       div.innerHTML = `
         ${!isMe ? otherAvatar : ''}
-        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5">
+        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.3)">
           ${m.voice_url ? createVoiceNotePlayer(m.voice_url, m.voice_duration || 0, isMe) : ''}
           ${m.image_url?`<img src="${m.image_url}" style="width:100%;border-radius:10px;margin-bottom:4px;max-height:200px;object-fit:cover">`:''}
           ${m.body?`<div>${m.body}</div>`:''}
@@ -4023,6 +4072,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.start();
       recordingSeconds = 0;
+      const matrix = document.getElementById('voice-pill-matrix');
+      matrix.innerHTML = Array.from({length:15}, (_,i) =>
+        `<div class="voice-pill-dot" style="animation-delay:${(Math.random()*0.9).toFixed(2)}s"></div>`
+      ).join('');
       document.getElementById('recording-indicator').style.display = 'flex';
       document.getElementById('chat-input-wrap').style.display = 'none';
       document.getElementById('chat-send-btn').style.display = 'none';
