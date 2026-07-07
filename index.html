@@ -997,6 +997,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         </div>
         <input type="file" id="onboard-avatar-upload" accept="image/*" style="display:none" onchange="previewOnboardAvatar(this)">
         <div id="onboard-avatar-status" style="font-size:13px;color:var(--muted);min-height:18px"></div>
+        <button onclick="openAvatarPicker()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;text-decoration:underline">🎭 Or pick an avatar instead</button>
       </div>
       <button onclick="goOnboard(3)" id="onboard-skip-avatar" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
       <button onclick="goOnboard(3)" style="width:100%;padding:12px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;margin-top:8px">Skip for now</button>
@@ -1467,6 +1468,20 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <input type="text" id="edit-location" placeholder="e.g. Johannesburg" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
     </div>
     <button onclick="saveProfile()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="save-profile-btn">Save Changes</button>
+    <button onclick="closeEditProfile();openAvatarPicker()" style="width:100%;padding:10px;background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;margin-top:10px">🎭 Or choose an avatar instead of a photo</button>
+  </div>
+</div>
+
+<!-- AVATAR PICKER MODAL -->
+<div id="avatar-picker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Choose an Avatar 🎭</div>
+      <button onclick="closeAvatarPicker()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:20px">Prefer not to use a photo? Pick a character instead — you can always change it later.</div>
+    <div id="avatar-preset-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
+    <button onclick="confirmAvatarSelection()" id="confirm-avatar-btn" disabled style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;opacity:0.5">Use this avatar</button>
   </div>
 </div>
 
@@ -4507,6 +4522,71 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     }
     // Refresh my profile stats
     await loadProfileStats();
+  }
+
+  // AVATAR PICKER (for people who'd rather not use a real photo)
+  const AVATAR_PRESETS = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#F5C518"/><circle cx="100" cy="120" r="55" fill="#E8B08C"/><path d="M45,120 A55,55 0 0 1 155,120 L155,95 Q140,58 100,56 Q60,58 45,95 Z" fill="#2B1B12"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FF6B35"/><circle cx="100" cy="120" r="55" fill="#8D5A3C"/><circle cx="60" cy="85" r="22" fill="#1A1A1A"/><circle cx="80" cy="63" r="24" fill="#1A1A1A"/><circle cx="100" cy="58" r="24" fill="#1A1A1A"/><circle cx="120" cy="63" r="24" fill="#1A1A1A"/><circle cx="140" cy="85" r="22" fill="#1A1A1A"/><circle cx="82" cy="118" r="5" fill="#111"/><circle cx="118" cy="118" r="5" fill="#111"/><path d="M82,146 Q100,159 118,146" stroke="#111" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#4ECDC4"/><circle cx="100" cy="120" r="55" fill="#C68863"/><path d="M48,110 A55,55 0 0 1 152,110" stroke="#3A2A1E" stroke-width="10" fill="none"/><rect x="68" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><rect x="102" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><line x1="98" y1="117" x2="102" y2="117" stroke="#111" stroke-width="5"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#45B7D1"/><path d="M40,150 Q35,90 100,58 Q165,90 160,150 L145,150 Q150,100 100,75 Q50,100 55,150 Z" fill="#5B3A29"/><circle cx="100" cy="45" r="16" fill="#5B3A29"/><circle cx="100" cy="120" r="55" fill="#F2C9A0"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#8B5CF6"/><circle cx="100" cy="120" r="55" fill="#3E2723"/><path d="M70,140 Q100,185 130,140 L130,158 Q100,178 70,158 Z" fill="#1A1A1A"/><circle cx="82" cy="112" r="5" fill="#fff"/><circle cx="118" cy="112" r="5" fill="#fff"/><path d="M85,140 Q100,148 115,140" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FF6B9D"/><path d="M40,175 Q35,90 100,58 Q165,90 160,175 L145,175 Q150,110 100,80 Q50,110 55,175 Z" fill="#6B4226"/><circle cx="100" cy="120" r="55" fill="#F4D9C6"/><rect x="68" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><rect x="102" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><line x1="98" y1="117" x2="102" y2="117" stroke="#111" stroke-width="5"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#00CC66"/><circle cx="100" cy="120" r="55" fill="#C68863"/><path d="M90,30 L100,60 L110,30 L118,65 L128,35 L132,70 L100,76 L68,70 L72,35 Z" fill="#F5C518"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#1a1a2e"/><circle cx="100" cy="120" r="55" fill="#E8B08C"/><path d="M45,105 A55,55 0 0 1 155,105 L155,90 Q140,55 100,55 Q60,55 45,90 Z" fill="#F5C518"/><ellipse cx="100" cy="107" rx="60" ry="10" fill="#F5C518"/><circle cx="82" cy="118" r="5" fill="#222"/><circle cx="118" cy="118" r="5" fill="#222"/><path d="M82,146 Q100,159 118,146" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`
+  ];
+
+  let selectedPresetAvatar = null;
+
+  function toDataUri(svg) { return 'data:image/svg+xml,' + encodeURIComponent(svg); }
+
+  function openAvatarPicker() {
+    selectedPresetAvatar = null;
+    const grid = document.getElementById('avatar-preset-grid');
+    grid.innerHTML = '';
+    AVATAR_PRESETS.forEach((svg) => {
+      const uri = toDataUri(svg);
+      const img = document.createElement('img');
+      img.src = uri;
+      img.style.cssText = 'width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;display:block';
+      img.onclick = () => {
+        grid.querySelectorAll('img').forEach(el => el.style.borderColor = 'transparent');
+        img.style.borderColor = 'var(--gold)';
+        selectedPresetAvatar = uri;
+        const btn = document.getElementById('confirm-avatar-btn');
+        btn.disabled = false; btn.style.opacity = '1';
+      };
+      grid.appendChild(img);
+    });
+    document.getElementById('avatar-picker-modal').style.display = 'flex';
+  }
+
+  function closeAvatarPicker() {
+    document.getElementById('avatar-picker-modal').style.display = 'none';
+  }
+
+  async function confirmAvatarSelection() {
+    if (!selectedPresetAvatar || !currentUser) return;
+    const btn = document.getElementById('confirm-avatar-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const { error } = await sb.from('profiles').update({ avatar_url: selectedPresetAvatar }).eq('id', currentUser.id);
+    btn.disabled = false; btn.textContent = 'Use this avatar';
+    if (error) { showToast('Error saving avatar'); return; }
+    await loadProfile();
+
+    // If we're mid-onboarding, update that preview too
+    const onboardImg = document.getElementById('onboard-avatar-img');
+    if (onboardImg) {
+      onboardImg.src = selectedPresetAvatar;
+      onboardImg.style.display = 'block';
+      const placeholder = document.getElementById('onboard-avatar-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
+      const nextBtn = document.getElementById('onboard-skip-avatar');
+      if (nextBtn) nextBtn.textContent = 'Next →';
+    }
+
+    closeAvatarPicker();
+    showToast('Avatar updated! 🎭');
   }
 
   // BLOCKING & REPORTING
