@@ -2095,6 +2095,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </button>
   <button class="mobile-nav-item" onclick="setNav(this,'messages')">
     <span class="mobile-nav-icon">✉️</span>DMs
+    <span class="mobile-badge" id="mobile-msg-badge"></span>
   </button>
   <button class="mobile-nav-item" onclick="setNav(this,'saved')">
     <span class="mobile-nav-icon">🔖</span>Saved
@@ -2289,6 +2290,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     setTimeout(checkPaymentReturn, 1000);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
+    checkUnreadMessages();
+    setInterval(checkUnreadMessages, 30000);
     startRealtimeSubscriptions();
     showToast('Welcome to Hive! 🐝');
   }
@@ -2317,22 +2320,14 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     // Real-time DM badge
     sb.channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUser?.id}` }, (payload) => {
-        // If chat with that sender is open, reload messages
+        // If chat with that sender is open, reload messages (loadChatMessages also marks them read)
         if (currentChatUser && payload.new.sender_id === currentChatUser.id) {
           loadChatMessages();
         } else {
-          // Show unread badge on DM nav
-          const dmBadge = document.getElementById('dm-badge');
-          if (!dmBadge) {
-            const navDm = document.querySelector('[onclick*="messages"]');
-            if (navDm) {
-              const badge = document.createElement('div');
-              badge.id = 'dm-badge';
-              badge.style.cssText = 'position:absolute;top:4px;right:8px;width:8px;height:8px;background:#ff4444;border-radius:50%';
-              navDm.style.position = 'relative';
-              navDm.appendChild(badge);
-            }
-          }
+          checkUnreadMessages();
+          // If the conversations list is currently visible, refresh it so the new message shows up
+          const convView = document.getElementById('conversations-view');
+          if (convView && convView.style.display !== 'none') loadConversations();
         }
       })
       .subscribe();
@@ -3362,6 +3357,16 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   // MESSAGES
   let currentChatUser = null;
 
+  async function checkUnreadMessages() {
+    if (!currentUser) return;
+    const { count } = await sb.from('messages').select('*', { count: 'exact', head: true }).eq('receiver_id', currentUser.id).eq('read', false);
+    const show = count > 0 ? 'block' : 'none';
+    const sidebarBadge = document.getElementById('msg-badge');
+    const mobileBadge = document.getElementById('mobile-msg-badge');
+    if (sidebarBadge) sidebarBadge.style.display = show;
+    if (mobileBadge) mobileBadge.style.display = show;
+  }
+
   async function loadConversations() {
     const list = document.getElementById('conversations-list');
     if (!list) return;
@@ -3373,11 +3378,36 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     list.innerHTML = '';
     convs.forEach(c => {
       const name = c.user.full_name || c.user.username || 'Unknown';
+      const m = c.lastMsg;
+      const isMine = m.sender_id === currentUser.id;
+      const isUnread = !isMine && !m.read;
+
+      let preview = m.voice_url ? '🎤 Voice note' : (m.image_url ? '📷 Photo' : (m.body || ''));
+      let receipt = '';
+      if (isMine) {
+        receipt = m.read
+          ? '<span style="color:var(--gold)">✓✓</span> '
+          : '<span style="color:var(--muted)">✓</span> ';
+      }
+
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s';
+      div.style.cssText = 'display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s';
       div.onmouseenter = () => div.style.background = 'rgba(255,255,255,0.03)';
       div.onmouseleave = () => div.style.background = 'transparent';
-      div.innerHTML = `<div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">${c.user.avatar_url ? `<img src="${c.user.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${name}</div><div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.lastMsg.body}</div></div><div style="font-size:11px;color:var(--muted)">${timeAgo(c.lastMsg.created_at)}</div>`;
+      div.innerHTML = `
+        <div style="width:52px;height:52px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:19px;flex-shrink:0;border:2.5px solid ${isUnread ? 'var(--gold)' : 'transparent'}">
+          ${c.user.avatar_url ? `<img src="${c.user.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="font-family:'Syne',sans-serif;font-weight:${isUnread ? 800 : 700};font-size:15px;color:${isUnread ? 'var(--text)' : 'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            <div style="font-size:11px;color:${isUnread ? 'var(--gold)' : 'var(--muted)'};flex-shrink:0">${timeAgo(m.created_at)}</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px">
+            <div style="font-size:13px;color:${isUnread ? 'var(--text)' : 'var(--muted)'};font-weight:${isUnread ? 600 : 400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${receipt}${preview}</div>
+            ${isUnread ? '<div style="width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>' : ''}
+          </div>
+        </div>`;
       div.onclick = () => openChat(c.user);
       list.appendChild(div);
     });
@@ -3451,6 +3481,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     if (!currentChatUser || !currentUser) return;
     const chatEl = document.getElementById('chat-messages');
     chatEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Loading...</div>';
+
+    // Mark any unread messages from this person as read, then refresh badges
+    await sb.from('messages').update({ read: true }).eq('sender_id', currentChatUser.id).eq('receiver_id', currentUser.id).eq('read', false);
+    checkUnreadMessages();
 
     const { data: msgsData, error } = await sb.from('messages')
       .select('*')
