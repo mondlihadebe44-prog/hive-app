@@ -1,47 +1,21 @@
 {
-  "name": "Hive - Your Community. Your Vibe.",
+  "name": "Hive",
   "short_name": "Hive",
-  "description": "Share your vibe. Discover your people.",
-  "start_url": "/hive-app/",
+  "description": "Hive - Your community. Your vibe.",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#F5C518",
-  "orientation": "portrait",
-  "categories": ["social", "lifestyle"],
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/144x144/1f41d.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/144x144/1f41d.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/144x144/1f41d.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "New Post",
-      "short_name": "Post",
-      "description": "Share a new vibe",
-      "url": "/hive-app/?action=post",
-      "icons": [{ "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png", "sizes": "72x72" }]
+      "type": "image/png"
     }
   ]
 }
