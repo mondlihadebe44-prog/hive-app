@@ -23,8 +23,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Hive">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f41d.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -298,29 +297,6 @@ body {
   min-height: 100vh;
 }
 
-/* ===== MOBILE TOP BAR (Hive wordmark + theme toggle) ===== */
-.mobile-topbar {
-  display: none;
-  align-items: center; justify-content: space-between;
-  padding: 4px 2px 14px;
-}
-.mobile-topbar-logo {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 22px; color: var(--gold);
-  margin: 0 auto;
-}
-.mobile-topbar-btn {
-  position: absolute; right: 16px;
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 1px solid var(--border); background: transparent;
-  color: var(--text); font-size: 15px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-@media (max-width: 768px) {
-  .mobile-topbar { display: flex; position: relative; }
-}
-
 /* ===== FEED HEADER ===== */
 .feed-header {
   position: sticky; top: 0;
@@ -334,7 +310,6 @@ body {
   font-size: 20px; font-weight: 800;
   color: var(--text); margin-bottom: 16px;
 }
-@media (max-width: 768px) { .feed-title { display: none; } }
 
 /* Stories */
 .stories-bar {
@@ -449,12 +424,6 @@ body {
   font-family: 'Syne', sans-serif; font-weight: 700;
   font-size: 15px; color: var(--text);
 }
-.badge-check {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 15px; height: 15px; border-radius: 50%;
-  background: #1D9BF0; color: #fff; font-size: 9px; font-weight: 900;
-}
-.badge-crown { font-size: 13px; filter: drop-shadow(0 0 3px rgba(245,197,24,0.6)); }
 .post-handle { font-size: 13px; color: var(--muted); }
 .post-dot { color: var(--muted); font-size: 12px; }
 .post-more {
@@ -522,8 +491,7 @@ body {
   padding: 4px; border-radius: 50%;
 }
 .reaction-opt:hover { transform: scale(1.4) translateY(-4px); }
-.like-btn .action-icon { color: #FF3B5C; }
-.like-btn.liked { color: #FF3B5C !important; }
+.like-btn.liked { color: var(--gold) !important; }
 .like-btn.liked .action-icon { animation: buzzAnim 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes buzzAnim {
   0%{transform:scale(1) rotate(0)} 25%{transform:scale(1.4) rotate(-15deg)}
@@ -678,11 +646,6 @@ body {
   flex: 1; overflow-y: auto; padding: 20px;
   display: flex; flex-direction: column; gap: 10px;
   scrollbar-width: none;
-  background-color: #0a0a0a;
-  background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 1000%22 width=%22640%22 height=%221000%22><g transform=%22translate(43.6,59.8) rotate(-18.8) scale(1.02)%22 opacity=%220.13%22><rect x=%22-16%22 y=%22-8%22 width=%2232%22 height=%2222%22 rx=%224%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%222.2%22/> <rect x=%22-6%22 y=%22-14%22 width=%2212%22 height=%227%22 rx=%222%22 fill=%22%23FF6B35%22/> <circle cx=%220%22 cy=%223%22 r=%227%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%222.2%22/></g><g transform=%22translate(148.4,53.3) rotate(-11.4) scale(1.03)%22 opacity=%220.15%22><path d=%22M0,-14 Q7,-2 0,10 Q-7,-2 0,-14 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(270.3,57.9) rotate(-19.3) scale(1.04)%22 opacity=%220.16%22><polygon points=%22-15,-13 0,-13 7,0 0,13 -15,13 -22,0%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/></g><g transform=%22translate(363.1,53.3) rotate(1.8) scale(1.04)%22 opacity=%220.1%22><path d=%22M-18,0 L16,-14 L4,16 L0,2 L-8,6 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(476.4,56.9) rotate(-19.2) scale(0.78)%22 opacity=%220.12%22><path d=%22M-10,-2 h-4 v18 h4 z%22 fill=%22%23F5C518%22/> <path d=%22M-6,-2 L-2,-16 Q0,-20 4,-16 L2,-4 h10 a4,4 0 0 1 4,5 l-3,11 a4,4 0 0 1 -4,3 h-13 v-16 z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(581.5,58.0) rotate(-2.1) scale(0.90)%22 opacity=%220.14%22><ellipse cx=%220%22 cy=%220%22 rx=%2213%22 ry=%226%22 fill=%22%23F5C518%22/> <circle cx=%2214%22 cy=%22-4%22 r=%224%22 fill=%22%23F5C518%22/> <path d=%22M16,-8 Q20,-16 16,-20 Q14,-14 16,-8%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.6%22/> <path d=%22M12,-8 Q14,-15 10,-19 Q10,-13 12,-8%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.6%22/> <path d=%22M-10,4 L-16,14%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22 stroke-linecap=%22round%22/> <path d=%22M8,5 L12,15%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22 stroke-linecap=%22round%22/></g><g transform=%22translate(159.9,162.3) rotate(-2.3) scale(1.05)%22 opacity=%220.1%22><path d=%22M-6,-14 L-10,14 M6,-14 L2,14 M-14,-4 L14,-4 M-14,6 L14,6%22 stroke=%22%23F5C518%22 stroke-width=%223%22 stroke-linecap=%22round%22/></g><g transform=%22translate(262.2,178.8) rotate(-3.4) scale(1.23)%22 opacity=%220.14%22><path d=%22M-18,0 L16,-14 L4,16 L0,2 L-8,6 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(382.2,162.2) rotate(-6.6) scale(1.00)%22 opacity=%220.09%22><polygon points=%22-12,-10 0,-10 6,0 0,10 -12,10 -18,0%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(479.3,171.3) rotate(-19.3) scale(1.10)%22 opacity=%220.11%22><circle cx=%22-8%22 cy=%2212%22 r=%226%22 fill=%22%23FF6B35%22/> <rect x=%22-3%22 y=%22-16%22 width=%223%22 height=%2228%22 fill=%22%23FF6B35%22/> <path d=%22M -3,-16 Q 10,-20 10,-8 L 10,-4 Q -3,-8 -3,-16 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(582.4,179.0) rotate(-6.4) scale(1.06)%22 opacity=%220.09%22><ellipse cx=%220%22 cy=%220%22 rx=%2216%22 ry=%2211%22 fill=%22%23FF6B35%22/> <circle cx=%22-14%22 cy=%22-8%22 r=%229%22 fill=%22%23FF6B35%22/> <path d=%22M14,4 Q26,4 26,14 Q26,20 20,20%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%224%22 stroke-linecap=%22round%22/> <path d=%22M-6,10 L-8,20 M6,10 L4,20%22 stroke=%22%23FF6B35%22 stroke-width=%224%22 stroke-linecap=%22round%22/></g><g transform=%22translate(60.0,274.9) rotate(18.3) scale(1.00)%22 opacity=%220.12%22><path d=%22M-10,-2 h-4 v18 h4 z%22 fill=%22%23F5C518%22/> <path d=%22M-6,-2 L-2,-16 Q0,-20 4,-16 L2,-4 h10 a4,4 0 0 1 4,5 l-3,11 a4,4 0 0 1 -4,3 h-13 v-16 z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(149.8,275.8) rotate(2.2) scale(1.10)%22 opacity=%220.14%22><circle cx=%22-8%22 cy=%2212%22 r=%226%22 fill=%22%23FF6B35%22/> <rect x=%22-3%22 y=%22-16%22 width=%223%22 height=%2228%22 fill=%22%23FF6B35%22/> <path d=%22M -3,-16 Q 10,-20 10,-8 L 10,-4 Q -3,-8 -3,-16 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(256.9,268.7) rotate(-11.8) scale(0.87)%22 opacity=%220.15%22><path d=%22M0,0 L4,-22 L0,-14 L-4,-22 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,-16 L6,-10 L20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,16 L6,10 L20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,16 L-6,10 L-20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,-16 L-6,-10 L-20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L0,20 L4,12 L-4,12 Z%22 fill=%22%23FF6B35%22/> <circle r=%226%22 fill=%22%23F5C518%22/></g><g transform=%22translate(359.4,275.5) rotate(-5.8) scale(1.03)%22 opacity=%220.14%22><rect x=%22-16%22 y=%22-8%22 width=%2232%22 height=%2222%22 rx=%224%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/> <rect x=%22-6%22 y=%22-14%22 width=%2212%22 height=%227%22 rx=%222%22 fill=%22%23F5C518%22/> <circle cx=%220%22 cy=%223%22 r=%227%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/></g><g transform=%22translate(484.3,284.5) rotate(-1.9) scale(1.19)%22 opacity=%220.12%22><circle cx=%22-8%22 cy=%2212%22 r=%226%22 fill=%22%23FF6B35%22/> <rect x=%22-3%22 y=%22-16%22 width=%223%22 height=%2228%22 fill=%22%23FF6B35%22/> <path d=%22M -3,-16 Q 10,-20 10,-8 L 10,-4 Q -3,-8 -3,-16 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(41.1,376.8) rotate(-12.8) scale(0.83)%22 opacity=%220.13%22><path d=%22M0,-14 Q7,-2 0,10 Q-7,-2 0,-14 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(255.5,385.1) rotate(-20.9) scale(1.19)%22 opacity=%220.1%22><rect x=%22-4%22 y=%220%22 width=%228%22 height=%2220%22 rx=%222%22 fill=%22%23FF6B35%22/> <circle cx=%22-6%22 cy=%22-6%22 r=%229%22 fill=%22%23FF6B35%22/> <circle cx=%226%22 cy=%22-6%22 r=%229%22 fill=%22%23FF6B35%22/> <circle cx=%220%22 cy=%22-12%22 r=%2210%22 fill=%22%23FF6B35%22/> <path d=%22M -4,4 L -14,0 M 4,4 L 14,2%22 stroke=%22%23FF6B35%22 stroke-width=%222%22 opacity=%220.7%22/></g><g transform=%22translate(376.2,388.2) rotate(-16.9) scale(0.99)%22 opacity=%220.12%22><path d=%22M 0,-18 L 3,-4 L 18,0 L 3,4 L 0,18 L -3,4 L -18,0 L -3,-4 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(46.7,509.2) rotate(-14.9) scale(0.76)%22 opacity=%220.1%22><path d=%22M-10,-2 h-4 v18 h4 z%22 fill=%22%23FF6B35%22/> <path d=%22M-6,-2 L-2,-16 Q0,-20 4,-16 L2,-4 h10 a4,4 0 0 1 4,5 l-3,11 a4,4 0 0 1 -4,3 h-13 v-16 z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(167.2,494.3) rotate(6.3) scale(0.80)%22 opacity=%220.13%22><path d=%22M0,0 L4,-22 L0,-14 L-4,-22 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,-16 L6,-10 L20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,16 L6,10 L20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,16 L-6,10 L-20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,-16 L-6,-10 L-20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L0,20 L4,12 L-4,12 Z%22 fill=%22%23FF6B35%22/> <circle r=%226%22 fill=%22%23F5C518%22/></g><g transform=%22translate(258.9,501.2) rotate(0.1) scale(1.07)%22 opacity=%220.15%22><circle cx=%22-8%22 cy=%2212%22 r=%226%22 fill=%22%23F5C518%22/> <rect x=%22-3%22 y=%22-16%22 width=%223%22 height=%2228%22 fill=%22%23F5C518%22/> <path d=%22M -3,-16 Q 10,-20 10,-8 L 10,-4 Q -3,-8 -3,-16 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(365.7,500.5) rotate(-6.4) scale(0.76)%22 opacity=%220.15%22><path d=%22M-16,-12 h32 a4,4 0 0 1 4,4 v12 a4,4 0 0 1 -4,4 h-20 l-8,7 v-7 h-4 a4,4 0 0 1 -4,-4 v-12 a4,4 0 0 1 4,-4 z%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/> <circle cx=%22-8%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/><circle cx=%220%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/><circle cx=%228%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/></g><g transform=%22translate(485.4,512.8) rotate(-2.3) scale(1.22)%22 opacity=%220.16%22><polygon points=%220.0,-16.0 4.1,-5.7 15.2,-4.9 6.7,2.2 9.4,12.9 0.0,7.0 -9.4,12.9 -6.7,2.2 -15.2,-4.9 -4.1,-5.7%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(155.5,610.6) rotate(21.4) scale(1.06)%22 opacity=%220.12%22><rect x=%22-20%22 y=%22-6%22 width=%2215%22 height=%2212%22 rx=%225%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22/> <rect x=%225%22 y=%22-6%22 width=%2215%22 height=%2212%22 rx=%225%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22/> <path d=%22M-5,-2 h10%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22/></g><g transform=%22translate(270.7,620.5) rotate(-16.7) scale(0.94)%22 opacity=%220.12%22><path d=%22M0,0 L4,-22 L0,-14 L-4,-22 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,-16 L6,-10 L20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L15,16 L6,10 L20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,16 L-6,10 L-20,6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L-15,-16 L-6,-10 L-20,-6 Z%22 fill=%22%23FF6B35%22/> <path d=%22M0,0 L0,20 L4,12 L-4,12 Z%22 fill=%22%23FF6B35%22/> <circle r=%226%22 fill=%22%23F5C518%22/></g><g transform=%22translate(377.1,599.5) rotate(19.6) scale(1.11)%22 opacity=%220.12%22><polygon points=%22-12,-10 0,-10 6,0 0,10 -12,10 -18,0%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(470.8,600.7) rotate(-15.3) scale(1.20)%22 opacity=%220.13%22><path d=%22M-16,8 L-16,-6 L-8,2 L0,-10 L8,2 L16,-6 L16,8 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(591.1,606.9) rotate(2.1) scale(0.82)%22 opacity=%220.15%22><circle r=%2210%22 fill=%22%23F5C518%22/> <circle cx=%22-16%22 cy=%22-6%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2216%22 cy=%22-6%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/> <circle cx=%22-14%22 cy=%228%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2214%22 cy=%228%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/> <circle cx=%220%22 cy=%2216%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%22-18%22 cy=%222%22 r=%226%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2218%22 cy=%222%22 r=%226%22 fill=%22%23F5C518%22 opacity=%220.85%22/></g><g transform=%22translate(54.1,734.4) rotate(-2.9) scale(1.19)%22 opacity=%220.09%22><path d=%22M -24,18 L -14,0 L 16,0 L 24,18 Z%22 fill=%22%23F5C518%22/> <path d=%22M -16,1 Q 1,-5 16,1%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222%22 opacity=%220.7%22/></g><g transform=%22translate(152.7,724.6) rotate(-10.6) scale(0.96)%22 opacity=%220.09%22><circle r=%2210%22 fill=%22%23F5C518%22/> <circle cx=%22-16%22 cy=%22-6%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2216%22 cy=%22-6%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/> <circle cx=%22-14%22 cy=%228%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2214%22 cy=%228%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/> <circle cx=%220%22 cy=%2216%22 r=%227%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%22-18%22 cy=%222%22 r=%226%22 fill=%22%23F5C518%22 opacity=%220.85%22/><circle cx=%2218%22 cy=%222%22 r=%226%22 fill=%22%23F5C518%22 opacity=%220.85%22/></g><g transform=%22translate(265.5,724.6) rotate(17.8) scale(0.96)%22 opacity=%220.13%22><rect x=%22-16%22 y=%22-8%22 width=%2232%22 height=%2222%22 rx=%224%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/> <rect x=%22-6%22 y=%22-14%22 width=%2212%22 height=%227%22 rx=%222%22 fill=%22%23F5C518%22/> <circle cx=%220%22 cy=%223%22 r=%227%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/></g><g transform=%22translate(383.8,730.0) rotate(4.8) scale(1.14)%22 opacity=%220.1%22><path d=%22M-16,-12 h32 a4,4 0 0 1 4,4 v12 a4,4 0 0 1 -4,4 h-20 l-8,7 v-7 h-4 a4,4 0 0 1 -4,-4 v-12 a4,4 0 0 1 4,-4 z%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222.2%22/> <circle cx=%22-8%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/><circle cx=%220%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/><circle cx=%228%22 cy=%22-2%22 r=%221.6%22 fill=%22%23F5C518%22/></g><g transform=%22translate(469.4,710.0) rotate(8.0) scale(1.02)%22 opacity=%220.14%22><path d=%22M0,-14 Q7,-2 0,10 Q-7,-2 0,-14 Z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(574.3,713.6) rotate(-20.1) scale(0.80)%22 opacity=%220.13%22><ellipse cx=%220%22 cy=%220%22 rx=%2216%22 ry=%2211%22 fill=%22%23FF6B35%22/> <circle cx=%22-14%22 cy=%22-8%22 r=%229%22 fill=%22%23FF6B35%22/> <path d=%22M14,4 Q26,4 26,14 Q26,20 20,20%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%224%22 stroke-linecap=%22round%22/> <path d=%22M-6,10 L-8,20 M6,10 L4,20%22 stroke=%22%23FF6B35%22 stroke-width=%224%22 stroke-linecap=%22round%22/></g><g transform=%22translate(41.1,828.5) rotate(20.8) scale(1.05)%22 opacity=%220.14%22><path d=%22M0,-18 Q10,-4 4,4 Q10,2 8,-4 Q16,10 4,18 Q-10,20 -10,6 Q-10,-2 -4,-8 Q-2,-2 0,-4 Q-2,-12 0,-18 Z%22 fill=%22%23F5C518%22/></g><g transform=%22translate(168.6,833.6) rotate(-11.1) scale(1.01)%22 opacity=%220.15%22><path d=%22M -24,18 L -14,0 L 16,0 L 24,18 Z%22 fill=%22%23FF6B35%22/> <path d=%22M -16,1 Q 1,-5 16,1%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%222%22 opacity=%220.7%22/></g><g transform=%22translate(256.5,822.7) rotate(-2.5) scale(0.79)%22 opacity=%220.12%22><path d=%22M -24,18 L -14,0 L 16,0 L 24,18 Z%22 fill=%22%23F5C518%22/> <path d=%22M -16,1 Q 1,-5 16,1%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%222%22 opacity=%220.7%22/></g><g transform=%22translate(381.3,844.5) rotate(-15.2) scale(1.11)%22 opacity=%220.1%22><rect x=%22-10%22 y=%22-6%22 width=%2220%22 height=%2220%22 rx=%224%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%222%22/> <rect x=%22-7%22 y=%22-13%22 width=%2214%22 height=%228%22 rx=%222%22 fill=%22%23FF6B35%22/> <path d=%22M -10,4 Q 0,8 10,4%22 fill=%22none%22 stroke=%22%23FF6B35%22 stroke-width=%222%22/></g><g transform=%22translate(472.1,846.0) rotate(-4.5) scale(0.99)%22 opacity=%220.1%22><path d=%22M-6,-14 L-10,14 M6,-14 L2,14 M-14,-4 L14,-4 M-14,6 L14,6%22 stroke=%22%23F5C518%22 stroke-width=%223%22 stroke-linecap=%22round%22/></g><g transform=%22translate(584.0,831.1) rotate(-6.3) scale(0.80)%22 opacity=%220.09%22><path d=%22M-10,-2 h-4 v18 h4 z%22 fill=%22%23FF6B35%22/> <path d=%22M-6,-2 L-2,-16 Q0,-20 4,-16 L2,-4 h10 a4,4 0 0 1 4,5 l-3,11 a4,4 0 0 1 -4,3 h-13 v-16 z%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(59.0,941.2) rotate(0.8) scale(0.90)%22 opacity=%220.1%22><ellipse cx=%220%22 cy=%220%22 rx=%2213%22 ry=%226%22 fill=%22%23F5C518%22/> <circle cx=%2214%22 cy=%22-4%22 r=%224%22 fill=%22%23F5C518%22/> <path d=%22M16,-8 Q20,-16 16,-20 Q14,-14 16,-8%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.6%22/> <path d=%22M12,-8 Q14,-15 10,-19 Q10,-13 12,-8%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.6%22/> <path d=%22M-10,4 L-16,14%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22 stroke-linecap=%22round%22/> <path d=%22M8,5 L12,15%22 stroke=%22%23F5C518%22 stroke-width=%222.4%22 stroke-linecap=%22round%22/></g><g transform=%22translate(148.9,937.9) rotate(-20.3) scale(1.14)%22 opacity=%220.14%22><path d=%22M-6,-14 L-10,14 M6,-14 L2,14 M-14,-4 L14,-4 M-14,6 L14,6%22 stroke=%22%23FF6B35%22 stroke-width=%223%22 stroke-linecap=%22round%22/></g><g transform=%22translate(271.6,956.9) rotate(-4.1) scale(1.02)%22 opacity=%220.14%22><polygon points=%22-12,-10 0,-10 6,0 0,10 -12,10 -18,0%22 fill=%22%23FF6B35%22/></g><g transform=%22translate(381.7,935.6) rotate(17.4) scale(0.88)%22 opacity=%220.13%22><rect x=%22-4%22 y=%220%22 width=%228%22 height=%2220%22 rx=%222%22 fill=%22%23F5C518%22/> <circle cx=%22-6%22 cy=%22-6%22 r=%229%22 fill=%22%23F5C518%22/> <circle cx=%226%22 cy=%22-6%22 r=%229%22 fill=%22%23F5C518%22/> <circle cx=%220%22 cy=%22-12%22 r=%2210%22 fill=%22%23F5C518%22/> <path d=%22M -4,4 L -14,0 M 4,4 L 14,2%22 stroke=%22%23F5C518%22 stroke-width=%222%22 opacity=%220.7%22/></g><g transform=%22translate(574.5,954.6) rotate(-2.0) scale(0.92)%22 opacity=%220.15%22><rect x=%22-4%22 y=%220%22 width=%228%22 height=%2220%22 rx=%222%22 fill=%22%23FF6B35%22/> <circle cx=%22-6%22 cy=%22-6%22 r=%229%22 fill=%22%23FF6B35%22/> <circle cx=%226%22 cy=%22-6%22 r=%229%22 fill=%22%23FF6B35%22/> <circle cx=%220%22 cy=%22-12%22 r=%2210%22 fill=%22%23FF6B35%22/> <path d=%22M -4,4 L -14,0 M 4,4 L 14,2%22 stroke=%22%23FF6B35%22 stroke-width=%222%22 opacity=%220.7%22/></g></svg>');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 .chat-input-area {
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -747,48 +710,6 @@ body {
 @keyframes waveAnim {
   0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)}
 }
-
-/* "Listening..." style recording pill */
-.voice-pill {
-  position: absolute; left: 50%; bottom: 84px;
-  transform: translateX(-50%);
-  background: rgba(38,26,16,0.94);
-  backdrop-filter: blur(16px);
-  border-radius: 50px;
-  padding: 12px 14px 12px 20px;
-  display: flex; align-items: center; gap: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  z-index: 60; min-width: 300px;
-  animation: pillIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
-}
-@keyframes pillIn { from{opacity:0;transform:translateX(-50%) translateY(12px) scale(0.9)} to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} }
-.voice-pill-cancel {
-  background:none;border:none;color:rgba(255,255,255,0.5);
-  font-size:18px;cursor:pointer;padding:0;flex-shrink:0;
-}
-.voice-pill-text {
-  color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;
-  white-space:nowrap;flex-shrink:0;
-}
-.voice-pill-mic { color: var(--gold); font-size:17px;flex-shrink:0; }
-.voice-pill-matrix {
-  display:grid; grid-template-columns:repeat(5,1fr); grid-auto-rows:5px;
-  gap:3px; flex:1; min-width:70px;
-}
-.voice-pill-dot {
-  width:5px;height:5px;border-radius:50%;
-  background: var(--gold); opacity:0.2;
-  animation: voicePillDot 1.1s ease-in-out infinite;
-}
-@keyframes voicePillDot { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.15)} }
-.voice-pill-time { color:rgba(255,255,255,0.6); font-size:12px; flex-shrink:0; min-width:32px; }
-.voice-pill-stop {
-  width:36px;height:36px;border-radius:11px;
-  background: var(--gold); border:none; cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.voice-pill-stop span { width:13px;height:13px;background:#000;border-radius:3px;display:block; }
 /* Theme picker */
 .theme-swatch {
   width: 52px; height: 52px; border-radius: 16px;
@@ -822,6 +743,19 @@ body.theme-pride .mobile-nav { border-top: 2px solid transparent; border-image: 
   margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
 }
 .group-card:hover { border-color: var(--gold); }
+
+/* HiveMind */
+.hivemind-btn {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 16px;
+  background: #1a1a1a; border: 1px solid var(--border);
+  border-radius: 16px; cursor: pointer;
+  transition: all 0.2s; color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+.hivemind-btn:hover { border-color: var(--gold); background: rgba(245,197,24,0.06); }
+body.light .hivemind-btn { background: #f5f5f5; border-color: #e0e0e0; }
+body.light .hivemind-btn:hover { border-color: var(--gold); background: rgba(245,197,24,0.06); }
 
 /* Vibe Check */
 .vibe-emoji-opt {
@@ -963,7 +897,6 @@ body.light .auth-inner { background: transparent; }
 body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
 body.light .icon-btn { color: #444; }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
-body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 </style>
 </head>
 <body>
@@ -1000,7 +933,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         </div>
         <input type="file" id="onboard-avatar-upload" accept="image/*" style="display:none" onchange="previewOnboardAvatar(this)">
         <div id="onboard-avatar-status" style="font-size:13px;color:var(--muted);min-height:18px"></div>
-        <button onclick="openAvatarPicker()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;text-decoration:underline">🎭 Or pick an avatar instead</button>
       </div>
       <button onclick="goOnboard(3)" id="onboard-skip-avatar" style="width:100%;padding:16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Next →</button>
       <button onclick="goOnboard(3)" style="width:100%;padding:12px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;margin-top:8px">Skip for now</button>
@@ -1235,19 +1167,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </div>
 </div>
 
-<!-- EDIT POST MODAL -->
-<div id="edit-post-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
-  <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Edit post ✏️</div>
-      <button onclick="closeEditPostModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
-    </div>
-    <textarea id="edit-post-input" placeholder="What's the vibe?" style="width:100%;background:#1a1a1a;border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;resize:none;min-height:100px;line-height:1.6;margin-bottom:16px"></textarea>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Edited posts show a small "edited" note — this keeps things transparent for anyone who already saw it.</div>
-    <button onclick="saveEditedPost()" id="save-edit-post-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Save changes</button>
-  </div>
-</div>
-
 <div id="thread-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
   <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1445,6 +1364,66 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </div>
 </div>
 
+<!-- HIVEMIND MODAL -->
+<div id="hivemind-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
+  <div id="hivemind-sheet" style="background:#111;border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:600px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.1,0.64,1)">
+    <!-- Handle bar -->
+    <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 24px"></div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="font-size:28px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold)">HiveMind</div>
+        <div style="font-size:12px;color:var(--muted)">AI-powered post assistant</div>
+      </div>
+    </div>
+    <!-- Current post preview -->
+    <div id="hivemind-preview" style="background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.15);border-radius:14px;padding:12px 16px;margin:16px 0;min-height:44px;font-size:14px;color:var(--muted);font-style:italic">Your post will appear here...</div>
+    <!-- Options -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">
+      <button onclick="hiveMindAction('write')" class="hivemind-btn">
+        <span style="font-size:20px">✍️</span>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Write my post</div>
+          <div style="font-size:12px;color:var(--muted)">Generate a post from your idea</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+      </button>
+      <button onclick="hiveMindAction('improve')" class="hivemind-btn">
+        <span style="font-size:20px">✨</span>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Improve my vibe</div>
+          <div style="font-size:12px;color:var(--muted)">Make your post more engaging</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+      </button>
+      <button onclick="hiveMindAction('hashtags')" class="hivemind-btn">
+        <span style="font-size:20px">🏷️</span>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Suggest hashtags</div>
+          <div style="font-size:12px;color:var(--muted)">Add relevant hashtags to your post</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+      </button>
+      <button onclick="hiveMindAction('translate')" class="hivemind-btn">
+        <span style="font-size:20px">🌍</span>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Translate my post</div>
+          <div style="font-size:12px;color:var(--muted)">Translate to another language</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+      </button>
+    </div>
+    <!-- Result area -->
+    <div id="hivemind-result" style="display:none;background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px">
+      <div id="hivemind-result-text" style="font-size:14px;line-height:1.6;margin-bottom:10px"></div>
+      <button onclick="applyHiveMindResult()" style="width:100%;padding:10px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Use this ✓</button>
+    </div>
+    <!-- Cancel -->
+    <button onclick="closeHiveMind()" style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:50px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">❌ Cancel</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1471,52 +1450,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <input type="text" id="edit-location" placeholder="e.g. Johannesburg" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
     </div>
     <button onclick="saveProfile()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="save-profile-btn">Save Changes</button>
-    <button onclick="closeEditProfile();openAvatarPicker()" style="width:100%;padding:10px;background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;margin-top:10px">🎭 Or choose an avatar instead of a photo</button>
-  </div>
-</div>
-
-<!-- AVATAR PICKER MODAL -->
-<div id="avatar-picker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Choose an Avatar 🎭</div>
-      <button onclick="closeAvatarPicker()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
-    </div>
-    <div style="color:var(--muted);font-size:13px;margin-bottom:20px">Prefer not to use a photo? Pick a character instead — you can always change it later.</div>
-    <div id="avatar-preset-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
-    <button onclick="confirmAvatarSelection()" id="confirm-avatar-btn" disabled style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;opacity:0.5">Use this avatar</button>
-  </div>
-</div>
-
-<!-- REPORT MODAL -->
-<div id="report-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:420px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Report 🚩</div>
-      <button onclick="closeReportModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
-    </div>
-    <div style="color:var(--muted);font-size:13px;margin-bottom:16px">Your report is sent privately to Hive's moderation team — the person won't be notified.</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="report-reason-list">
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Spam')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Spam</button>
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Harassment or bullying')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Harassment or bullying</button>
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Hate speech')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Hate speech</button>
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Nudity or sexual content')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Nudity or sexual content</button>
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Impersonation')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Impersonation</button>
-      <button class="report-reason-btn" onclick="selectReportReason(this,'Other')" style="text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Other</button>
-    </div>
-    <textarea id="report-details" placeholder="Add details (optional)" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;min-height:70px;margin-bottom:16px"></textarea>
-    <button onclick="submitReport()" id="submit-report-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Submit Report</button>
-  </div>
-</div>
-
-<!-- BLOCKED ACCOUNTS MODAL -->
-<div id="blocked-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:28px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Blocked Accounts 🚫</div>
-      <button onclick="document.getElementById('blocked-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
-    </div>
-    <div id="blocked-list"><div class="loading-wrap"><div class="spinner"></div></div></div>
   </div>
 </div>
 
@@ -1691,7 +1624,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Light/Dark mode">🌙</button>
         <button class="icon-btn" onclick="openThemePicker()" title="Change theme">🎨</button>
         <button class="icon-btn" onclick="showProModal()" title="Hive Pro">👑</button>
-        <button class="icon-btn" onclick="openBlockedList()" title="Blocked accounts">🚫</button>
         <button class="icon-btn" onclick="signOut()" title="Sign out">↩</button>
       </div>
       <div class="user-card" onclick="setNav(document.getElementById('nav-profile'),'profile')">
@@ -1710,10 +1642,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     <!-- FEED -->
     <div id="feed-panel" class="panel active">
       <div class="feed-header">
-        <div class="mobile-topbar">
-          <div class="mobile-topbar-logo"><span>🐝</span><span>Hive</span></div>
-          <button class="mobile-topbar-btn" onclick="toggleTheme()" id="mobile-theme-btn" title="Light/Dark mode">🌙</button>
-        </div>
         <div class="feed-title">Your Hive 🍯</div>
         <div class="stories-bar" id="vibe-check-bar">
           <!-- Add Vibe Check button -->
@@ -1728,7 +1656,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         <div class="feed-tabs">
           <button class="feed-tab active" onclick="switchTab(this)">For You</button>
           <button class="feed-tab" onclick="switchTab(this)">Following</button>
-          <button class="feed-tab" onclick="switchTab(this)">Trending 🔥</button>
+          <button class="feed-tab" onclick="switchTab(this)">Trending</button>
         </div>
       </div>
 
@@ -1741,7 +1669,11 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
             <span style="font-size:12px;color:var(--gold);font-weight:600">Starting a thread</span>
             <button onclick="cancelNewThread()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 0 0 4px">✕</button>
           </div>
-          <input class="compose-input" placeholder="What's the vibe?" id="compose-text">
+          <input class="compose-input" placeholder="What's the vibe? 🐝" id="compose-text">
+          <!-- HiveMind Button -->
+          <button onclick="openHiveMind()" style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.3);border-radius:50px;padding:8px 16px;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;transition:all 0.2s;width:fit-content" onmouseover="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.25),rgba(245,197,24,0.1))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05))'">
+            🐝 Ask HiveMind
+          </button>
           <div id="image-preview-container" style="display:none;margin-bottom:12px">
             <div id="image-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px"></div>
           </div>
@@ -1906,14 +1838,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           <button id="chat-mic-btn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="width:44px;height:44px;min-width:44px;border-radius:50%;background:#1a1a1a;border:1.5px solid var(--border);color:#fff;font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center">🎤</button>
         </div>
         <!-- Recording indicator -->
-        <!-- Recording indicator: floating "Listening..." style pill -->
-        <div id="recording-indicator" class="voice-pill" style="display:none">
-          <button class="voice-pill-cancel" onclick="cancelRecording()" title="Cancel">✕</button>
-          <span class="voice-pill-text">Listening...</span>
-          <span class="voice-pill-mic">🎙️</span>
-          <div class="voice-pill-matrix" id="voice-pill-matrix"></div>
-          <span class="voice-pill-time" id="recording-time">0:00</span>
-          <button class="voice-pill-stop" onclick="stopRecording()" title="Stop and send"><span></span></button>
+        <div id="recording-indicator" style="display:none;flex-shrink:0;padding:8px 16px;background:rgba(255,50,50,0.1);border-top:1px solid rgba(255,50,50,0.2);align-items:center;gap:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite"></div>
+          <div style="color:#ff4444;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">Recording... <span id="recording-time">0:00</span></div>
+          <button onclick="cancelRecording()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer">Cancel</button>
         </div>
       </div>
     </div>
@@ -1951,7 +1879,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           <button onclick="openThemePicker()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">🎨 Themes</button>
           <button onclick="showProModal()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid rgba(245,197,24,0.4);background:rgba(245,197,24,0.08);color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">👑 Pro</button>
         </div>
-        <button onclick="openBlockedList()" style="margin-top:10px;width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">🚫 Blocked Accounts</button>
       </div>
       <!-- Profile Tabs -->
       <div style="display:flex;border-bottom:1px solid var(--border);margin-top:8px">
@@ -1982,10 +1909,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <!-- Avatar properly overlapping cover -->
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:-46px;margin-bottom:12px">
         <div id="user-avatar-large" style="width:92px;height:92px;border-radius:50%;background:var(--gold);border:4px solid var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:#000;overflow:hidden;flex-shrink:0;position:relative;z-index:2"></div>
-        <div style="display:flex;gap:8px;margin-bottom:4px">
-          <button id="user-block-btn" onclick="blockUser(viewingUserId, document.getElementById('user-name-large').textContent)" style="padding:8px 14px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🚫</button>
-          <button id="user-follow-btn" onclick="toggleFollowUser(this)" style="padding:8px 24px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Follow</button>
-        </div>
+        <button id="user-follow-btn" onclick="toggleFollowUser(this)" style="padding:8px 24px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:4px">Follow</button>
       </div>
       <div id="user-name-large" style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:2px"></div>
       <div id="user-handle-large" style="color:var(--muted);font-size:14px;margin-bottom:8px"></div>
@@ -2098,7 +2022,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   </button>
   <button class="mobile-nav-item" onclick="setNav(this,'messages')">
     <span class="mobile-nav-icon">✉️</span>DMs
-    <span class="mobile-badge" id="mobile-msg-badge"></span>
   </button>
   <button class="mobile-nav-item" onclick="setNav(this,'saved')">
     <span class="mobile-nav-icon">🔖</span>Saved
@@ -2256,7 +2179,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
       document.getElementById('nav-name').textContent = data.full_name || '';
       document.getElementById('nav-handle').textContent = '@' + (data.username || '');
-      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + renderBadges(data);
+      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
 
@@ -2283,7 +2206,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     document.getElementById('auth').style.display = 'none';
     document.getElementById('splash').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    loadBlockedUsers().then(() => loadPosts());
+    loadPosts();
     loadVibeChecks();
     setTimeout(loadProfileStats, 500);
     setTimeout(loadWhoToFollow, 1000);
@@ -2293,8 +2216,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     setTimeout(checkPaymentReturn, 1000);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
-    checkUnreadMessages();
-    setInterval(checkUnreadMessages, 30000);
     startRealtimeSubscriptions();
     showToast('Welcome to Hive! 🐝');
   }
@@ -2323,14 +2244,22 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     // Real-time DM badge
     sb.channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUser?.id}` }, (payload) => {
-        // If chat with that sender is open, reload messages (loadChatMessages also marks them read)
+        // If chat with that sender is open, reload messages
         if (currentChatUser && payload.new.sender_id === currentChatUser.id) {
           loadChatMessages();
         } else {
-          checkUnreadMessages();
-          // If the conversations list is currently visible, refresh it so the new message shows up
-          const convView = document.getElementById('conversations-view');
-          if (convView && convView.style.display !== 'none') loadConversations();
+          // Show unread badge on DM nav
+          const dmBadge = document.getElementById('dm-badge');
+          if (!dmBadge) {
+            const navDm = document.querySelector('[onclick*="messages"]');
+            if (navDm) {
+              const badge = document.createElement('div');
+              badge.id = 'dm-badge';
+              badge.style.cssText = 'position:absolute;top:4px;right:8px;width:8px;height:8px;background:#ff4444;border-radius:50%';
+              navDm.style.position = 'relative';
+              navDm.appendChild(badge);
+            }
+          }
         }
       })
       .subscribe();
@@ -2383,8 +2312,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     document.getElementById('hashtag-title').textContent = '#' + tag;
     const container = document.getElementById('hashtag-posts');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading #' + tag + '...</div>';
-    let { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', '%#' + tag + '%').order('created_at', { ascending: false }).limit(20);
-    posts = filterBlocked(posts);
+    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', '%#' + tag + '%').order('created_at', { ascending: false }).limit(20);
     if (!posts || posts.length === 0) {
       container.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔍</div><div class="empty-text">No posts with #${tag} yet! Be first!</div></div>`;
       return;
@@ -2399,13 +2327,9 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const tab = el.textContent.trim();
     if (tab === 'For You') loadPosts('foryou');
     if (tab === 'Following') loadPosts('following');
-    if (tab.indexOf('Trending') === 0) loadTrending();
+    if (tab === 'Trending') loadTrending();
   }
-  function toggleTheme() {
-    document.body.classList.toggle('light');
-    const isLight = document.body.classList.contains('light');
-    document.querySelectorAll('#theme-btn,#mobile-theme-btn').forEach(b => { if (b) b.textContent = isLight ? '☀️' : '🌙'; });
-  }
+  function toggleTheme() { document.body.classList.toggle('light'); document.getElementById('theme-btn').textContent = document.body.classList.contains('light') ? '☀️' : '🌙'; }
 
   // POSTS
   let currentPostsPage = 0;
@@ -2433,8 +2357,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       query = query.in('user_id', ids);
     }
 
-    let { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
-    posts = filterBlocked(posts);
+    const { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
     if (!append) container.innerHTML = '';
 
     if (error || !posts || posts.length === 0) {
@@ -2494,13 +2417,12 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
     // Get posts from last 48 hours
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    let { data: posts } = await sb.from('posts')
+    const { data: posts } = await sb.from('posts')
       .select('*, profiles(username,full_name,avatar_url,verified)')
       .is('reply_to', null)
       .gt('created_at', cutoff)
       .order('created_at', { ascending: false })
       .limit(50);
-    posts = filterBlocked(posts);
 
     if (!posts || posts.length === 0) {
       container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔥</div><div class="empty-text">Nothing trending yet!<br>Be the first to post something 🐝</div></div>';
@@ -2537,7 +2459,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       badge.style.cssText = 'padding:6px 20px 0;display:flex;align-items:center;gap:6px';
       badge.innerHTML = `
         <span style="color:var(--gold);font-size:12px;font-weight:700">#${rank + 1} Trending</span>
-        <span style="color:var(--muted);font-size:11px">· ❤️ ${likes} · 💬 ${comments} · 🔁 ${reposts}</span>`;
+        <span style="color:var(--muted);font-size:11px">· 🐝 ${likes} · 💬 ${comments} · 🔁 ${reposts}</span>`;
       card.insertBefore(badge, card.firstChild);
       container.appendChild(card);
     });
@@ -2585,22 +2507,13 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     threadLineResizeTimeout = setTimeout(measureAndDrawThreadLines, 150);
   });
 
-  // Renders the check + crown badges shown next to a name, matching brand style
-  function renderBadges(p) {
-    if (!p) return '';
-    let html = '';
-    if (p.verified) html += ' <span class="badge-check" title="Verified">✓</span>';
-    if (p.is_pro) html += ' <span class="badge-crown" title="Hive Pro">👑</span>';
-    return html;
-  }
-
   function createPostCard(post, isThreadReply = false) {
     const p = post.profiles || {};
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
     const initial = name[0].toUpperCase();
     const isOwn = currentUser && post.user_id === currentUser.id;
-    const badges = renderBadges(p);
+    const verified = p.verified ? '<span style="display:inline-block;font-size:14px;filter:drop-shadow(0 0 4px #4A90D9) drop-shadow(0 0 8px #4A90D9)">🐝</span>' : '';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial;
 
     const card = document.createElement('div');
@@ -2613,13 +2526,12 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name}${badges}</span>
+            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name} ${verified}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
-            ${post.edited_at ? '<span class="post-dot">·</span><span class="post-handle edited-marker">edited</span>' : ''}
           </div>
-          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}','${post.user_id}',${isOwn})">···</button>
+          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body)}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
@@ -2627,7 +2539,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
         <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
-            <span class="action-icon">🤍</span><span class="like-count">0</span>
+            <span class="action-icon">🐝</span><span class="like-count">0</span>
             <div class="particles"></div>
             <div class="reactions-popup" id="reactions-${post.id}">
               <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','buzz',this.closest('.like-btn'))">🐝</span>
@@ -2644,11 +2556,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           <button class="action-btn repost-btn" onclick="event.stopPropagation();showRepostMenu(this,'${post.id}')">
             <span class="action-icon">🔁</span><span class="repost-count">0</span>
           </button>
-          <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')">
+          <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
             <span class="action-icon">🔖</span>
-          </button>
-          <button class="action-btn" onclick="event.stopPropagation();sharePost('${post.id}')" title="Share">
-            <span class="action-icon">↗️</span>
           </button>
           ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon">🧵</span></button>` : '')}
         </div>
@@ -2675,21 +2584,13 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     return card;
   }
 
-  function sharePost(postId) {
-    navigator.clipboard.writeText(window.location.href);
-    showToast('Link copied! 🔗');
-  }
-
   async function loadLikes(postId, card) {
     const { count } = await sb.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
     const el = card.querySelector('.like-count');
     if (el) el.textContent = count || 0;
     if (currentUser) {
       const { data } = await sb.from('likes').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
-      if (data) {
-        const btn = card.querySelector('.like-btn');
-        if (btn) { btn.classList.add('liked'); const icon = btn.querySelector('.action-icon'); if (icon) icon.textContent = '❤️'; }
-      }
+      if (data) { const btn = card.querySelector('.like-btn'); if (btn) btn.classList.add('liked'); }
     }
   }
 
@@ -2754,7 +2655,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const count = parseInt(countEl.textContent) || 0;
     if (isLiked) {
       btn.classList.remove('liked');
-      btn.querySelector('.action-icon').textContent = '🤍';
+      btn.querySelector('.action-icon').textContent = '🐝';
       countEl.textContent = Math.max(0, count - 1);
       await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
@@ -3293,8 +3194,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: notifs } = await sb.from('notifications').select('*, profiles!notifications_from_user_id_fkey(username,full_name,avatar_url)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
     if (!notifs || notifs.length === 0) { list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔔</div><div class="empty-text">No notifications yet</div></div>'; return; }
     list.innerHTML = '';
-    const icons = { like: '❤️', follow: '👤', comment: '💬', message: '✉️', repost: '🔁' };
-    const msgs = { like: 'liked your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message', repost: 'reposted your post' };
+    const icons = { like: '🐝', follow: '👤', comment: '💬', message: '✉️', repost: '🔁' };
+    const msgs = { like: 'buzzed your post', follow: 'started following you', comment: 'commented on your post', message: 'sent you a message', repost: 'rebuzzed your post' };
     notifs.forEach(n => {
       const p = n.profiles || {};
       const name = p.full_name || 'Someone';
@@ -3360,16 +3261,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   // MESSAGES
   let currentChatUser = null;
 
-  async function checkUnreadMessages() {
-    if (!currentUser) return;
-    const { count } = await sb.from('messages').select('*', { count: 'exact', head: true }).eq('receiver_id', currentUser.id).eq('read', false);
-    const show = count > 0 ? 'block' : 'none';
-    const sidebarBadge = document.getElementById('msg-badge');
-    const mobileBadge = document.getElementById('mobile-msg-badge');
-    if (sidebarBadge) sidebarBadge.style.display = show;
-    if (mobileBadge) mobileBadge.style.display = show;
-  }
-
   async function loadConversations() {
     const list = document.getElementById('conversations-list');
     if (!list) return;
@@ -3377,40 +3268,15 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: msgsData } = await sb.from('messages').select('*, sender:profiles!messages_sender_id_fkey(id,username,full_name,avatar_url), receiver:profiles!messages_receiver_id_fkey(id,username,full_name,avatar_url)').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`).order('created_at', { ascending: false });
     if (!msgsData || msgsData.length === 0) { list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">✉️</div><div class="empty-text">No messages yet!</div></div>'; return; }
     const seen = new Set(); const convs = [];
-    msgsData.forEach(m => { const other = m.sender_id === currentUser.id ? m.receiver : m.sender; if (other && !seen.has(other.id) && !blockedUserIds.has(other.id)) { seen.add(other.id); convs.push({ user: other, lastMsg: m }); } });
+    msgsData.forEach(m => { const other = m.sender_id === currentUser.id ? m.receiver : m.sender; if (other && !seen.has(other.id)) { seen.add(other.id); convs.push({ user: other, lastMsg: m }); } });
     list.innerHTML = '';
     convs.forEach(c => {
       const name = c.user.full_name || c.user.username || 'Unknown';
-      const m = c.lastMsg;
-      const isMine = m.sender_id === currentUser.id;
-      const isUnread = !isMine && !m.read;
-
-      let preview = m.voice_url ? '🎤 Voice note' : (m.image_url ? '📷 Photo' : (m.body || ''));
-      let receipt = '';
-      if (isMine) {
-        receipt = m.read
-          ? '<span style="color:var(--gold)">✓✓</span> '
-          : '<span style="color:var(--muted)">✓</span> ';
-      }
-
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s';
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s';
       div.onmouseenter = () => div.style.background = 'rgba(255,255,255,0.03)';
       div.onmouseleave = () => div.style.background = 'transparent';
-      div.innerHTML = `
-        <div style="width:52px;height:52px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:19px;flex-shrink:0;border:2.5px solid ${isUnread ? 'var(--gold)' : 'transparent'}">
-          ${c.user.avatar_url ? `<img src="${c.user.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div style="font-family:'Syne',sans-serif;font-weight:${isUnread ? 800 : 700};font-size:15px;color:${isUnread ? 'var(--text)' : 'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
-            <div style="font-size:11px;color:${isUnread ? 'var(--gold)' : 'var(--muted)'};flex-shrink:0">${timeAgo(m.created_at)}</div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px">
-            <div style="font-size:13px;color:${isUnread ? 'var(--text)' : 'var(--muted)'};font-weight:${isUnread ? 600 : 400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${receipt}${preview}</div>
-            ${isUnread ? '<div style="width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>' : ''}
-          </div>
-        </div>`;
+      div.innerHTML = `<div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">${c.user.avatar_url ? `<img src="${c.user.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${name}</div><div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.lastMsg.body}</div></div><div style="font-size:11px;color:var(--muted)">${timeAgo(c.lastMsg.created_at)}</div>`;
       div.onclick = () => openChat(c.user);
       list.appendChild(div);
     });
@@ -3448,7 +3314,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   }
 
   async function openChat(user) {
-    if (blockedUserIds.has(user.id)) { showToast("You've blocked this person — unblock them to message"); return; }
     currentChatUser = user;
     const name = user.full_name || user.username || 'Unknown';
     document.getElementById('conversations-view').style.display = 'none';
@@ -3484,10 +3349,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     if (!currentChatUser || !currentUser) return;
     const chatEl = document.getElementById('chat-messages');
     chatEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Loading...</div>';
-
-    // Mark any unread messages from this person as read, then refresh badges
-    await sb.from('messages').update({ read: true }).eq('sender_id', currentChatUser.id).eq('receiver_id', currentUser.id).eq('read', false);
-    checkUnreadMessages();
 
     const { data: msgsData, error } = await sb.from('messages')
       .select('*')
@@ -3534,7 +3395,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
       div.innerHTML = `
         ${!isMe ? otherAvatar : ''}
-        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.3)">
+        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5">
           ${m.voice_url ? createVoiceNotePlayer(m.voice_url, m.voice_duration || 0, isMe) : ''}
           ${m.image_url?`<img src="${m.image_url}" style="width:100%;border-radius:10px;margin-bottom:4px;max-height:200px;object-fit:cover">`:''}
           ${m.body?`<div>${m.body}</div>`:''}
@@ -3779,7 +3640,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const p = quoted.profiles || {};
     const name = p.full_name || 'Unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const badges = renderBadges(p);
+    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:11px">🐝</span>' : '';
 
     // Build media section — use full image_urls array if available, fall back to single image_url
     const urls = (quoted.image_urls && quoted.image_urls.length > 0)
@@ -3804,7 +3665,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     wrap.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="width:24px;height:24px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${badges}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${verified}</div>
         <div style="font-size:11px;color:var(--muted)">${timeAgo(quoted.created_at)}</div>
       </div>
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
@@ -4042,6 +3903,87 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     document.getElementById('pro-modal').style.display = 'flex';
   }
 
+  // HIVEMIND
+  let currentHiveMindResult = '';
+
+  function openHiveMind() {
+    const modal = document.getElementById('hivemind-modal');
+    const sheet = document.getElementById('hivemind-sheet');
+    const preview = document.getElementById('hivemind-preview');
+    const result = document.getElementById('hivemind-result');
+
+    // Show current post text in preview
+    const postText = document.getElementById('compose-text').value.trim();
+    preview.textContent = postText || 'Your post will appear here...';
+    preview.style.fontStyle = postText ? 'normal' : 'italic';
+    preview.style.color = postText ? 'var(--text)' : 'var(--muted)';
+
+    // Hide result from previous session
+    result.style.display = 'none';
+    currentHiveMindResult = '';
+
+    // Animate in
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+      sheet.style.transform = 'translateY(0)';
+    });
+  }
+
+  function closeHiveMind() {
+    const sheet = document.getElementById('hivemind-sheet');
+    sheet.style.transform = 'translateY(100%)';
+    setTimeout(() => {
+      document.getElementById('hivemind-modal').style.display = 'none';
+    }, 350);
+  }
+
+  function hiveMindAction(action) {
+    const postText = document.getElementById('compose-text').value.trim();
+    const resultEl = document.getElementById('hivemind-result');
+    const resultText = document.getElementById('hivemind-result-text');
+
+    // Placeholder responses — will be replaced with real AI later
+    let response = '';
+    if (action === 'write') {
+      if (!postText) {
+        showToast('Write something first so HiveMind knows what to work with! 🐝');
+        return;
+      }
+      response = `✍️ Here's a polished version of your post:\n\n"${postText}"\n\n🤖 AI writing coming soon — HiveMind will generate this for you!`;
+    } else if (action === 'improve') {
+      if (!postText) {
+        showToast('Write something first so HiveMind can improve it! 🐝');
+        return;
+      }
+      response = `✨ Improved version:\n\n"${postText}"\n\n🤖 AI improvements coming soon — HiveMind will make your post more engaging!`;
+    } else if (action === 'hashtags') {
+      if (!postText) {
+        showToast('Write your post first so HiveMind can suggest hashtags! 🐝');
+        return;
+      }
+      response = `🏷️ Suggested hashtags for your post:\n\n#hiveapp #southafrica #vibes #community #joburg\n\n🤖 AI hashtag suggestions coming soon!`;
+    } else if (action === 'translate') {
+      if (!postText) {
+        showToast('Write something first so HiveMind can translate it! 🐝');
+        return;
+      }
+      response = `🌍 Translation coming soon!\n\nHiveMind will be able to translate your post to Zulu, Afrikaans, Xhosa and more languages.\n\n🤖 AI translation coming soon!`;
+    }
+
+    currentHiveMindResult = postText;
+    resultText.textContent = response;
+    resultEl.style.display = 'block';
+
+    // Scroll to result
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function applyHiveMindResult() {
+    // For now just close — when AI is connected this will insert the AI result
+    closeHiveMind();
+    showToast('HiveMind AI coming soon! 🐝🧠');
+  }
+
   // PUSH NOTIFICATIONS via OneSignal
   async function initPushNotifications() {
     if (!window.OneSignal) return;
@@ -4124,10 +4066,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.start();
       recordingSeconds = 0;
-      const matrix = document.getElementById('voice-pill-matrix');
-      matrix.innerHTML = Array.from({length:15}, (_,i) =>
-        `<div class="voice-pill-dot" style="animation-delay:${(Math.random()*0.9).toFixed(2)}s"></div>`
-      ).join('');
       document.getElementById('recording-indicator').style.display = 'flex';
       document.getElementById('chat-input-wrap').style.display = 'none';
       document.getElementById('chat-send-btn').style.display = 'none';
@@ -4326,7 +4264,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const badges = renderBadges(p);
+    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
     const isOwn = currentUser && post.user_id === currentUser.id;
 
     const card = document.createElement('div');
@@ -4336,7 +4274,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name">${name}${badges}</span>
+            <span class="post-name">${name}${verified}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
@@ -4457,10 +4395,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
 
     const name = profile.full_name || profile.username || 'Unknown';
     const initial = name[0].toUpperCase();
-    const badges = renderBadges(profile);
+    const verified = profile.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:18px">🐝</span>' : '';
 
     document.getElementById('user-profile-title').textContent = name;
-    document.getElementById('user-name-large').innerHTML = name + badges;
+    document.getElementById('user-name-large').innerHTML = name + verified;
     document.getElementById('user-handle-large').textContent = '@' + (profile.username || '');
     document.getElementById('user-bio-large').textContent = profile.bio || '';
 
@@ -4498,13 +4436,10 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     // Follow button
     const followBtn = document.getElementById('user-follow-btn');
     followBtn.dataset.userId = userId;
-    const blockBtn = document.getElementById('user-block-btn');
     if (currentUser && userId === currentUser.id) {
       followBtn.style.display = 'none';
-      if (blockBtn) blockBtn.style.display = 'none';
     } else {
       followBtn.style.display = 'block';
-      if (blockBtn) blockBtn.style.display = 'block';
       if (currentUser) {
         const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
         if (data) {
@@ -4561,310 +4496,41 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     await loadProfileStats();
   }
 
-  // AVATAR PICKER (for people who'd rather not use a real photo)
-  const AVATAR_PRESETS = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#F5C518"/><circle cx="100" cy="120" r="55" fill="#E8B08C"/><path d="M45,120 A55,55 0 0 1 155,120 L155,95 Q140,58 100,56 Q60,58 45,95 Z" fill="#2B1B12"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FF6B35"/><circle cx="100" cy="120" r="55" fill="#8D5A3C"/><circle cx="60" cy="85" r="22" fill="#1A1A1A"/><circle cx="80" cy="63" r="24" fill="#1A1A1A"/><circle cx="100" cy="58" r="24" fill="#1A1A1A"/><circle cx="120" cy="63" r="24" fill="#1A1A1A"/><circle cx="140" cy="85" r="22" fill="#1A1A1A"/><circle cx="82" cy="118" r="5" fill="#111"/><circle cx="118" cy="118" r="5" fill="#111"/><path d="M82,146 Q100,159 118,146" stroke="#111" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#4ECDC4"/><circle cx="100" cy="120" r="55" fill="#C68863"/><path d="M48,110 A55,55 0 0 1 152,110" stroke="#3A2A1E" stroke-width="10" fill="none"/><rect x="68" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><rect x="102" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><line x1="98" y1="117" x2="102" y2="117" stroke="#111" stroke-width="5"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#45B7D1"/><path d="M40,150 Q35,90 100,58 Q165,90 160,150 L145,150 Q150,100 100,75 Q50,100 55,150 Z" fill="#5B3A29"/><circle cx="100" cy="45" r="16" fill="#5B3A29"/><circle cx="100" cy="120" r="55" fill="#F2C9A0"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#8B5CF6"/><circle cx="100" cy="120" r="55" fill="#3E2723"/><path d="M70,140 Q100,185 130,140 L130,158 Q100,178 70,158 Z" fill="#1A1A1A"/><circle cx="82" cy="112" r="5" fill="#fff"/><circle cx="118" cy="112" r="5" fill="#fff"/><path d="M85,140 Q100,148 115,140" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FF6B9D"/><path d="M40,175 Q35,90 100,58 Q165,90 160,175 L145,175 Q150,110 100,80 Q50,110 55,175 Z" fill="#6B4226"/><circle cx="100" cy="120" r="55" fill="#F4D9C6"/><rect x="68" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><rect x="102" y="106" width="30" height="22" rx="8" fill="none" stroke="#111" stroke-width="5"/><line x1="98" y1="117" x2="102" y2="117" stroke="#111" stroke-width="5"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#00CC66"/><circle cx="100" cy="120" r="55" fill="#C68863"/><path d="M90,30 L100,60 L110,30 L118,65 L128,35 L132,70 L100,76 L68,70 L72,35 Z" fill="#F5C518"/><circle cx="82" cy="115" r="5" fill="#222"/><circle cx="118" cy="115" r="5" fill="#222"/><path d="M82,145 Q100,158 118,145" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#1a1a2e"/><circle cx="100" cy="120" r="55" fill="#E8B08C"/><path d="M45,105 A55,55 0 0 1 155,105 L155,90 Q140,55 100,55 Q60,55 45,90 Z" fill="#F5C518"/><ellipse cx="100" cy="107" rx="60" ry="10" fill="#F5C518"/><circle cx="82" cy="118" r="5" fill="#222"/><circle cx="118" cy="118" r="5" fill="#222"/><path d="M82,146 Q100,159 118,146" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`
-  ];
-
-  let selectedPresetAvatar = null;
-
-  function toDataUri(svg) { return 'data:image/svg+xml,' + encodeURIComponent(svg); }
-
-  function openAvatarPicker() {
-    selectedPresetAvatar = null;
-    const grid = document.getElementById('avatar-preset-grid');
-    grid.innerHTML = '';
-    AVATAR_PRESETS.forEach((svg) => {
-      const uri = toDataUri(svg);
-      const img = document.createElement('img');
-      img.src = uri;
-      img.style.cssText = 'width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;display:block';
-      img.onclick = () => {
-        grid.querySelectorAll('img').forEach(el => el.style.borderColor = 'transparent');
-        img.style.borderColor = 'var(--gold)';
-        selectedPresetAvatar = uri;
-        const btn = document.getElementById('confirm-avatar-btn');
-        btn.disabled = false; btn.style.opacity = '1';
-      };
-      grid.appendChild(img);
-    });
-    document.getElementById('avatar-picker-modal').style.display = 'flex';
-  }
-
-  function closeAvatarPicker() {
-    document.getElementById('avatar-picker-modal').style.display = 'none';
-  }
-
-  async function confirmAvatarSelection() {
-    if (!selectedPresetAvatar || !currentUser) return;
-    const btn = document.getElementById('confirm-avatar-btn');
-    btn.disabled = true; btn.textContent = 'Saving...';
-    const { error } = await sb.from('profiles').update({ avatar_url: selectedPresetAvatar }).eq('id', currentUser.id);
-    btn.disabled = false; btn.textContent = 'Use this avatar';
-    if (error) { showToast('Error saving avatar'); return; }
-    await loadProfile();
-
-    // If we're mid-onboarding, update that preview too
-    const onboardImg = document.getElementById('onboard-avatar-img');
-    if (onboardImg) {
-      onboardImg.src = selectedPresetAvatar;
-      onboardImg.style.display = 'block';
-      const placeholder = document.getElementById('onboard-avatar-placeholder');
-      if (placeholder) placeholder.style.display = 'none';
-      const nextBtn = document.getElementById('onboard-skip-avatar');
-      if (nextBtn) nextBtn.textContent = 'Next →';
-    }
-
-    closeAvatarPicker();
-    showToast('Avatar updated! 🎭');
-  }
-
-  // BLOCKING & REPORTING
-  let blockedUserIds = new Set();
-
-  async function loadBlockedUsers() {
-    if (!currentUser) return;
-    const { data } = await sb.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
-    blockedUserIds = new Set((data || []).map(b => b.blocked_id));
-  }
-
-  // Removes any already-rendered posts from a blocked user out of the current view
-  function purgeBlockedFromDOM(userId) {
-    document.querySelectorAll(`[data-post-id]`).forEach(card => {
-      const avatarBtn = card.querySelector('.post-card-avatar');
-      if (avatarBtn && avatarBtn.getAttribute('onclick') === `openUserProfile('${userId}')`) {
-        card.remove();
-      }
-    });
-  }
-
-  // Filters a post array to remove anything from someone you've blocked
-  function filterBlocked(posts) {
-    if (!posts) return posts;
-    return posts.filter(p => !blockedUserIds.has(p.user_id));
-  }
-
-  async function blockUser(userId, name, fromPostId) {
-    if (!currentUser) { showToast('Sign in first!'); return; }
-    if (!userId) { showToast('Could not identify user'); return; }
-    if (userId === currentUser.id) { showToast("You can't block yourself!"); return; }
-    const label = name ? name : 'this user';
-    if (!confirm(`Block ${label}? They won't be able to message you, and you won't see their posts.`)) return;
-
-    const { error } = await sb.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
-    if (error && !error.message.includes('duplicate')) { showToast('Error blocking user'); return; }
-
-    blockedUserIds.add(userId);
-    purgeBlockedFromDOM(userId);
-
-    // If we blocked them from a specific post, also remove that post immediately
-    if (fromPostId) {
-      const card = document.querySelector(`[data-post-id="${fromPostId}"]`);
-      if (card) card.remove();
-    }
-
-    // If currently viewing their profile, bounce back to feed
-    if (viewingUserId === userId) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('feed-panel').classList.add('active');
-    }
-
-    // If they're the open DM, close that chat
-    if (currentChatUser && currentChatUser.id === userId) {
-      showConversations();
-    }
-
-    showToast(`Blocked${name ? ' ' + name : ''} 🚫`);
-  }
-
-  async function unblockUser(userId, btn) {
-    if (!currentUser) return;
-    await sb.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
-    blockedUserIds.delete(userId);
-    if (btn) { const row = btn.closest('.blocked-row'); if (row) row.remove(); }
-    showToast('Unblocked');
-  }
-
-  async function openBlockedList() {
-    document.getElementById('blocked-modal').style.display = 'flex';
-    const list = document.getElementById('blocked-list');
-    list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    const { data } = await sb.from('blocks').select('blocked_id, profiles!blocks_blocked_id_fkey(id,username,full_name,avatar_url)').eq('blocker_id', currentUser.id);
-    if (!data || data.length === 0) {
-      list.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🚫</div><div class="empty-text">No blocked accounts</div></div>';
-      return;
-    }
-    list.innerHTML = '';
-    data.forEach(row => {
-      const p = row.profiles || {};
-      const name = p.full_name || p.username || 'Unknown';
-      const div = document.createElement('div');
-      div.className = 'blocked-row';
-      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:14px;margin-bottom:8px';
-      div.innerHTML = `
-        <div style="width:42px;height:42px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:16px;flex-shrink:0">
-          ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
-        </div>
-        <div style="flex:1;min-width:0"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}</div><div style="font-size:12px;color:var(--muted)">@${p.username || ''}</div></div>
-        <button onclick="unblockUser('${row.blocked_id}', this)" style="padding:6px 14px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Unblock</button>`;
-      list.appendChild(div);
-    });
-  }
-
-  // Reporting
-  let reportContext = { postId: null, userId: null, reason: null };
-
-  function openReportModal(postId, userId) {
-    reportContext = { postId, userId, reason: null };
-    document.getElementById('report-details').value = '';
-    document.querySelectorAll('.report-reason-btn').forEach(b => { b.style.background = 'transparent'; b.style.borderColor = 'var(--border)'; });
-    document.getElementById('report-modal').style.display = 'flex';
-  }
-
-  function closeReportModal() {
-    document.getElementById('report-modal').style.display = 'none';
-  }
-
-  function selectReportReason(btn, reason) {
-    document.querySelectorAll('.report-reason-btn').forEach(b => { b.style.background = 'transparent'; b.style.borderColor = 'var(--border)'; });
-    btn.style.background = 'rgba(245,197,24,0.1)';
-    btn.style.borderColor = 'var(--gold)';
-    reportContext.reason = reason;
-  }
-
-  async function submitReport() {
-    if (!currentUser) { showToast('Sign in to report!'); return; }
-    if (!reportContext.reason) { showToast('Please select a reason'); return; }
-    const details = document.getElementById('report-details').value.trim();
-    const btn = document.getElementById('submit-report-btn');
-    btn.disabled = true; btn.textContent = 'Submitting...';
-    const { error } = await sb.from('reports').insert({
-      reporter_id: currentUser.id,
-      reported_user_id: reportContext.userId,
-      post_id: reportContext.postId,
-      reason: reportContext.reason,
-      details: details || null
-    });
-    btn.disabled = false; btn.textContent = 'Submit Report';
-    if (error) { showToast('Error submitting report'); return; }
-    closeReportModal();
-    showToast('Report submitted — thanks for helping keep Hive safe 🐝');
-  }
-
-  // EDIT POST
-  let editingPostId = null;
-
-  async function openEditPostModal(postId) {
-    editingPostId = postId;
-    const card = document.querySelector(`[data-post-id="${postId}"]`);
-    let currentBody = '';
-    if (card) {
-      const bodyEl = card.querySelector('.post-body');
-      if (bodyEl) currentBody = bodyEl.textContent || '';
-    } else {
-      const { data: post } = await sb.from('posts').select('body').eq('id', postId).maybeSingle();
-      currentBody = post?.body || '';
-    }
-    document.getElementById('edit-post-input').value = currentBody;
-    document.getElementById('edit-post-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('edit-post-input').focus(), 200);
-  }
-
-  function closeEditPostModal() {
-    document.getElementById('edit-post-modal').style.display = 'none';
-    editingPostId = null;
-  }
-
-  async function saveEditedPost() {
-    if (!editingPostId || !currentUser) return;
-    const text = document.getElementById('edit-post-input').value.trim();
-    if (!text) { showToast('Post can\'t be empty!'); return; }
-    const btn = document.getElementById('save-edit-post-btn');
-    btn.disabled = true; btn.textContent = 'Saving...';
-    const editedAt = new Date().toISOString();
-    const { data, error } = await sb.from('posts')
-      .update({ body: text, edited_at: editedAt })
-      .eq('id', editingPostId)
-      .eq('user_id', currentUser.id)
-      .select();
-    btn.disabled = false; btn.textContent = 'Save changes';
-    if (error) { showToast('Error saving edit: ' + error.message); return; }
-    if (!data || data.length === 0) {
-      showToast("Couldn't save — check that the update permission (RLS policy) exists for posts");
-      return;
-    }
-
-    // Update the card in place if it's currently on screen
-    const card = document.querySelector(`[data-post-id="${editingPostId}"]`);
-    if (card) {
-      const bodyEl = card.querySelector('.post-body');
-      if (bodyEl) bodyEl.innerHTML = formatBody(text);
-      const nameRow = card.querySelector('.post-name-row');
-      if (nameRow && !nameRow.querySelector('.edited-marker')) {
-        const dot = document.createElement('span');
-        dot.className = 'post-dot';
-        dot.textContent = '·';
-        const marker = document.createElement('span');
-        marker.className = 'post-handle edited-marker';
-        marker.textContent = 'edited';
-        nameRow.appendChild(dot);
-        nameRow.appendChild(marker);
-      }
-    }
-
-    closeEditPostModal();
-    showToast('Post updated! ✏️');
-  }
-
   // POST OPTIONS MENU
   let activeMenu = null;
 
-  function showPostMenu(btn, postId, authorId, isOwn) {
+  function showPostMenu(btn, postId, isOwn) {
     // Close any existing menu
     if (activeMenu) { activeMenu.remove(); activeMenu = null; }
 
     const menu = document.createElement('div');
-    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
-
-    function addItem(label, color, onClick) {
-      const b = document.createElement('button');
-      b.style.cssText = `display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:${color};font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s;text-align:left`;
-      b.innerHTML = label;
-      b.onmouseover = () => b.style.background = 'rgba(255,255,255,0.06)';
-      b.onmouseout = () => b.style.background = 'none';
-      b.onclick = onClick;
-      menu.appendChild(b);
-      return b;
-    }
+    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
 
     if (isOwn) {
-      addItem('✏️ Edit post', 'var(--text)', () => { menu.remove(); activeMenu = null; openEditPostModal(postId); });
-      addItem('🗑️ Delete post', '#ff4444', () => deletePost(postId, menu));
+      const deleteBtn = document.createElement('button');
+      deleteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+      deleteBtn.innerHTML = '🗑️ Delete post';
+      deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255,68,68,0.1)';
+      deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
+      deleteBtn.onclick = () => deletePost(postId, menu);
+      menu.appendChild(deleteBtn);
     }
 
-    addItem('🔗 Copy link', 'var(--text)', () => {
-      navigator.clipboard.writeText(window.location.href);
-      showToast('Link copied! 🔗');
-      menu.remove(); activeMenu = null;
-    });
+    const copyBtn = document.createElement('button');
+    copyBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    copyBtn.innerHTML = '🔗 Copy link';
+    copyBtn.onmouseover = () => copyBtn.style.background = 'rgba(255,255,255,0.05)';
+    copyBtn.onmouseout = () => copyBtn.style.background = 'none';
+    copyBtn.onclick = () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; };
+    menu.appendChild(copyBtn);
 
-    if (!isOwn) {
-      addItem('🚫 Block user', '#ff4444', () => {
-        menu.remove(); activeMenu = null;
-        blockUser(authorId, null, postId);
-      });
-      addItem('🚩 Report post', 'var(--muted)', () => {
-        menu.remove(); activeMenu = null;
-        openReportModal(postId, authorId);
-      });
-    }
+    const reportBtn = document.createElement('button');
+    reportBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--muted);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
+    reportBtn.innerHTML = '🚩 Report';
+    reportBtn.onmouseover = () => reportBtn.style.background = 'rgba(255,255,255,0.05)';
+    reportBtn.onmouseout = () => reportBtn.style.background = 'none';
+    reportBtn.onclick = () => { showToast('Reported! 🚩'); menu.remove(); activeMenu = null; };
+    menu.appendChild(reportBtn);
 
     btn.parentElement.style.position = 'relative';
     btn.parentElement.appendChild(menu);
@@ -5216,10 +4882,9 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     if (!container) return;
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading...</div>';
     const { data } = await sb.from('bookmarks').select('*, posts(*, profiles(username,full_name,avatar_url,verified))').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-    const filtered = (data || []).filter(b => b.posts && !blockedUserIds.has(b.posts.user_id));
-    if (filtered.length === 0) { container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔖</div><div class="empty-text">No saved posts yet! Tap 🔖 on any post.</div></div>'; return; }
+    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔖</div><div class="empty-text">No saved posts yet! Tap 🔖 on any post.</div></div>'; return; }
     container.innerHTML = '';
-    filtered.forEach(b => container.appendChild(createPostCard(b.posts)));
+    data.forEach(b => { if (b.posts) container.appendChild(createPostCard(b.posts)); });
   }
 
   // WHO TO FOLLOW
@@ -5244,7 +4909,6 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
     const followingIds = (following || []).map(f => f.following_id);
     followingIds.push(currentUser.id);
-    blockedUserIds.forEach(id => followingIds.push(id));
 
     const { data: users } = await sb.from('profiles')
       .select('id,username,full_name,avatar_url,verified,bio,location')
@@ -5259,7 +4923,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     listEl.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const badges = renderBadges(u);
+      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:12px">🐝</span>' : '';
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:16px;margin-bottom:10px';
       row.innerHTML = `
@@ -5267,7 +4931,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${badges}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${verified}</div>
           <div style="font-size:12px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
@@ -5287,13 +4951,12 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     const { data: following } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
     const followingIds = (following || []).map(f => f.following_id);
     followingIds.push(currentUser.id);
-    blockedUserIds.forEach(id => followingIds.push(id));
     const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified').not('id', 'in', `(${followingIds.join(',')})`).limit(4);
     if (!users || users.length === 0) { container.innerHTML = '<div style="color:var(--muted);font-size:13px">No suggestions yet!</div>'; return; }
     container.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const badges = renderBadges(u);
+      const verified = u.verified ? ' 🐝' : '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px';
       div.innerHTML = `
@@ -5301,7 +4964,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${badges}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${verified}</div>
           <div style="font-size:11px;color:var(--muted)">@${u.username}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
@@ -5360,13 +5023,12 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   async function searchPeopleGlobal(query) {
     const container = document.getElementById('search-people');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    let { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
-    users = (users || []).filter(u => !blockedUserIds.has(u.id));
+    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
     container.innerHTML = '';
     if (!users || users.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No people found for "${query}"</div>`; return; }
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const badges = renderBadges(u);
+      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s';
       div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.03)';
@@ -5376,7 +5038,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
           ${u.bio ? `<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.bio}</div>` : ''}
         </div>`;
@@ -5388,8 +5050,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
   async function searchPostsGlobal(query) {
     const container = document.getElementById('search-posts');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    let { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', `%${query}%`).is('reply_to', null).order('created_at', { ascending: false }).limit(15);
-    posts = filterBlocked(posts);
+    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').ilike('body', `%${query}%`).is('reply_to', null).order('created_at', { ascending: false }).limit(15);
     container.innerHTML = '';
     if (!posts || posts.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No posts found for "${query}"</div>`; return; }
     posts.forEach(post => container.appendChild(createPostCard(post)));
@@ -5428,7 +5089,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     results.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const badges = renderBadges(u);
+      const verified = u.verified ? ' 🐝' : '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:all 0.2s';
       div.onmouseover = () => div.style.borderColor = 'var(--gold)';
@@ -5438,7 +5099,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
         </div>`;
       results.appendChild(div);
@@ -5456,7 +5117,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     results.innerHTML = `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:12px">People from ${location} 📍</div>`;
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const badges = renderBadges(u);
+      const verified = u.verified ? ' 🐝' : '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);margin-bottom:8px';
       div.innerHTML = `
@@ -5464,7 +5125,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
         <div style="flex:1">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${badges}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}</div>
         </div>
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:6px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Follow</button>`;
@@ -5735,7 +5396,7 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
       const showResults = userVoteOptionId !== null || isExpired;
 
       const optDiv = document.createElement('div');
-      optDiv.style.cssText = `position:relative;border:1.5px solid ${isMyVote ? 'var(--gold)' : 'var(--border)'};border-radius:50px;padding:11px 18px;cursor:${showResults ? 'default' : 'pointer'};overflow:hidden`;
+      optDiv.style.cssText = `position:relative;border:1.5px solid ${isMyVote ? 'var(--gold)' : 'var(--border)'};border-radius:12px;padding:10px 14px;cursor:${showResults ? 'default' : 'pointer'};overflow:hidden`;
       if (showResults) {
         optDiv.innerHTML = `
           <div style="position:absolute;inset:0;background:rgba(245,197,24,0.12);width:${pct}%;transition:width 0.4s"></div>
@@ -5751,16 +5412,8 @@ body.light .mobile-topbar-btn { border-color: #e0e0e0; color: #444; }
     });
 
     const footer = document.createElement('div');
-    footer.style.cssText = 'font-size:11px;color:var(--muted);padding:0 6px';
-    let statusText = 'Poll ended';
-    if (!isExpired && post.poll_ends_at) {
-      const msLeft = new Date(post.poll_ends_at).getTime() - Date.now();
-      const daysLeft = Math.max(1, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
-      statusText = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
-    } else if (!isExpired) {
-      statusText = 'Poll active';
-    }
-    footer.textContent = `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} · ${statusText}`;
+    footer.style.cssText = 'font-size:11px;color:var(--muted)';
+    footer.textContent = `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} · ${isExpired ? 'Poll ended' : 'Poll active'}`;
     pollWrap.appendChild(footer);
 
     container.appendChild(pollWrap);
