@@ -2509,7 +2509,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </div>
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
-        <div class="post-body">${formatBody(post.body)}</div>
+        <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
         ${renderPostMedia(post)}
         <div class="poll-container" id="poll-container-${post.id}"></div>
@@ -3893,11 +3893,15 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const messages = document.getElementById('hivemind-messages');
     messages.innerHTML = '';
 
-    // Opening greeting from HiveMind
+    // Personalized greeting
+    const firstName = (currentProfile?.full_name || 'there').split(' ')[0];
     const postText = document.getElementById('compose-text').value.trim();
-    let greeting = '🐝 Hi! I\'m HiveMind. What kind of help do you need today?';
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+    let greeting = `🐝 ${timeGreeting}, ${firstName}! 👋\n\nWhat would you like me to help you with today?`;
     if (postText) {
-      greeting = `🐝 Hi! I can see you're working on something. Want me to help improve it, add hashtags, or create something completely new?`;
+      greeting = `🐝 ${timeGreeting}, ${firstName}! 👋\n\nI can see you're working on a post. Want me to improve it, add hashtags, make it funnier, or something else?`;
     }
     appendHiveMindMessage('assistant', greeting);
 
@@ -4028,7 +4032,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         },
         body: JSON.stringify({
           message: text,
-          history: hiveMindHistory.slice(-6) // send last 6 messages for context
+          history: hiveMindHistory.slice(-6)
         })
       });
 
@@ -4036,12 +4040,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       removeHiveMindTyping();
       hiveMindTyping = false;
 
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data.error || 'HiveMind unavailable');
 
       const reply = data.reply;
-      hiveMindHistory.push({ role: 'assistant', content: reply });
+      if (!reply) throw new Error('Empty response from HiveMind');
 
-      // Show reply — with "Use this" button if it looks like a generated post
+      hiveMindHistory.push({ role: 'assistant', content: reply });
       appendHiveMindMessage('assistant', reply, isPostRequest);
 
     } catch(e) {
