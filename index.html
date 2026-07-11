@@ -1364,63 +1364,39 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   </div>
 </div>
 
-<!-- HIVEMIND MODAL -->
+<!-- HIVEMIND CHAT MODAL -->
 <div id="hivemind-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:flex-end;justify-content:center">
-  <div id="hivemind-sheet" style="background:#111;border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:600px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.1,0.64,1)">
-    <!-- Handle bar -->
-    <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 24px"></div>
+  <div id="hivemind-sheet" style="background:#111;border-radius:24px 24px 0 0;width:100%;max-width:600px;height:85vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.1,0.64,1)">
+
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <div style="font-size:28px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold)">HiveMind</div>
-        <div style="font-size:12px;color:var(--muted)">AI-powered post assistant</div>
+    <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:20px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--gold)">HiveMind</div>
+            <div style="font-size:11px;color:#00CC66">● Online</div>
+          </div>
+        </div>
+        <button onclick="closeHiveMind()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
       </div>
     </div>
-    <!-- Current post preview -->
-    <div id="hivemind-preview" style="background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.15);border-radius:14px;padding:12px 16px;margin:16px 0;min-height:44px;font-size:14px;color:var(--muted);font-style:italic">Your post will appear here...</div>
-    <!-- Options -->
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">
-      <button onclick="hiveMindAction('write')" class="hivemind-btn">
-        <span style="font-size:20px">✍️</span>
-        <div style="text-align:left">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Write my post</div>
-          <div style="font-size:12px;color:var(--muted)">Generate a post from your idea</div>
+
+    <!-- Chat messages -->
+    <div id="hivemind-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none"></div>
+
+    <!-- Input area -->
+    <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:#111;border-radius:0 0 0 0">
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1;background:#1a1a1a;border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+          <textarea id="hivemind-input" placeholder="Ask HiveMind anything..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHiveMind()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" style="width:100%;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none;line-height:1.5"></textarea>
         </div>
-        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
-      </button>
-      <button onclick="hiveMindAction('improve')" class="hivemind-btn">
-        <span style="font-size:20px">✨</span>
-        <div style="text-align:left">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Improve my vibe</div>
-          <div style="font-size:12px;color:var(--muted)">Make your post more engaging</div>
-        </div>
-        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
-      </button>
-      <button onclick="hiveMindAction('hashtags')" class="hivemind-btn">
-        <span style="font-size:20px">🏷️</span>
-        <div style="text-align:left">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Suggest hashtags</div>
-          <div style="font-size:12px;color:var(--muted)">Add relevant hashtags to your post</div>
-        </div>
-        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
-      </button>
-      <button onclick="hiveMindAction('translate')" class="hivemind-btn">
-        <span style="font-size:20px">🌍</span>
-        <div style="text-align:left">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Translate my post</div>
-          <div style="font-size:12px;color:var(--muted)">Translate to another language</div>
-        </div>
-        <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
-      </button>
+        <button onclick="sendHiveMind()" id="hivemind-send-btn" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:var(--gold);border:none;color:#000;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+      </div>
+      <div style="text-align:center;margin-top:8px;font-size:11px;color:#333">HiveMind can make mistakes — always review before posting</div>
     </div>
-    <!-- Result area -->
-    <div id="hivemind-result" style="display:none;background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px">
-      <div id="hivemind-result-text" style="font-size:14px;line-height:1.6;margin-bottom:10px"></div>
-      <button onclick="applyHiveMindResult()" style="width:100%;padding:10px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Use this ✓</button>
-    </div>
-    <!-- Cancel -->
-    <button onclick="closeHiveMind()" style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:50px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">❌ Cancel</button>
+
   </div>
 </div>
 
@@ -3903,85 +3879,176 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.getElementById('pro-modal').style.display = 'flex';
   }
 
-  // HIVEMIND
-  let currentHiveMindResult = '';
+  // HIVEMIND CHAT
+  const HIVEMIND_URL = 'https://yaqdplheuddatviwaijl.supabase.co/functions/v1/hivemind';
+  let hiveMindHistory = []; // stores {role, content} for conversation context
+  let hiveMindTyping = false;
 
   function openHiveMind() {
     const modal = document.getElementById('hivemind-modal');
     const sheet = document.getElementById('hivemind-sheet');
-    const preview = document.getElementById('hivemind-preview');
-    const result = document.getElementById('hivemind-result');
 
-    // Show current post text in preview
+    // Reset chat on each open
+    hiveMindHistory = [];
+    const messages = document.getElementById('hivemind-messages');
+    messages.innerHTML = '';
+
+    // Opening greeting from HiveMind
     const postText = document.getElementById('compose-text').value.trim();
-    preview.textContent = postText || 'Your post will appear here...';
-    preview.style.fontStyle = postText ? 'normal' : 'italic';
-    preview.style.color = postText ? 'var(--text)' : 'var(--muted)';
+    let greeting = '🐝 Hi! I\'m HiveMind. What kind of help do you need today?';
+    if (postText) {
+      greeting = `🐝 Hi! I can see you're working on something. Want me to help improve it, add hashtags, or create something completely new?`;
+    }
+    appendHiveMindMessage('assistant', greeting);
 
-    // Hide result from previous session
-    result.style.display = 'none';
-    currentHiveMindResult = '';
+    // If they have a draft, show quick action chips
+    if (postText) {
+      appendQuickChips(postText);
+    }
 
     // Animate in
     modal.style.display = 'flex';
-    requestAnimationFrame(() => {
-      sheet.style.transform = 'translateY(0)';
-    });
+    requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+    setTimeout(() => document.getElementById('hivemind-input')?.focus(), 400);
   }
 
   function closeHiveMind() {
     const sheet = document.getElementById('hivemind-sheet');
     sheet.style.transform = 'translateY(100%)';
-    setTimeout(() => {
-      document.getElementById('hivemind-modal').style.display = 'none';
-    }, 350);
+    setTimeout(() => { document.getElementById('hivemind-modal').style.display = 'none'; }, 350);
   }
 
-  function hiveMindAction(action) {
-    const postText = document.getElementById('compose-text').value.trim();
-    const resultEl = document.getElementById('hivemind-result');
-    const resultText = document.getElementById('hivemind-result-text');
+  function appendHiveMindMessage(role, text, withUseBtn = false) {
+    const messages = document.getElementById('hivemind-messages');
+    const isAI = role === 'assistant';
+    const div = document.createElement('div');
+    div.style.cssText = `display:flex;justify-content:${isAI ? 'flex-start' : 'flex-end'};align-items:flex-end;gap:8px`;
 
-    // Placeholder responses — will be replaced with real AI later
-    let response = '';
-    if (action === 'write') {
-      if (!postText) {
-        showToast('Write something first so HiveMind knows what to work with! 🐝');
-        return;
-      }
-      response = `✍️ Here's a polished version of your post:\n\n"${postText}"\n\n🤖 AI writing coming soon — HiveMind will generate this for you!`;
-    } else if (action === 'improve') {
-      if (!postText) {
-        showToast('Write something first so HiveMind can improve it! 🐝');
-        return;
-      }
-      response = `✨ Improved version:\n\n"${postText}"\n\n🤖 AI improvements coming soon — HiveMind will make your post more engaging!`;
-    } else if (action === 'hashtags') {
-      if (!postText) {
-        showToast('Write your post first so HiveMind can suggest hashtags! 🐝');
-        return;
-      }
-      response = `🏷️ Suggested hashtags for your post:\n\n#hiveapp #southafrica #vibes #community #joburg\n\n🤖 AI hashtag suggestions coming soon!`;
-    } else if (action === 'translate') {
-      if (!postText) {
-        showToast('Write something first so HiveMind can translate it! 🐝');
-        return;
-      }
-      response = `🌍 Translation coming soon!\n\nHiveMind will be able to translate your post to Zulu, Afrikaans, Xhosa and more languages.\n\n🤖 AI translation coming soon!`;
+    const bubble = document.createElement('div');
+    bubble.style.cssText = `max-width:80%;padding:12px 16px;border-radius:${isAI ? '18px 18px 18px 4px' : '18px 18px 4px 18px'};background:${isAI ? '#1a1a1a' : 'var(--gold)'};color:${isAI ? 'var(--text)' : '#000'};font-size:14px;line-height:1.6;white-space:pre-wrap`;
+    bubble.textContent = text;
+
+    // Add "Use this post" button on AI messages that look like posts
+    if (isAI && withUseBtn) {
+      const useBtn = document.createElement('button');
+      useBtn.textContent = '✓ Use this post';
+      useBtn.style.cssText = 'display:block;margin-top:10px;padding:8px 16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer;width:100%';
+      useBtn.onclick = () => {
+        document.getElementById('compose-text').value = text;
+        closeHiveMind();
+        showToast('Post added! Edit it and post your vibe 🐝✨');
+      };
+      bubble.appendChild(useBtn);
     }
 
-    currentHiveMindResult = postText;
-    resultText.textContent = response;
-    resultEl.style.display = 'block';
+    if (isAI) {
+      const avatar = document.createElement('div');
+      avatar.style.cssText = 'width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0';
+      avatar.textContent = '🐝';
+      div.appendChild(avatar);
+    }
 
-    // Scroll to result
-    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    div.appendChild(bubble);
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
   }
 
-  function applyHiveMindResult() {
-    // For now just close — when AI is connected this will insert the AI result
-    closeHiveMind();
-    showToast('HiveMind AI coming soon! 🐝🧠');
+  function appendQuickChips(postText) {
+    const messages = document.getElementById('hivemind-messages');
+    const chips = document.createElement('div');
+    chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;padding-left:36px;margin-top:-4px';
+    const options = [
+      { label: '✨ Improve it', msg: `Improve this post: "${postText}"` },
+      { label: '🏷️ Add hashtags', msg: `Add relevant hashtags to: "${postText}"` },
+      { label: '😄 Make it funny', msg: `Make this post funnier: "${postText}"` },
+      { label: '🌍 Translate to Zulu', msg: `Translate this to Zulu: "${postText}"` },
+    ];
+    options.forEach(opt => {
+      const chip = document.createElement('button');
+      chip.textContent = opt.label;
+      chip.style.cssText = 'padding:6px 14px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:50px;color:var(--gold);font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif';
+      chip.onclick = () => {
+        document.getElementById('hivemind-input').value = opt.msg;
+        sendHiveMind();
+      };
+      chips.appendChild(chip);
+    });
+    messages.appendChild(chips);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function showHiveMindTyping() {
+    const messages = document.getElementById('hivemind-messages');
+    const div = document.createElement('div');
+    div.id = 'hivemind-typing';
+    div.style.cssText = 'display:flex;align-items:flex-end;gap:8px';
+    div.innerHTML = `
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:14px">🐝</div>
+      <div style="padding:12px 16px;background:#1a1a1a;border-radius:18px 18px 18px 4px;display:flex;gap:4px;align-items:center">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 1s ease-in-out infinite"></div>
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 1s ease-in-out infinite 0.2s"></div>
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 1s ease-in-out infinite 0.4s"></div>
+      </div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeHiveMindTyping() {
+    document.getElementById('hivemind-typing')?.remove();
+  }
+
+  async function sendHiveMind() {
+    if (hiveMindTyping) return;
+    const input = document.getElementById('hivemind-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Show user message
+    appendHiveMindMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Add to history
+    hiveMindHistory.push({ role: 'user', content: text });
+
+    // Show typing indicator
+    hiveMindTyping = true;
+    showHiveMindTyping();
+
+    // Detect if this looks like a post generation request
+    const isPostRequest = /write|create|post|generate|draft|make|compose/i.test(text);
+
+    try {
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`
+        },
+        body: JSON.stringify({
+          message: text,
+          history: hiveMindHistory.slice(-6) // send last 6 messages for context
+        })
+      });
+
+      const data = await res.json();
+      removeHiveMindTyping();
+      hiveMindTyping = false;
+
+      if (data.error) throw new Error(data.error);
+
+      const reply = data.reply;
+      hiveMindHistory.push({ role: 'assistant', content: reply });
+
+      // Show reply — with "Use this" button if it looks like a generated post
+      appendHiveMindMessage('assistant', reply, isPostRequest);
+
+    } catch(e) {
+      removeHiveMindTyping();
+      hiveMindTyping = false;
+      appendHiveMindMessage('assistant', '🐝 Sorry, I\'m having trouble connecting right now. Please try again in a moment!');
+    }
   }
 
   // PUSH NOTIFICATIONS via OneSignal
