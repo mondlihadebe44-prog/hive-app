@@ -2190,6 +2190,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     setTimeout(showNotifPermissionPrompt, 6000);
     setTimeout(loadSavedTheme, 300);
     setTimeout(checkPaymentReturn, 1000);
+    setTimeout(initHiveMindAutocomplete, 1500);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
     startRealtimeSubscriptions();
@@ -3932,16 +3933,14 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     bubble.style.cssText = `max-width:80%;padding:12px 16px;border-radius:${isAI ? '18px 18px 18px 4px' : '18px 18px 4px 18px'};background:${isAI ? '#1a1a1a' : 'var(--gold)'};color:${isAI ? 'var(--text)' : '#000'};font-size:14px;line-height:1.6;white-space:pre-wrap`;
     bubble.textContent = text;
 
-    // Add "Use this post" button on AI messages that look like posts
+    // Add "Post to Hive" button on AI messages that look like posts
     if (isAI && withUseBtn) {
       const useBtn = document.createElement('button');
-      useBtn.textContent = '✓ Use this post';
-      useBtn.style.cssText = 'display:block;margin-top:10px;padding:8px 16px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer;width:100%';
-      useBtn.onclick = () => {
-        document.getElementById('compose-text').value = text;
-        closeHiveMind();
-        showToast('Post added! Edit it and post your vibe 🐝✨');
-      };
+      useBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:13px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:"Syne",sans-serif;font-weight:800;font-size:14px;cursor:pointer;width:100%;transition:all 0.2s;box-shadow:0 4px 20px rgba(245,197,24,0.4)';
+      useBtn.innerHTML = '🐝 Post to Hive';
+      useBtn.onmouseover = () => { useBtn.style.transform = 'scale(1.03)'; useBtn.style.boxShadow = '0 6px 28px rgba(245,197,24,0.6)'; };
+      useBtn.onmouseout = () => { useBtn.style.transform = 'scale(1)'; useBtn.style.boxShadow = '0 4px 20px rgba(245,197,24,0.4)'; };
+      useBtn.onclick = () => postToHiveFromMind(text);
       bubble.appendChild(useBtn);
     }
 
@@ -4053,6 +4052,130 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       hiveMindTyping = false;
       appendHiveMindMessage('assistant', '🐝 Sorry, I\'m having trouble connecting right now. Please try again in a moment!');
     }
+  }
+
+  function postToHiveFromMind(text) {
+    const sheet = document.getElementById('hivemind-sheet');
+    const composeInput = document.getElementById('compose-text');
+
+    // Step 1 — flash the button gold to confirm tap
+    // Step 2 — slide HiveMind down
+    sheet.style.transition = 'transform 0.4s cubic-bezier(0.4,0,1,1)';
+    sheet.style.transform = 'translateY(100%)';
+
+    setTimeout(() => {
+      // Step 3 — hide modal
+      document.getElementById('hivemind-modal').style.display = 'none';
+      sheet.style.transition = 'transform 0.35s cubic-bezier(0.34,1.1,0.64,1)';
+
+      // Step 4 — fill compose box with a typewriter effect
+      composeInput.value = '';
+      composeInput.focus();
+      let i = 0;
+      const typeInterval = setInterval(() => {
+        composeInput.value += text[i];
+        i++;
+        if (i >= text.length) {
+          clearInterval(typeInterval);
+          // Step 5 — flash compose box to draw attention
+          composeInput.style.borderBottom = '2px solid var(--gold)';
+          composeInput.style.transition = 'border-color 0.3s';
+          setTimeout(() => {
+            composeInput.style.borderBottom = '';
+          }, 1500);
+          showToast('✨ Ready to post! Edit if you want, then tap Post 🐝');
+        }
+      }, 18); // typewriter speed — fast but visible
+
+    }, 380);
+  }
+
+  // HIVEMIND AUTOCOMPLETE — suggests posts as user types
+  let autocompleteTimeout = null;
+  let autocompleteVisible = false;
+
+  function initHiveMindAutocomplete() {
+    const input = document.getElementById('compose-text');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      const text = this.value.trim();
+      clearTimeout(autocompleteTimeout);
+      // Only trigger after at least 10 chars and after a short pause
+      if (text.length < 10) { hideAutocomplete(); return; }
+      autocompleteTimeout = setTimeout(() => fetchAutocomplete(text), 900);
+    });
+    // Hide autocomplete when input is cleared
+    input.addEventListener('blur', () => {
+      setTimeout(hideAutocomplete, 200);
+    });
+  }
+
+  async function fetchAutocomplete(text) {
+    try {
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`
+        },
+        body: JSON.stringify({
+          message: `The user is typing a social media post and has written: "${text}". Generate 3 different natural completions or continuations for this post. Return ONLY a JSON array of 3 short strings, nothing else. Example: ["completion 1","completion 2","completion 3"]`,
+          history: []
+        })
+      });
+      const data = await res.json();
+      if (!data.reply) return;
+      // Parse the JSON array from the response
+      let suggestions = [];
+      try {
+        const clean = data.reply.replace(/```json|```/g, '').trim();
+        suggestions = JSON.parse(clean);
+      } catch(e) { return; }
+      if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+      showAutocomplete(suggestions);
+    } catch(e) { /* silently fail */ }
+  }
+
+  function showAutocomplete(suggestions) {
+    hideAutocomplete();
+    const composeBox = document.querySelector('.compose-box');
+    if (!composeBox) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'hivemind-autocomplete';
+    panel.style.cssText = 'position:absolute;left:0;right:0;background:#111;border:1px solid rgba(245,197,24,0.3);border-radius:16px;padding:12px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:fadeUp 0.25s ease';
+    panel.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><span style="font-size:14px">🐝</span><span style="font-size:11px;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:1px">HIVEMIND SUGGESTS</span></div>`;
+
+    suggestions.forEach(s => {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;text-align:left;padding:9px 12px;background:rgba(245,197,24,0.05);border:1px solid rgba(245,197,24,0.15);border-radius:10px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:13px;cursor:pointer;margin-bottom:6px;transition:all 0.2s;line-height:1.4';
+      btn.textContent = s;
+      btn.onmouseover = () => { btn.style.background = 'rgba(245,197,24,0.12)'; btn.style.borderColor = 'var(--gold)'; };
+      btn.onmouseout = () => { btn.style.background = 'rgba(245,197,24,0.05)'; btn.style.borderColor = 'rgba(245,197,24,0.15)'; };
+      btn.onclick = () => {
+        document.getElementById('compose-text').value = s;
+        hideAutocomplete();
+        showToast('🐝 HiveMind filled it in — edit or post!');
+      };
+      panel.appendChild(btn);
+    });
+
+    const dismiss = document.createElement('button');
+    dismiss.textContent = '✕ Dismiss';
+    dismiss.style.cssText = 'width:100%;padding:7px;background:none;border:none;color:#444;font-size:12px;cursor:pointer;margin-top:2px';
+    dismiss.onclick = hideAutocomplete;
+    panel.appendChild(dismiss);
+
+    // Position relative to compose box
+    composeBox.style.position = 'relative';
+    composeBox.appendChild(panel);
+    autocompleteVisible = true;
+  }
+
+  function hideAutocomplete() {
+    const el = document.getElementById('hivemind-autocomplete');
+    if (el) el.remove();
+    autocompleteVisible = false;
   }
 
   // PUSH NOTIFICATIONS via OneSignal
