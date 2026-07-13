@@ -1692,6 +1692,31 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         </div>
       </div>
 
+      <!-- VIBE RADAR CARD -->
+      <div id="vibe-radar-card" style="display:none;margin:12px 16px 4px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0d0a00,#1a1200);border:1px solid rgba(245,197,24,0.25);animation:fadeUp 0.5s ease both">
+        <!-- Header -->
+        <div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:18px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--gold)">Vibe Radar</div>
+              <div style="font-size:11px;color:rgba(245,197,24,0.5)">Powered by HiveMind</div>
+            </div>
+          </div>
+          <button onclick="dismissVibeRadar()" style="background:none;border:none;color:#333;font-size:18px;cursor:pointer;padding:4px">✕</button>
+        </div>
+        <!-- Content -->
+        <div id="vibe-radar-content" style="padding:0 18px 18px">
+          <!-- Loading state -->
+          <div id="vibe-radar-loading" style="display:flex;align-items:center;gap:10px;padding:8px 0 12px">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(245,197,24,0.2);border-top-color:var(--gold)"></div>
+            <span style="font-size:13px;color:rgba(245,197,24,0.6)">HiveMind is reading the vibes...</span>
+          </div>
+          <!-- Suggestions will be injected here -->
+          <div id="vibe-radar-suggestions"></div>
+        </div>
+      </div>
+
       <div id="posts-container">
         <div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>
       </div>
@@ -2191,6 +2216,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     setTimeout(loadSavedTheme, 300);
     setTimeout(checkPaymentReturn, 1000);
     setTimeout(initHiveMindAutocomplete, 1500);
+    setTimeout(loadVibeRadar, 2000);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
     startRealtimeSubscriptions();
@@ -4088,6 +4114,126 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       }, 18); // typewriter speed — fast but visible
 
     }, 380);
+  }
+
+  // VIBE RADAR
+  async function loadVibeRadar() {
+    if (!currentUser || !currentProfile) return;
+    const card = document.getElementById('vibe-radar-card');
+    const loading = document.getElementById('vibe-radar-loading');
+    const suggestions = document.getElementById('vibe-radar-suggestions');
+    if (!card) return;
+
+    // Show the card
+    card.style.display = 'block';
+    loading.style.display = 'flex';
+    suggestions.innerHTML = '';
+
+    // Build a context-aware prompt using only what user already shared
+    const name = (currentProfile.full_name || 'there').split(' ')[0];
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    const day = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+    const location = currentProfile.location || 'South Africa';
+    const interests = currentProfile.interests || '';
+
+    const prompt = `You are HiveMind inside Hive, a South African social media app.
+The user's name is ${name}. It is ${timeOfDay} on a ${day} in ${location}.
+${interests ? `Their interests include: ${interests}.` : ''}
+Generate exactly 4 short, engaging social media post ideas that feel personal and relevant to this moment.
+Return ONLY a valid JSON array of objects. Each object must have:
+- "emoji": one relevant emoji
+- "label": a short 3-5 word label (e.g. "Monday motivation")  
+- "post": a ready-to-post social media caption under 200 chars with emojis
+
+Example format:
+[{"emoji":"☀️","label":"Morning energy","post":"Good ${timeOfDay} Hive! Ready to make today count 🐝✨"},{"emoji":"🔥","label":"Weekend vibes","post":"..."}]
+
+Return ONLY the JSON array, nothing else.`;
+
+    try {
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`
+        },
+        body: JSON.stringify({ message: prompt, history: [] })
+      });
+
+      const data = await res.json();
+      loading.style.display = 'none';
+
+      let items = [];
+      try {
+        const clean = (data.reply || '').replace(/```json|```/g, '').trim();
+        items = JSON.parse(clean);
+      } catch(e) { items = []; }
+
+      if (!Array.isArray(items) || items.length === 0) {
+        showVibeRadarFallback(name, timeOfDay, suggestions);
+        return;
+      }
+
+      renderVibeRadarSuggestions(items, suggestions, name, timeOfDay);
+
+    } catch(e) {
+      loading.style.display = 'none';
+      showVibeRadarFallback(name, timeOfDay, suggestions);
+    }
+  }
+
+  function renderVibeRadarSuggestions(items, container, name, timeOfDay) {
+    // Greeting
+    const greeting = document.createElement('div');
+    greeting.style.cssText = 'font-size:13px;color:rgba(245,197,24,0.7);margin-bottom:12px';
+    greeting.textContent = `Good ${timeOfDay}! Here's what HiveMind thinks the Hive wants to hear from you today 🐝`;
+    container.appendChild(greeting);
+
+    items.forEach((item, i) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `background:rgba(245,197,24,0.05);border:1px solid rgba(245,197,24,0.12);border-radius:14px;padding:12px 14px;margin-bottom:8px;animation:fadeUp 0.4s ease both;animation-delay:${i * 0.08}s`;
+
+      wrap.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:18px">${item.emoji}</span>
+          <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px">${item.label}</span>
+        </div>
+        <div style="font-size:13px;color:#ccc;line-height:1.5;margin-bottom:10px">${item.post}</div>`;
+
+      const postBtn = document.createElement('button');
+      postBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 12px rgba(245,197,24,0.3)';
+      postBtn.innerHTML = '🐝 Post Now';
+      postBtn.onmouseover = () => { postBtn.style.transform = 'scale(1.02)'; postBtn.style.boxShadow = '0 4px 16px rgba(245,197,24,0.5)'; };
+      postBtn.onmouseout = () => { postBtn.style.transform = 'scale(1)'; postBtn.style.boxShadow = '0 2px 12px rgba(245,197,24,0.3)'; };
+      postBtn.onclick = () => {
+        postToHiveFromMind(item.post);
+        dismissVibeRadar();
+      };
+      wrap.appendChild(postBtn);
+      container.appendChild(wrap);
+    });
+  }
+
+  function showVibeRadarFallback(name, timeOfDay, container) {
+    // Friendly fallback suggestions when AI is unavailable
+    const fallbacks = [
+      { emoji: '☀️', label: `${timeOfDay} energy`, post: `Good ${timeOfDay}, Hive! Ready to make today count 🐝✨` },
+      { emoji: '🔥', label: 'Share your vibe', post: `What's everyone's vibe today? Drop it below 👇🐝` },
+      { emoji: '💛', label: 'Community love', post: `Grateful for this community 🍯 Keep being amazing, Hive!` },
+      { emoji: '🚀', label: 'Goals check', post: `New day, new goals. What are you working on? Let's hold each other accountable 💪🐝` },
+    ];
+    renderVibeRadarSuggestions(fallbacks, container, name, timeOfDay);
+  }
+
+  function dismissVibeRadar() {
+    const card = document.getElementById('vibe-radar-card');
+    if (card) {
+      card.style.transition = 'opacity 0.3s,transform 0.3s';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(-8px)';
+      setTimeout(() => card.style.display = 'none', 300);
+    }
   }
 
   // HIVEMIND AUTOCOMPLETE — suggests posts as user types
