@@ -2180,7 +2180,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
       document.getElementById('nav-name').textContent = data.full_name || '';
       document.getElementById('nav-handle').textContent = '@' + (data.username || '');
-      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;filter:drop-shadow(0 0 6px #4A90D9) drop-shadow(0 0 12px #4A90D9)">🐝</span>' : '');
+      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;background:#1D9BF0;color:#fff;border-radius:50%;padding:2px 4px;font-size:13px;font-style:normal">✓</span>' : '');
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
 
@@ -2516,7 +2516,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const username = p.username || 'unknown';
     const initial = name[0].toUpperCase();
     const isOwn = currentUser && post.user_id === currentUser.id;
-    const verified = p.verified ? '<span style="display:inline-block;font-size:14px;filter:drop-shadow(0 0 4px #4A90D9) drop-shadow(0 0 8px #4A90D9)">🐝</span>' : '';
+    const verified = p.verified ? '<span style="display:inline-block;font-size:14px;background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:11px;font-style:normal">✓</span>' : '';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial;
 
     const card = document.createElement('div');
@@ -2542,7 +2542,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
-            <span class="action-icon">🐝</span><span class="like-count">0</span>
+            <span class="action-icon">🤍</span><span class="like-count">0</span>
             <div class="particles"></div>
             <div class="reactions-popup" id="reactions-${post.id}">
               <span class="reaction-opt" onclick="event.stopPropagation();react('${post.id}','buzz',this.closest('.like-btn'))">🐝</span>
@@ -2593,7 +2593,14 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (el) el.textContent = count || 0;
     if (currentUser) {
       const { data } = await sb.from('likes').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
-      if (data) { const btn = card.querySelector('.like-btn'); if (btn) btn.classList.add('liked'); }
+      if (data) {
+        const btn = card.querySelector('.like-btn');
+        if (btn) {
+          btn.classList.add('liked');
+          btn.querySelector('.action-icon').textContent = '❤️';
+          btn.style.color = '#ff4d6d';
+        }
+      }
     }
   }
 
@@ -2658,11 +2665,20 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const count = parseInt(countEl.textContent) || 0;
     if (isLiked) {
       btn.classList.remove('liked');
-      btn.querySelector('.action-icon').textContent = '🐝';
+      btn.querySelector('.action-icon').textContent = '🤍';
+      btn.style.color = '';
       countEl.textContent = Math.max(0, count - 1);
       await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
-      await react(postId, 'buzz', btn);
+      btn.classList.add('liked');
+      btn.querySelector('.action-icon').textContent = '❤️';
+      btn.style.color = '#ff4d6d';
+      countEl.textContent = count + 1;
+      await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id, reaction: 'like' });
+      const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
+      if (post && post.user_id !== currentUser.id) {
+        await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
+      }
     }
   }
 
@@ -3643,7 +3659,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const p = quoted.profiles || {};
     const name = p.full_name || 'Unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:11px">🐝</span>' : '';
+    const verified = p.verified ? ' <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:10px;font-style:normal">✓</span>' : '';
 
     // Build media section — use full image_urls array if available, fall back to single image_url
     const urls = (quoted.image_urls && quoted.image_urls.length > 0)
@@ -4604,7 +4620,7 @@ Return ONLY the JSON array, nothing else.`;
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
-    const verified = p.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
+    const verified = p.verified ? ' <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:11px;font-style:normal">✓</span>' : '';
     const isOwn = currentUser && post.user_id === currentUser.id;
 
     const card = document.createElement('div');
@@ -4735,7 +4751,7 @@ Return ONLY the JSON array, nothing else.`;
 
     const name = profile.full_name || profile.username || 'Unknown';
     const initial = name[0].toUpperCase();
-    const verified = profile.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:18px">🐝</span>' : '';
+    const verified = profile.verified ? ' <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:2px 4px;font-size:14px;font-style:normal">✓</span>' : '';
 
     document.getElementById('user-profile-title').textContent = name;
     document.getElementById('user-name-large').innerHTML = name + verified;
@@ -5263,7 +5279,7 @@ Return ONLY the JSON array, nothing else.`;
     listEl.innerHTML = '';
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 3px #4A90D9);font-size:12px">🐝</span>' : '';
+      const verified = u.verified ? ' <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:10px;font-style:normal">✓</span>' : '';
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:16px;margin-bottom:10px';
       row.innerHTML = `
@@ -5368,7 +5384,7 @@ Return ONLY the JSON array, nothing else.`;
     if (!users || users.length === 0) { container.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--muted)">No people found for "${query}"</div>`; return; }
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' <span style="filter:drop-shadow(0 0 4px #4A90D9);font-size:13px">🐝</span>' : '';
+      const verified = u.verified ? ' <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:11px;font-style:normal">✓</span>' : '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s';
       div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.03)';
