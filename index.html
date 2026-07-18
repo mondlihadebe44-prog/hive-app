@@ -1693,26 +1693,44 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       </div>
 
       <!-- VIBE RADAR CARD -->
+      <!-- HIVE PULSE CARD -->
+      <div id="hive-pulse-card" style="display:none;margin:12px 16px 4px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#000814,#0a0a0a);border:1px solid rgba(78,205,196,0.2);animation:fadeUp 0.5s ease both 0.2s">
+        <div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4ECDC4,#45B7D1);display:flex;align-items:center;justify-content:center;font-size:18px">🐝</div>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#4ECDC4">Hive Pulse</div>
+              <div style="font-size:11px;color:rgba(78,205,196,0.5)">Here's what's buzzing across Hive</div>
+            </div>
+          </div>
+          <button onclick="dismissHivePulse()" style="background:none;border:none;color:#333;font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <div id="hive-pulse-content" style="padding:0 18px 18px">
+          <div id="hive-pulse-loading" style="display:flex;align-items:center;gap:10px;padding:8px 0 12px">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(78,205,196,0.2);border-top-color:#4ECDC4"></div>
+            <span style="font-size:13px;color:rgba(78,205,196,0.6)">Reading the pulse of Hive...</span>
+          </div>
+          <div id="hive-pulse-suggestions"></div>
+        </div>
+      </div>
+
+      <!-- VIBE RADAR CARD -->
       <div id="vibe-radar-card" style="display:none;margin:12px 16px 4px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0d0a00,#1a1200);border:1px solid rgba(245,197,24,0.25);animation:fadeUp 0.5s ease both">
-        <!-- Header -->
         <div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:18px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
             <div>
               <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--gold)">Vibe Radar</div>
-              <div style="font-size:11px;color:rgba(245,197,24,0.5)">Powered by HiveMind</div>
+              <div style="font-size:11px;color:rgba(245,197,24,0.5)">Personalized by HiveMind</div>
             </div>
           </div>
           <button onclick="dismissVibeRadar()" style="background:none;border:none;color:#333;font-size:18px;cursor:pointer;padding:4px">✕</button>
         </div>
-        <!-- Content -->
         <div id="vibe-radar-content" style="padding:0 18px 18px">
-          <!-- Loading state -->
           <div id="vibe-radar-loading" style="display:flex;align-items:center;gap:10px;padding:8px 0 12px">
             <div class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(245,197,24,0.2);border-top-color:var(--gold)"></div>
-            <span style="font-size:13px;color:rgba(245,197,24,0.6)">HiveMind is reading the vibes...</span>
+            <span style="font-size:13px;color:rgba(245,197,24,0.6)">HiveMind is personalizing your radar...</span>
           </div>
-          <!-- Suggestions will be injected here -->
           <div id="vibe-radar-suggestions"></div>
         </div>
       </div>
@@ -2217,6 +2235,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     setTimeout(checkPaymentReturn, 1000);
     setTimeout(initHiveMindAutocomplete, 1500);
     setTimeout(loadVibeRadar, 2000);
+    setTimeout(loadHivePulse, 2500);
     checkUnreadNotifications();
     setInterval(checkUnreadNotifications, 30000);
     startRealtimeSubscriptions();
@@ -4132,7 +4151,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }, 380);
   }
 
-  // VIBE RADAR
+  // VIBE RADAR — Personalized
   async function loadVibeRadar() {
     if (!currentUser || !currentProfile) return;
     const card = document.getElementById('vibe-radar-card');
@@ -4140,10 +4159,284 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const suggestions = document.getElementById('vibe-radar-suggestions');
     if (!card) return;
 
-    // Show the card
     card.style.display = 'block';
     loading.style.display = 'flex';
     suggestions.innerHTML = '';
+
+    // Gather user context
+    const name = (currentProfile.full_name || 'there').split(' ')[0];
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    const dayOfWeek = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+
+    // Fetch user's recent posts for topic analysis
+    const { data: recentPosts } = await sb.from('posts')
+      .select('body,created_at')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Extract topics and hashtags from recent posts
+    const allText = (recentPosts || []).map(p => p.body || '').join(' ');
+    const hashtags = (allText.match(/#\w+/g) || []).slice(0, 8).join(' ');
+    const recentTopics = allText.slice(0, 300);
+
+    // Calculate days since last post
+    const lastPost = recentPosts?.[0];
+    const daysSinceLastPost = lastPost
+      ? Math.floor((Date.now() - new Date(lastPost.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+
+    try {
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`
+        },
+        body: JSON.stringify({
+          message: 'generate vibe radar',
+          history: [],
+          mode: 'vibe_radar',
+          context: {
+            userId: currentUser.id,
+            name,
+            location: currentProfile.location || 'South Africa',
+            interests: currentProfile.interests || '',
+            timeOfDay,
+            dayOfWeek,
+            recentPosts: recentTopics,
+            topHashtags: hashtags,
+            daysSinceLastPost
+          }
+        })
+      });
+
+      const data = await res.json();
+      loading.style.display = 'none';
+
+      let parsed = null;
+      try {
+        const clean = (data.reply || '').replace(/```json|```/g, '').trim();
+        parsed = JSON.parse(clean);
+      } catch(e) { parsed = null; }
+
+      if (!parsed?.personalSuggestions?.length) {
+        showVibeRadarFallback(name, timeOfDay, suggestions, daysSinceLastPost);
+        return;
+      }
+
+      // Show "we miss you" banner if user hasn't posted in 3+ days
+      if (parsed.missedUser || daysSinceLastPost > 3) {
+        const missDiv = document.createElement('div');
+        missDiv.style.cssText = 'background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:rgba(245,197,24,0.8);line-height:1.5';
+        missDiv.innerHTML = `🐝 <strong>We miss your vibe, ${name}!</strong> People who follow you haven't heard from you in a while. Here are some ideas for today 👇`;
+        suggestions.appendChild(missDiv);
+      }
+
+      renderVibeRadarSuggestions(parsed.personalSuggestions, suggestions, name, timeOfDay);
+
+      // Update user's personalization data
+      const topics = parsed.personalSuggestions.map(s => s.label).join(', ');
+      await sb.from('profiles').update({
+        posting_frequency: (currentProfile.posting_frequency || 0) + 1,
+        last_posted_at: new Date().toISOString(),
+        posting_topics: parsed.personalSuggestions.map(s => s.label),
+        favorite_hashtags: hashtags.split(' ').filter(Boolean)
+      }).eq('id', currentUser.id);
+
+    } catch(e) {
+      loading.style.display = 'none';
+      showVibeRadarFallback(name, timeOfDay, suggestions, daysSinceLastPost);
+    }
+  }
+
+  function renderVibeRadarSuggestions(items, container, name, timeOfDay) {
+    const greeting = document.createElement('div');
+    greeting.style.cssText = 'font-size:13px;color:rgba(245,197,24,0.7);margin-bottom:12px';
+    greeting.textContent = `Good ${timeOfDay}, ${name}! HiveMind picked these just for you 🐝`;
+    container.appendChild(greeting);
+
+    items.forEach((item, i) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `background:rgba(245,197,24,0.05);border:1px solid rgba(245,197,24,0.12);border-radius:14px;padding:12px 14px;margin-bottom:8px;animation:fadeUp 0.4s ease both;animation-delay:${i * 0.08}s`;
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px';
+      header.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">${item.emoji}</span>
+          <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px">${item.label}</span>
+        </div>
+        ${item.confidence ? `<span style="font-size:10px;color:#555;background:#1a1a1a;padding:2px 8px;border-radius:50px">${item.confidence}% match</span>` : ''}`;
+      wrap.appendChild(header);
+
+      const postText = document.createElement('div');
+      postText.style.cssText = 'font-size:13px;color:#ccc;line-height:1.5;margin-bottom:6px';
+      postText.textContent = item.post;
+      wrap.appendChild(postText);
+
+      // "Why this suggestion" reason
+      if (item.reason) {
+        const reason = document.createElement('div');
+        reason.style.cssText = 'font-size:11px;color:#444;margin-bottom:10px;display:flex;align-items:center;gap:4px';
+        reason.innerHTML = `🐝 <em>${item.reason}</em>`;
+        wrap.appendChild(reason);
+      }
+
+      const postBtn = document.createElement('button');
+      postBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 12px rgba(245,197,24,0.3)';
+      postBtn.innerHTML = '🐝 Post Now';
+      postBtn.onmouseover = () => { postBtn.style.transform = 'scale(1.02)'; postBtn.style.boxShadow = '0 4px 16px rgba(245,197,24,0.5)'; };
+      postBtn.onmouseout = () => { postBtn.style.transform = 'scale(1)'; postBtn.style.boxShadow = '0 2px 12px rgba(245,197,24,0.3)'; };
+      postBtn.onclick = () => { postToHiveFromMind(item.post); dismissVibeRadar(); };
+      wrap.appendChild(postBtn);
+      container.appendChild(wrap);
+    });
+  }
+
+  function showVibeRadarFallback(name, timeOfDay, container, daysSinceLastPost = 0) {
+    if (daysSinceLastPost > 3) {
+      const missDiv = document.createElement('div');
+      missDiv.style.cssText = 'background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:rgba(245,197,24,0.8)';
+      missDiv.innerHTML = `🐝 <strong>We miss your vibe, ${name}!</strong> Here are some ideas to get you posting again 👇`;
+      container.appendChild(missDiv);
+    }
+    const fallbacks = [
+      { emoji: '☀️', label: `${timeOfDay} energy`, post: `Good ${timeOfDay}, Hive! Ready to make today count 🐝✨`, reason: 'A great way to start the day', confidence: 85 },
+      { emoji: '🔥', label: 'Share your vibe', post: `What's everyone's vibe today? Drop it below 👇🐝`, reason: 'Engagement posts always get responses', confidence: 80 },
+      { emoji: '💛', label: 'Community love', post: `Grateful for this community 🍯 Keep being amazing, Hive!`, reason: 'Your followers love positivity', confidence: 78 },
+    ];
+    renderVibeRadarSuggestions(fallbacks, container, name, timeOfDay);
+  }
+
+  function dismissVibeRadar() {
+    const card = document.getElementById('vibe-radar-card');
+    if (card) {
+      card.style.transition = 'opacity 0.3s,transform 0.3s';
+      card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
+      setTimeout(() => card.style.display = 'none', 300);
+    }
+  }
+
+  // HIVE PULSE
+  async function loadHivePulse() {
+    if (!currentUser) return;
+    const card = document.getElementById('hive-pulse-card');
+    const loading = document.getElementById('hive-pulse-loading');
+    const container = document.getElementById('hive-pulse-suggestions');
+    if (!card) return;
+
+    card.style.display = 'block';
+    loading.style.display = 'flex';
+    container.innerHTML = '';
+
+    // Get trending hashtags and recent posts across Hive
+    const { data: recentPosts } = await sb.from('posts')
+      .select('body')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const allText = (recentPosts || []).map(p => p.body || '').join(' ');
+    const hashtagCounts = {};
+    (allText.match(/#\w+/g) || []).forEach(tag => {
+      hashtagCounts[tag.toLowerCase()] = (hashtagCounts[tag.toLowerCase()] || 0) + 1;
+    });
+    const topHashtags = Object.entries(hashtagCounts)
+      .sort((a,b) => b[1]-a[1]).slice(0,8).map(([tag]) => tag).join(' ');
+    const recentTopics = allText.slice(0, 400);
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+
+    try {
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`
+        },
+        body: JSON.stringify({
+          message: 'generate hive pulse',
+          history: [],
+          mode: 'hive_pulse',
+          context: {
+            topHashtags,
+            trendingTopics: recentTopics,
+            location: currentProfile?.location || 'South Africa',
+            timeOfDay
+          }
+        })
+      });
+
+      const data = await res.json();
+      loading.style.display = 'none';
+
+      let parsed = null;
+      try {
+        const clean = (data.reply || '').replace(/```json|```/g, '').trim();
+        parsed = JSON.parse(clean);
+      } catch(e) { parsed = null; }
+
+      if (!parsed?.hivePulse?.length) { showHivePulseFallback(container, timeOfDay); return; }
+
+      parsed.hivePulse.forEach((item, i) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = `background:rgba(78,205,196,0.05);border:1px solid rgba(78,205,196,0.12);border-radius:14px;padding:12px 14px;margin-bottom:8px;animation:fadeUp 0.4s ease both;animation-delay:${i * 0.08}s`;
+        wrap.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">${item.emoji}</span>
+              <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#4ECDC4;text-transform:uppercase;letter-spacing:0.5px">${item.title}</span>
+            </div>
+            ${item.confidence ? `<span style="font-size:10px;color:#555;background:#1a1a1a;padding:2px 8px;border-radius:50px">${item.confidence}%</span>` : ''}
+          </div>
+          <div style="font-size:13px;color:#aaa;line-height:1.5;margin-bottom:10px">${item.description}</div>`;
+
+        const joinBtn = document.createElement('button');
+        joinBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:rgba(78,205,196,0.15);color:#4ECDC4;border:1px solid rgba(78,205,196,0.3);border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s';
+        joinBtn.textContent = '🐝 Join the Buzz';
+        joinBtn.onmouseover = () => { joinBtn.style.background = 'rgba(78,205,196,0.25)'; };
+        joinBtn.onmouseout = () => { joinBtn.style.background = 'rgba(78,205,196,0.15)'; };
+        joinBtn.onclick = () => { postToHiveFromMind(item.postPrompt); dismissHivePulse(); };
+        wrap.appendChild(joinBtn);
+        container.appendChild(wrap);
+      });
+
+    } catch(e) {
+      loading.style.display = 'none';
+      showHivePulseFallback(container, timeOfDay);
+    }
+  }
+
+  function showHivePulseFallback(container, timeOfDay) {
+    const fallbacks = [
+      { emoji: '🔥', title: 'Trending now', description: 'People across Hive are sharing their vibes this ' + timeOfDay + '.', postPrompt: 'Hive is buzzing right now! What\'s your vibe today? 🐝🔥' },
+      { emoji: '🎵', title: 'Music vibes', description: 'Amapiano and local music are dominating Hive today.', postPrompt: 'Drop one song everyone should hear right now 🎵🐝' },
+      { emoji: '⚽', title: 'Football talk', description: 'PSL fans are active and debating tonight.', postPrompt: 'Who\'s your PSL team and why? ⚽🖤💛' },
+    ];
+    fallbacks.forEach((item, i) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `background:rgba(78,205,196,0.05);border:1px solid rgba(78,205,196,0.12);border-radius:14px;padding:12px 14px;margin-bottom:8px`;
+      wrap.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">${item.emoji}</span><span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#4ECDC4;text-transform:uppercase">${item.title}</span></div><div style="font-size:13px;color:#aaa;margin-bottom:10px">${item.description}</div>`;
+      const btn = document.createElement('button');
+      btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:rgba(78,205,196,0.15);color:#4ECDC4;border:1px solid rgba(78,205,196,0.3);border-radius:50px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;cursor:pointer';
+      btn.textContent = '🐝 Join the Buzz';
+      btn.onclick = () => { postToHiveFromMind(item.postPrompt); dismissHivePulse(); };
+      wrap.appendChild(btn);
+      container.appendChild(wrap);
+    });
+  }
+
+  function dismissHivePulse() {
+    const card = document.getElementById('hive-pulse-card');
+    if (card) {
+      card.style.transition = 'opacity 0.3s,transform 0.3s';
+      card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
+      setTimeout(() => card.style.display = 'none', 300);
+    }
+  }
+
+  // HIVEMIND AUTOCOMPLETE — suggests posts as user types
 
     // Build a context-aware prompt using only what user already shared
     const name = (currentProfile.full_name || 'there').split(' ')[0];
