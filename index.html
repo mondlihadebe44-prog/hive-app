@@ -744,7 +744,69 @@ body.theme-pride .mobile-nav { border-top: 2px solid transparent; border-image: 
 }
 .group-card:hover { border-color: var(--gold); }
 
-/* HiveMind */
+/* Full-Screen Composer */
+#fullscreen-composer {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg); display: none; flex-direction: column;
+  animation: fadeUp 0.25s ease;
+}
+#fullscreen-composer.active { display: flex; }
+.composer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.composer-body {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+  display: flex; gap: 12px;
+}
+.composer-textarea {
+  flex: 1; background: none; border: none; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 18px;
+  line-height: 1.6; outline: none; resize: none;
+  min-height: 120px; width: 100%;
+}
+.composer-textarea::placeholder { color: #444; }
+.composer-footer {
+  flex-shrink: 0; border-top: 1px solid var(--border);
+  padding: 10px 16px; display: flex; align-items: center;
+  gap: 8px; background: var(--bg);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+.composer-char-count {
+  font-size: 12px; color: var(--muted); margin-left: auto;
+}
+.composer-char-count.warning { color: #FF6B35; }
+.composer-char-count.danger { color: #ff4444; }
+/* Mention dropdown */
+#mention-dropdown {
+  position: absolute; background: #111; border: 1px solid var(--border);
+  border-radius: 16px; padding: 8px; z-index: 600;
+  min-width: 260px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-height: 240px; overflow-y: auto;
+}
+.mention-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s;
+}
+.mention-item:hover { background: rgba(245,197,24,0.08); }
+/* Edited badge */
+.edited-badge {
+  font-size: 11px; color: var(--muted);
+  font-style: italic; margin-left: 4px;
+}
+/* Mention highlight in post */
+.post-mention {
+  color: var(--gold); cursor: pointer; font-weight: 600;
+}
+.post-mention:hover { text-decoration: underline; }
+body.light .composer-textarea { color: #0a0a0a; }
+body.light .composer-textarea::placeholder { color: #bbb; }
+body.light #fullscreen-composer { background: #f5f5f5; }
+body.light .composer-header { background: #fff; }
+body.light .composer-footer { background: #fff; }
+body.light #mention-dropdown { background: #fff; border-color: #e0e0e0; }
 .hivemind-btn {
   display: flex; align-items: center; gap: 14px;
   width: 100%; padding: 14px 16px;
@@ -1400,6 +1462,70 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   </div>
 </div>
 
+<!-- FULL-SCREEN COMPOSER -->
+<div id="fullscreen-composer">
+  <!-- Header -->
+  <div class="composer-header">
+    <button onclick="closeComposer()" style="background:none;border:none;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;padding:6px 12px;border-radius:50px;border:1.5px solid rgba(245,197,24,0.3)">Cancel</button>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--text)" id="composer-title">New Post</div>
+    <button id="composer-post-btn" onclick="submitComposer()" disabled style="padding:8px 20px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;cursor:pointer;opacity:0.4;transition:all 0.2s">Post</button>
+  </div>
+
+  <!-- Body -->
+  <div class="composer-body" style="position:relative">
+    <!-- Avatar -->
+    <div id="composer-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="setNav(document.getElementById('nav-profile'),'profile');closeComposer()"></div>
+
+    <div style="flex:1;position:relative">
+      <!-- Username -->
+      <div id="composer-username" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:8px;color:var(--text)"></div>
+
+      <!-- Text area -->
+      <textarea id="composer-textarea" class="composer-textarea" placeholder="What's the vibe? 🐝" oninput="onComposerInput(this)" onkeyup="checkMentions(this)"></textarea>
+
+      <!-- Mention dropdown -->
+      <div id="mention-dropdown" style="display:none;position:absolute;top:100%;left:0"></div>
+
+      <!-- Media previews -->
+      <div id="composer-image-previews" style="display:none;margin-top:12px">
+        <div id="composer-image-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;border-radius:16px;overflow:hidden"></div>
+      </div>
+      <div id="composer-video-preview" style="display:none;margin-top:12px;position:relative">
+        <video id="composer-video-el" style="width:100%;border-radius:16px;max-height:280px;background:#000" controls playsinline></video>
+        <button onclick="removeComposerVideo()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+      </div>
+      <div id="composer-gif-preview" style="display:none;margin-top:12px;position:relative">
+        <img id="composer-gif-el" style="width:100%;border-radius:16px;max-height:240px;object-fit:cover">
+        <button onclick="removeComposerGif()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character counter -->
+  <div style="padding:0 20px 8px;text-align:right">
+    <span id="composer-char-count" class="composer-char-count">0 / 500</span>
+  </div>
+
+  <!-- Footer toolbar -->
+  <div class="composer-footer">
+    <button onclick="document.getElementById('composer-photo-input').click()" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:4px" title="Add photos">📷</button>
+    <input type="file" id="composer-photo-input" accept="image/*" multiple style="display:none" onchange="addComposerImages(this)">
+    <button onclick="document.getElementById('composer-video-input').click()" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:4px" title="Add video">🎬</button>
+    <input type="file" id="composer-video-input" accept="video/*" style="display:none" onchange="addComposerVideo(this)">
+    <button onclick="openComposerGif()" style="background:none;border:none;color:var(--gold);font-size:14px;font-weight:800;cursor:pointer;padding:4px;font-family:'Syne',sans-serif" title="Add GIF">GIF</button>
+    <button onclick="openPollCreator()" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer;padding:4px" title="Create poll">📊</button>
+    <button onclick="openHiveMind()" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer;padding:4px" title="Ask HiveMind">🧠</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <div id="composer-char-ring" style="width:28px;height:28px;position:relative">
+        <svg width="28" height="28" style="transform:rotate(-90deg)">
+          <circle cx="14" cy="14" r="11" fill="none" stroke="#222" stroke-width="2.5"/>
+          <circle id="composer-ring-fill" cx="14" cy="14" r="11" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-dasharray="69.1" stroke-dashoffset="69.1" style="transition:stroke-dashoffset 0.2s,stroke 0.2s"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- EDIT PROFILE MODAL -->
@@ -1645,7 +1771,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <span style="font-size:12px;color:var(--gold);font-weight:600">Starting a thread</span>
             <button onclick="cancelNewThread()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 0 0 4px">✕</button>
           </div>
-          <input class="compose-input" placeholder="What's the vibe? 🐝" id="compose-text">
+          <input class="compose-input" placeholder="What's the vibe? 🐝" id="compose-text" readonly onclick="openComposer()" style="cursor:pointer">
           <!-- HiveMind Button -->
           <button onclick="openHiveMind()" style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.3);border-radius:50px;padding:8px 16px;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;transition:all 0.2s;width:fit-content" onmouseover="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.25),rgba(245,197,24,0.1))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05))'">
             🐝 Ask HiveMind
@@ -2552,8 +2678,8 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
+            ${post.edited ? '<span class="edited-badge">· Edited</span>' : ''}
           </div>
-          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
         <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
@@ -2834,6 +2960,294 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     } else {
       showToast('Vibe posted! 🐝✨');
     }
+  }
+
+  // FULL-SCREEN COMPOSER
+  let composerMode = 'new';
+  let editingPostId = null;
+  let composerImageFiles = [];
+  let composerVideoFile = null;
+  let composerGifUrl = null;
+  let composerDraft = '';
+
+  function openComposer(mode = 'new', existingPost = null) {
+    composerMode = mode;
+    editingPostId = existingPost?.id || null;
+    composerImageFiles = [];
+    composerVideoFile = null;
+    composerGifUrl = null;
+
+    const textarea = document.getElementById('composer-textarea');
+    const title = document.getElementById('composer-title');
+    const postBtn = document.getElementById('composer-post-btn');
+
+    title.textContent = mode === 'edit' ? 'Edit Post' : 'New Post';
+    postBtn.textContent = mode === 'edit' ? 'Save' : 'Post';
+
+    const avatarEl = document.getElementById('composer-avatar');
+    const usernameEl = document.getElementById('composer-username');
+    if (currentProfile) {
+      if (currentProfile.avatar_url) {
+        avatarEl.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        avatarEl.style.background = 'transparent';
+      } else {
+        avatarEl.textContent = (currentProfile.full_name || 'U')[0].toUpperCase();
+        avatarEl.style.background = getColor(currentProfile.full_name || 'User');
+      }
+      usernameEl.textContent = currentProfile.full_name || currentProfile.username || '';
+    }
+
+    textarea.value = mode === 'edit' && existingPost ? (existingPost.body || '') : (composerDraft || '');
+    document.getElementById('composer-image-previews').style.display = 'none';
+    document.getElementById('composer-image-grid').innerHTML = '';
+    document.getElementById('composer-video-preview').style.display = 'none';
+    document.getElementById('composer-gif-preview').style.display = 'none';
+
+    document.getElementById('fullscreen-composer').classList.add('active');
+    setTimeout(() => { textarea.focus(); updateComposerUI(); }, 300);
+  }
+
+  function closeComposer() {
+    const textarea = document.getElementById('composer-textarea');
+    if (composerMode === 'new' && textarea.value.trim()) composerDraft = textarea.value;
+    else if (composerMode === 'new') composerDraft = '';
+    document.getElementById('fullscreen-composer').classList.remove('active');
+    hideMentionDropdown();
+  }
+
+  function onComposerInput(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+    updateComposerUI();
+    if (composerMode === 'new') composerDraft = el.value;
+  }
+
+  function updateComposerUI() {
+    const textarea = document.getElementById('composer-textarea');
+    const postBtn = document.getElementById('composer-post-btn');
+    const charCount = document.getElementById('composer-char-count');
+    const ring = document.getElementById('composer-ring-fill');
+    const len = textarea.value.length;
+    const MAX = 500;
+    charCount.textContent = `${len} / ${MAX}`;
+    charCount.className = 'composer-char-count' + (len > MAX ? ' danger' : len > MAX * 0.8 ? ' warning' : '');
+    const pct = Math.min(len / MAX, 1);
+    const circ = 69.1;
+    ring.style.strokeDashoffset = circ - (pct * circ);
+    ring.style.stroke = len > MAX ? '#ff4444' : len > MAX * 0.8 ? '#FF6B35' : 'var(--gold)';
+    const hasContent = textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || composerGifUrl;
+    postBtn.disabled = !hasContent || len > MAX;
+    postBtn.style.opacity = (!hasContent || len > MAX) ? '0.4' : '1';
+  }
+
+  async function submitComposer() {
+    if (!currentUser) { showToast('Sign in first!'); return; }
+    const textarea = document.getElementById('composer-textarea');
+    const text = textarea.value.trim();
+    const postBtn = document.getElementById('composer-post-btn');
+    postBtn.disabled = true;
+    postBtn.textContent = composerMode === 'edit' ? 'Saving...' : 'Posting...';
+
+    if (composerMode === 'edit' && editingPostId) {
+      const { error } = await sb.from('posts')
+        .update({ body: text, edited: true, edited_at: new Date().toISOString() })
+        .eq('id', editingPostId).eq('user_id', currentUser.id);
+      postBtn.textContent = 'Save'; postBtn.disabled = false;
+      if (error) { showToast('Error saving!'); return; }
+      const card = document.querySelector(`[data-post-id="${editingPostId}"]`);
+      if (card) {
+        const bodyEl = card.querySelector('.post-body');
+        if (bodyEl) bodyEl.innerHTML = formatBody(text);
+        if (!card.querySelector('.edited-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'edited-badge'; badge.textContent = ' · Edited';
+          const handle = card.querySelector('.post-handle');
+          if (handle) handle.after(badge);
+        }
+      }
+      closeComposer(); showToast('Post updated! ✅'); return;
+    }
+
+    let imageUrl = null, imageUrls = [], videoUrl = null;
+    if (composerVideoFile) {
+      postBtn.textContent = '0%';
+      try { videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = `${pct}%`); }
+      catch(e) { showToast('Video upload failed!'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
+    } else if (composerGifUrl) {
+      imageUrl = composerGifUrl;
+    } else if (composerImageFiles.length > 0) {
+      postBtn.textContent = 'Uploading...';
+      for (const file of composerImageFiles) {
+        const compressed = await compressImage(file);
+        const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+        const { error: upErr } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
+        if (upErr) { showToast('Upload failed!'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
+        const { data: u } = sb.storage.from('posts').getPublicUrl(fileName);
+        imageUrls.push(u.publicUrl);
+      }
+      imageUrl = imageUrls[0];
+    }
+
+    const { data, error } = await sb.from('posts').insert({
+      user_id: currentUser.id, body: text || '',
+      image_url: imageUrl,
+      image_urls: imageUrls.length > 0 ? imageUrls : null,
+      video_url: videoUrl
+    }).select('*, profiles(username,full_name,avatar_url,verified)').single();
+
+    postBtn.textContent = 'Post'; postBtn.disabled = false;
+    if (error) { showToast('Error: ' + error.message); return; }
+
+    // Send mention notifications
+    const mentions = [...new Set((text.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
+    for (const username of mentions) {
+      const { data: mentioned } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+      if (mentioned && mentioned.id !== currentUser.id) {
+        await sb.from('notifications').insert({ user_id: mentioned.id, from_user_id: currentUser.id, type: 'comment', post_id: data.id });
+      }
+    }
+
+    composerDraft = '';
+    closeComposer();
+    showToast('Vibe posted! 🐝✨');
+    const container = document.getElementById('posts-container');
+    const empty = container.querySelector('.empty-wrap');
+    if (empty) container.innerHTML = '';
+    container.insertBefore(createPostCard(data), container.firstChild);
+  }
+
+  // Composer image handling
+  function addComposerImages(input) {
+    const files = Array.from(input.files).slice(0, 4);
+    if (!files.length) return;
+    composerImageFiles = files;
+    composerVideoFile = null; composerGifUrl = null;
+    document.getElementById('composer-video-preview').style.display = 'none';
+    document.getElementById('composer-gif-preview').style.display = 'none';
+    const grid = document.getElementById('composer-image-grid');
+    grid.innerHTML = '';
+    files.forEach((file, i) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden';
+        wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"><button onclick="removeComposerImage(${i})" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:12px;cursor:pointer">✕</button>`;
+        grid.appendChild(wrap);
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('composer-image-previews').style.display = 'block';
+    updateComposerUI();
+  }
+
+  function removeComposerImage(i) {
+    composerImageFiles.splice(i, 1);
+    if (!composerImageFiles.length) document.getElementById('composer-image-previews').style.display = 'none';
+    updateComposerUI();
+  }
+
+  function addComposerVideo(input) {
+    const file = input.files[0]; if (!file) return;
+    const video = document.getElementById('composer-video-el');
+    video.src = URL.createObjectURL(file);
+    video.onloadedmetadata = () => {
+      if (video.duration > 60) { showToast('Max 60 seconds!'); return; }
+      composerVideoFile = file;
+      composerImageFiles = []; composerGifUrl = null;
+      document.getElementById('composer-image-previews').style.display = 'none';
+      document.getElementById('composer-gif-preview').style.display = 'none';
+      document.getElementById('composer-video-preview').style.display = 'block';
+      updateComposerUI();
+    };
+  }
+
+  function removeComposerVideo() {
+    composerVideoFile = null;
+    document.getElementById('composer-video-preview').style.display = 'none';
+    document.getElementById('composer-video-input').value = '';
+    updateComposerUI();
+  }
+
+  function openComposerGif() {
+    window._gifTarget = 'composer';
+    openGifPicker();
+  }
+
+  function removeComposerGif() {
+    composerGifUrl = null;
+    document.getElementById('composer-gif-preview').style.display = 'none';
+    updateComposerUI();
+  }
+
+  // @MENTION SYSTEM
+  let mentionSearchTimeout = null;
+  let mentionStartIndex = -1;
+
+  function checkMentions(el) {
+    const text = el.value;
+    const cursor = el.selectionStart;
+    const before = text.slice(0, cursor);
+    const match = before.match(/@(\w*)$/);
+    if (match) {
+      mentionStartIndex = before.lastIndexOf('@');
+      clearTimeout(mentionSearchTimeout);
+      mentionSearchTimeout = setTimeout(() => searchMentions(match[1], el), 250);
+    } else {
+      hideMentionDropdown();
+    }
+  }
+
+  async function searchMentions(query, textarea) {
+    const dropdown = document.getElementById('mention-dropdown');
+    const { data: users } = await sb.from('profiles')
+      .select('id,username,full_name,avatar_url,verified')
+      .or(`username.ilike.${query}%,full_name.ilike.${query}%`)
+      .neq('id', currentUser?.id || '').limit(5);
+    if (!users || !users.length) { hideMentionDropdown(); return; }
+    dropdown.innerHTML = '';
+    users.forEach(u => {
+      const name = u.full_name || u.username || 'Unknown';
+      const item = document.createElement('div');
+      item.className = 'mention-item';
+      const badge = u.verified ? ` <span style="background:#1D9BF0;color:#fff;border-radius:50%;padding:1px 3px;font-size:9px">✓</span>` : '';
+      item.innerHTML = `
+        <div style="width:36px;height:36px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">
+          ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
+        </div>
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${badge}</div><div style="font-size:12px;color:var(--muted)">@${u.username}</div></div>`;
+      item.onclick = () => insertMention(u.username, textarea);
+      dropdown.appendChild(item);
+    });
+    dropdown.style.display = 'block';
+  }
+
+  function insertMention(username, textarea) {
+    const text = textarea.value;
+    const cursor = textarea.selectionStart;
+    const before = text.slice(0, mentionStartIndex);
+    const after = text.slice(cursor);
+    const mention = `@${username} `;
+    textarea.value = before + mention + after;
+    const pos = before.length + mention.length;
+    textarea.setSelectionRange(pos, pos);
+    hideMentionDropdown();
+    textarea.focus();
+    updateComposerUI();
+  }
+
+  function hideMentionDropdown() {
+    const d = document.getElementById('mention-dropdown');
+    if (d) d.style.display = 'none';
+    mentionStartIndex = -1;
+  }
+
+  // EDIT POST
+  function editPost(postId, menu) {
+    if (menu) { menu.remove(); activeMenu = null; }
+    sb.from('posts').select('*').eq('id', postId).single().then(({ data: post }) => {
+      if (!post) { showToast('Post not found'); return; }
+      openComposer('edit', post);
+    });
   }
 
   // VIDEO UPLOAD via Cloudinary
@@ -5040,49 +5454,35 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   let activeMenu = null;
 
   function showPostMenu(btn, postId, isOwn) {
-    // Close any existing menu
     if (activeMenu) { activeMenu.remove(); activeMenu = null; }
-
     const menu = document.createElement('div');
-    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+    menu.style.cssText = 'position:absolute;top:32px;right:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+
+    const mkBtn = (icon, label, color, onClick) => {
+      const b = document.createElement('button');
+      b.style.cssText = `display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:${color};font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s`;
+      b.innerHTML = `${icon} ${label}`;
+      b.onmouseover = () => b.style.background = 'rgba(255,255,255,0.05)';
+      b.onmouseout = () => b.style.background = 'none';
+      b.onclick = onClick;
+      return b;
+    };
 
     if (isOwn) {
-      const deleteBtn = document.createElement('button');
-      deleteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:#ff4444;font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-      deleteBtn.innerHTML = '🗑️ Delete post';
-      deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255,68,68,0.1)';
-      deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
-      deleteBtn.onclick = () => deletePost(postId, menu);
-      menu.appendChild(deleteBtn);
+      menu.appendChild(mkBtn('✏️', 'Edit post', 'var(--text)', () => { menu.remove(); activeMenu = null; editPost(postId); }));
+      menu.appendChild(mkBtn('🗑️', 'Delete post', '#ff4444', () => deletePost(postId, menu)));
     }
-
-    const copyBtn = document.createElement('button');
-    copyBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    copyBtn.innerHTML = '🔗 Copy link';
-    copyBtn.onmouseover = () => copyBtn.style.background = 'rgba(255,255,255,0.05)';
-    copyBtn.onmouseout = () => copyBtn.style.background = 'none';
-    copyBtn.onclick = () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; };
-    menu.appendChild(copyBtn);
-
-    const reportBtn = document.createElement('button');
-    reportBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--muted);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    reportBtn.innerHTML = '🚩 Report';
-    reportBtn.onmouseover = () => reportBtn.style.background = 'rgba(255,255,255,0.05)';
-    reportBtn.onmouseout = () => reportBtn.style.background = 'none';
-    reportBtn.onclick = () => { showToast('Reported! 🚩'); menu.remove(); activeMenu = null; };
-    menu.appendChild(reportBtn);
+    menu.appendChild(mkBtn('🔗', 'Copy link', 'var(--text)', () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; }));
+    menu.appendChild(mkBtn('📤', 'Share', 'var(--text)', () => { if (navigator.share) navigator.share({ title: 'Hive Post', url: window.location.href }); menu.remove(); activeMenu = null; }));
+    menu.appendChild(mkBtn('🔖', 'Save post', 'var(--text)', () => { toggleBookmark(null, postId); menu.remove(); activeMenu = null; }));
+    if (!isOwn) menu.appendChild(mkBtn('🚩', 'Report', 'var(--muted)', () => { showToast('Reported! 🚩'); menu.remove(); activeMenu = null; }));
 
     btn.parentElement.style.position = 'relative';
     btn.parentElement.appendChild(menu);
     activeMenu = menu;
-
-    // Close when clicking outside
     setTimeout(() => {
       document.addEventListener('click', function closeMenu(e) {
-        if (!menu.contains(e.target) && e.target !== btn) {
-          menu.remove(); activeMenu = null;
-          document.removeEventListener('click', closeMenu);
-        }
+        if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); activeMenu = null; document.removeEventListener('click', closeMenu); }
       });
     }, 100);
   }
@@ -5966,7 +6366,38 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     showToast('Vote counted! 🐝');
   }
 
-  function formatBody(text) { return text.replace(/#(\w+)/g, '<span class="post-hashtag" onclick="openHashtag(\'$1\')">#$1</span>'); }
+  function formatBody(text) {
+    if (!text) return '';
+    return text
+      .replace(/#(\w+)/g, '<span class="post-hashtag" onclick="openHashtag(\'$1\')">#$1</span>')
+      .replace(/@(\w+)/g, '<span class="post-mention" onclick="openUserProfileByUsername(\'$1\')">@$1</span>');
+  }
+
+  async function openUserProfileByUsername(username) {
+    const { data } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+    if (data) openUserProfile(data.id);
+    else showToast('@' + username + ' not found');
+  }
+
+  function selectGif(url) {
+    if (window._gifTarget === 'composer') {
+      composerGifUrl = url;
+      composerImageFiles = []; composerVideoFile = null;
+      document.getElementById('composer-gif-el').src = url;
+      document.getElementById('composer-gif-preview').style.display = 'block';
+      document.getElementById('composer-image-previews').style.display = 'none';
+      document.getElementById('composer-video-preview').style.display = 'none';
+      closeGifPicker();
+      window._gifTarget = null;
+      updateComposerUI();
+    } else {
+      selectedGifUrl = url;
+      removeImage();
+      document.getElementById('gif-preview').src = url;
+      document.getElementById('gif-preview-container').style.display = 'block';
+      closeGifPicker();
+    }
+  }
   function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
   function getColor(n) { const c=['#F5C518','#FF6B35','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD']; let h=0; for(let x of n) h=x.charCodeAt(0)+h*31; return c[Math.abs(h)%c.length]; }
   function burstParticles(container) {
