@@ -2680,7 +2680,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <span class="post-handle">${timeAgo(post.created_at)}</span>
             ${post.edited ? '<span class="edited-badge">· Edited</span>' : ''}
           </div>
-        </div>
+          <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
         ${renderPostMedia(post)}
