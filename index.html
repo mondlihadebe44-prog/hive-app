@@ -614,40 +614,96 @@ body {
 }
 
 /* Profile panel */
+/* Profile */
 .profile-cover {
-  height: 200px; position: relative;
-  background: linear-gradient(135deg, var(--gold), var(--orange));
+  height: 220px; position: relative;
+  background: linear-gradient(135deg, #1a1200, #0d0800);
   overflow: hidden;
+}
+.profile-cover::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7));
+  pointer-events: none;
 }
 .profile-cover img { width: 100%; height: 100%; object-fit: cover; }
 .cover-edit-btn {
-  position: absolute; top: 12px; right: 12px;
-  background: rgba(0,0,0,0.6); border: none; border-radius: 50px;
-  padding: 6px 14px; color: #fff; font-size: 12px; cursor: pointer;
-  backdrop-filter: blur(8px); z-index: 2;
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50px; padding: 6px 14px; color: #fff;
+  font-size: 12px; cursor: pointer; z-index: 3;
+  backdrop-filter: blur(10px); font-family: 'DM Sans', sans-serif;
+  font-weight: 500; transition: background 0.2s;
 }
-.profile-info-section { padding: 0 20px 20px; }
+.cover-edit-btn:hover { background: rgba(0,0,0,0.75); }
+.profile-info-section { padding: 0 20px 20px; background: var(--bg); }
 .profile-avatar-wrap {
-  margin-top: -46px; margin-bottom: 12px;
+  margin-top: -52px; margin-bottom: 14px;
   display: flex; justify-content: space-between; align-items: flex-end;
+  position: relative; z-index: 2;
 }
 .profile-avatar-large {
-  width: 92px; height: 92px; border-radius: 50%;
+  width: 96px; height: 96px; border-radius: 50%;
   background: var(--gold); border: 4px solid var(--bg);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 32px; color: #000; overflow: hidden;
+  font-size: 34px; color: #000; overflow: hidden;
   cursor: pointer; position: relative; flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  transition: transform 0.2s;
 }
+.profile-avatar-large:hover { transform: scale(1.04); }
 .profile-name-large {
   font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 22px; margin-bottom: 2px;
+  font-size: 22px; margin-bottom: 3px; color: var(--text);
+  letter-spacing: -0.3px;
 }
-.profile-handle-large { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
-.profile-bio-large { font-size: 15px; line-height: 1.6; margin-bottom: 16px; color: #aaa; }
-.profile-stats { display: flex; gap: 24px; padding-bottom: 16px; }
-.stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--gold); }
-.stat-label { font-size: 13px; color: var(--muted); }
+.profile-handle-large {
+  color: var(--muted); font-size: 14px; margin-bottom: 12px;
+}
+.profile-bio-large {
+  font-size: 15px; line-height: 1.65; margin-bottom: 14px;
+  color: #bbb; word-break: break-word;
+}
+.profile-stats {
+  display: flex; gap: 0; margin-bottom: 4px;
+  border: 1px solid var(--border); border-radius: 16px;
+  overflow: hidden;
+}
+.profile-stats > div {
+  flex: 1; padding: 12px 8px; text-align: center;
+  border-right: 1px solid var(--border); cursor: pointer;
+  transition: background 0.2s;
+}
+.profile-stats > div:last-child { border-right: none; }
+.profile-stats > div:hover { background: rgba(245,197,24,0.06); }
+.stat-num {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 19px; color: var(--text); display: block;
+}
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Profile tabs */
+.profile-tabs-bar {
+  display: flex; border-bottom: 1px solid var(--border);
+  margin-top: 8px; position: sticky; top: 0;
+  background: var(--bg); z-index: 10;
+}
+.profile-tab-btn {
+  flex: 1; padding: 14px 0; font-size: 13px; font-weight: 600;
+  color: var(--muted); border: none; background: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  font-family: 'Syne', sans-serif;
+}
+.profile-tab-btn.active { color: var(--text); border-bottom-color: var(--gold); }
+.profile-tab-btn:hover:not(.active) { color: var(--text); }
+
+body.light .profile-avatar-large { border-color: #f5f5f5 !important; }
+body.light .profile-bio-large { color: #555; }
+body.light .profile-stats { border-color: #e0e0e0; }
+body.light .profile-stats > div { border-color: #e0e0e0; }
+body.light .stat-num { color: #0a0a0a; }
+body.light .profile-tabs-bar { background: #fff; }
 
 /* Messages */
 .messages-panel { display: none; flex-direction: column; height: 100vh; }
@@ -2015,50 +2071,73 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     <!-- PROFILE -->
     <div id="profile-panel" class="panel">
+      <!-- Cover photo -->
       <div class="profile-cover" id="cover-container" onclick="document.getElementById('cover-upload').click()">
         <img id="cover-photo" style="width:100%;height:100%;object-fit:cover;display:none">
         <button class="cover-edit-btn" onclick="event.stopPropagation();document.getElementById('cover-upload').click()">📷 Edit cover</button>
         <input type="file" id="cover-upload" accept="image/*" style="display:none" onchange="uploadCover(this)">
       </div>
+
       <div class="profile-info-section">
+        <!-- Avatar row -->
         <div class="profile-avatar-wrap">
           <div class="profile-avatar-large" id="profile-avatar-big" onclick="document.getElementById('avatar-upload').click()">?
-            <div style="position:absolute;bottom:0;right:0;width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">📷</div>
+            <div style="position:absolute;bottom:2px;right:2px;width:26px;height:26px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--bg)">📷</div>
           </div>
           <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
         </div>
-        <div id="avatar-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
-        <div id="cover-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
-        <div class="profile-name-large" id="profile-name-big">...</div>
+
+        <!-- Upload status -->
+        <div id="avatar-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:2px"></div>
+        <div id="cover-upload-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+
+        <!-- Name + verification -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+          <div class="profile-name-large" id="profile-name-big">...</div>
+          <div id="profile-verified-badge" style="display:none">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#1D9BF0;border-radius:50%;border:1.5px solid rgba(245,197,24,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3)"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </div>
         <div class="profile-handle-large" id="profile-handle-big">@...</div>
-        <div id="profile-location-joined" style="display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="profile-bio-large" id="profile-bio-big"></div>
+
+        <!-- Location + join date -->
+        <div id="profile-location-joined" style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
           <span id="profile-location" style="font-size:13px;color:var(--muted);display:none">📍 <span id="profile-location-text"></span></span>
           <span id="profile-joined" style="font-size:13px;color:var(--muted)">📅 <span id="profile-joined-text"></span></span>
         </div>
-        <div class="profile-bio-large" id="profile-bio-big">...</div>
-        <div class="profile-stats">
-          <div><div class="stat-num" id="my-posts-count">0</div><div class="stat-label">Posts</div></div>
-          <div><div class="stat-num" id="my-followers-count">0</div><div class="stat-label">Followers</div></div>
-          <div><div class="stat-num" id="my-following-count">0</div><div class="stat-label">Following</div></div>
+
+        <!-- Stats -->
+        <div class="profile-stats" style="margin-bottom:16px">
+          <div><span class="stat-num" id="my-posts-count">0</span><div class="stat-label">Posts</div></div>
+          <div><span class="stat-num" id="my-followers-count">0</span><div class="stat-label">Followers</div></div>
+          <div><span class="stat-num" id="my-following-count">0</span><div class="stat-label">Following</div></div>
         </div>
-        <button onclick="openEditProfile()" style="margin-top:16px;width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">✏️ Edit Profile</button>
+
+        <!-- Action buttons -->
+        <button onclick="openEditProfile()" style="width:100%;padding:11px;border-radius:50px;border:none;background:var(--gold);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 12px rgba(245,197,24,0.3)" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">✏️ Edit Profile</button>
+
         <div style="display:flex;gap:10px;margin-top:10px">
-          <button onclick="openThemePicker()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">🎨 Themes</button>
-          <button onclick="showProModal()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid rgba(245,197,24,0.4);background:rgba(245,197,24,0.08);color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">👑 Pro</button>
+          <button onclick="shareProfile()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">↗ Share</button>
+          <button onclick="showProModal()" style="flex:1;padding:10px;border-radius:50px;border:1.5px solid rgba(245,197,24,0.5);background:rgba(245,197,24,0.06);color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,24,0.12)'" onmouseout="this.style.background='rgba(245,197,24,0.06)'">👑 Hive Pro</button>
         </div>
       </div>
+
       <!-- Profile Tabs -->
-      <div style="display:flex;border-bottom:1px solid var(--border);margin-top:8px">
-        <button onclick="switchProfileTab(this,'my-posts-feed')" class="feed-tab active" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--text);border:none;background:none;border-bottom:2px solid var(--gold);cursor:pointer">Posts</button>
-        <button onclick="switchProfileTab(this,'my-replies-feed')" class="feed-tab" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer">Replies</button>
-        <button onclick="switchProfileTab(this,'my-media-feed')" class="feed-tab" style="flex:1;padding:14px 0;font-size:14px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer">Media</button>
+      <div class="profile-tabs-bar">
+        <button onclick="switchProfileTab(this,'my-posts-feed')" class="profile-tab-btn feed-tab active">Posts</button>
+        <button onclick="switchProfileTab(this,'my-replies-feed')" class="profile-tab-btn feed-tab">Replies</button>
+        <button onclick="switchProfileTab(this,'my-media-feed')" class="profile-tab-btn feed-tab">Media</button>
+        <button onclick="switchProfileTab(this,'my-buzz-feed')" class="profile-tab-btn feed-tab">Buzz</button>
       </div>
-      <!-- My Posts -->
+
+      <!-- Tab content -->
       <div id="my-posts-feed">
         <div class="loading-wrap"><div class="spinner"></div></div>
       </div>
       <div id="my-replies-feed" style="display:none"></div>
       <div id="my-media-feed" style="display:none"></div>
+      <div id="my-buzz-feed" style="display:none"><div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No buzz activity yet!</div></div></div>
     </div>
 
   <!-- USER PROFILE PANEL -->
@@ -2346,7 +2425,9 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
       document.getElementById('nav-name').textContent = data.full_name || '';
       document.getElementById('nav-handle').textContent = '@' + (data.username || '');
-      document.getElementById('profile-name-big').innerHTML = (data.full_name || '') + (data.verified ? ' <span style="display:inline-block;font-size:20px;background:#1D9BF0;color:#fff;border-radius:50%;padding:2px 4px;font-size:13px;font-style:normal">✓</span>' : '');
+      document.getElementById('profile-name-big').textContent = data.full_name || '';
+      const badgeEl = document.getElementById('profile-verified-badge');
+      if (badgeEl) badgeEl.style.display = data.verified ? 'inline-flex' : 'none';
       document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
       document.getElementById('profile-bio-big').textContent = data.bio || '';
 
@@ -3520,17 +3601,28 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   function switchProfileTab(el, tabId) {
-    document.querySelectorAll('#profile-panel .feed-tab').forEach(t => {
-      t.style.color = 'var(--muted)';
-      t.style.borderBottomColor = 'transparent';
+    document.querySelectorAll('#profile-panel .profile-tab-btn, #profile-panel .feed-tab').forEach(t => {
+      t.classList.remove('active');
+      t.style.color = '';
+      t.style.borderBottomColor = '';
     });
-    el.style.color = 'var(--text)';
-    el.style.borderBottomColor = 'var(--gold)';
-    document.getElementById('my-posts-feed').style.display = tabId === 'my-posts-feed' ? 'block' : 'none';
-    document.getElementById('my-replies-feed').style.display = tabId === 'my-replies-feed' ? 'block' : 'none';
-    document.getElementById('my-media-feed').style.display = tabId === 'my-media-feed' ? 'block' : 'none';
+    el.classList.add('active');
+    ['my-posts-feed','my-replies-feed','my-media-feed','my-buzz-feed'].forEach(id => {
+      const el2 = document.getElementById(id);
+      if (el2) el2.style.display = id === tabId ? 'block' : 'none';
+    });
     if (tabId === 'my-media-feed') loadMyMedia();
     if (tabId === 'my-replies-feed') loadMyReplies();
+  }
+
+  function shareProfile() {
+    const url = `${window.location.origin}${window.location.pathname}?user=${currentUser?.id}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Check out my Hive profile!', url });
+    } else {
+      navigator.clipboard.writeText(url);
+      showToast('Profile link copied! 🐝');
+    }
   }
 
   async function loadMyReplies() {
