@@ -415,30 +415,31 @@ body {
 }
 #posts-container, #group-posts-container, #user-posts-container, #my-posts-feed { position: relative; }
 .post-card-right {
-  flex: 1; min-width: 0;
+  flex: 1; min-width: 0; max-width: 100%;
   display: flex; flex-direction: column;
+  overflow: hidden;
 }
 .post-header-row {
   display: flex; align-items: center;
   justify-content: space-between;
   margin-bottom: 4px; gap: 4px;
-  min-width: 0;
+  min-width: 0; width: 100%;
 }
 .post-name-row {
   display: flex; align-items: center;
   gap: 4px; min-width: 0; flex: 1;
-  overflow: hidden;
+  overflow: hidden; flex-wrap: nowrap;
 }
 .post-name {
   font-family: 'Syne', sans-serif; font-weight: 700;
   font-size: 14px; color: var(--text);
   white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; max-width: 140px;
+  text-overflow: ellipsis; max-width: 130px; flex-shrink: 1;
 }
 .post-handle {
   font-size: 12px; color: var(--muted);
   white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; flex-shrink: 1;
+  text-overflow: ellipsis; flex-shrink: 2; min-width: 0;
 }
 .post-dot { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 .post-more {
@@ -451,7 +452,10 @@ body {
 .post-body {
   font-size: 15px; line-height: 1.6;
   color: var(--text); margin-bottom: 10px;
-  word-break: break-word; white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%; min-width: 0;
 }
 .post-hashtag { color: var(--gold); cursor: pointer; }
 .post-image {
