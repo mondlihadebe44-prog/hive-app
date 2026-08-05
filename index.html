@@ -866,6 +866,44 @@ body.theme-pride .mobile-nav { border-top: 2px solid transparent; border-image: 
 }
 .group-emoji-opt:hover { transform: scale(1.2); }
 .group-emoji-opt.selected { border-color: var(--gold); background: rgba(245,197,24,0.1); }
+
+/* Explore */
+.explore-chip {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 50px;
+  border: 1px solid #222; background: #111; color: #888;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.explore-chip:hover { border-color: #F6C21A; color: #F6C21A; }
+.explore-chip.active { background: #F6C21A; color: #000; border-color: #F6C21A; font-weight: 700; }
+.explore-location-card {
+  padding: 14px; background: #111; border: 1px solid #1e1e1e;
+  border-radius: 16px; cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.explore-location-card:hover { border-color: #F6C21A; background: rgba(246,194,26,0.05); }
+.explore-hashtag-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #111; border: 1px solid #1e1e1e;
+  border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.explore-hashtag-card:hover { border-color: #F6C21A; }
+.explore-person-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: #111; border: 1px solid #1e1e1e;
+  border-radius: 14px; margin-bottom: 8px; transition: all 0.2s;
+}
+.explore-person-card:hover { background: #141414; }
+.explore-group-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: #111; border: 1px solid #1e1e1e;
+  border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.explore-group-card:hover { border-color: #F6C21A; }
+body.light .explore-chip { background: #f0f0f0; border-color: #e0e0e0; color: #666; }
+body.light .explore-chip.active { background: #F6C21A; color: #000; }
+body.light .explore-location-card, body.light .explore-hashtag-card,
+body.light .explore-person-card, body.light .explore-group-card { background: #fff; border-color: #e0e0e0; }
+
 .group-card {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 16px; background: #111;
@@ -1999,46 +2037,98 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     <!-- EXPLORE -->
     <div id="explore-panel" class="panel">
-      <div class="panel-header"><div class="panel-title">Explore 🔍</div></div>
-      <div style="padding:20px">
-        <div class="search-box" style="margin-bottom:24px">
-          <span>🔍</span>
-          <input placeholder="Search users, hashtags..." id="explore-search" oninput="searchUsers(this.value)">
+      <!-- Sticky search header -->
+      <div class="panel-header" style="flex-direction:column;align-items:stretch;gap:12px;padding-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="panel-title">Explore</div>
+          <button onclick="openHiveMind()" style="display:flex;align-items:center;gap:6px;background:rgba(246,194,26,0.1);border:1px solid rgba(246,194,26,0.3);color:#F6C21A;padding:7px 14px;border-radius:50px;font-size:12px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700">🐝 Ask HiveMind</button>
         </div>
+        <!-- Search bar -->
+        <div class="search-box" style="margin:0">
+          <span>🔍</span>
+          <input placeholder="Search Hive…" id="explore-search" oninput="searchUsers(this.value)" style="font-size:15px">
+        </div>
+        <!-- Category chips -->
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none">
+          <button class="explore-chip active" onclick="setExploreChip(this,'trending')">🔥 Trending</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'nearme')">📍 Near Me</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'news')">📰 News</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'music')">🎵 Music</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'sports')">⚽ Sports</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'gaming')">🎮 Gaming</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'tech')">💻 Tech</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'entertainment')">🎬 Entertainment</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'memes')">😂 Memes</button>
+          <button class="explore-chip" onclick="setExploreChip(this,'photos')">📸 Photos</button>
+        </div>
+      </div>
+
+      <div style="padding:0 16px 100px;overflow-y:auto">
+        <!-- Search results -->
         <div id="explore-search-results"></div>
 
-        <!-- Location Hives -->
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:16px">📍 Local Hives</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-          <div onclick="filterByLocation('Johannesburg')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div style="font-size:28px;margin-bottom:6px">🏙️</div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Johannesburg</div>
+        <!-- HiveMind card -->
+        <div onclick="openHiveMind()" style="margin:16px 0;padding:16px 18px;background:linear-gradient(135deg,rgba(246,194,26,0.08),rgba(246,194,26,0.03));border:1px solid rgba(246,194,26,0.2);border-radius:20px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px" onmouseover="this.style.borderColor='rgba(246,194,26,0.5)'" onmouseout="this.style.borderColor='rgba(246,194,26,0.2)'">
+          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#F6C21A,#D89B00);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#F6C21A;margin-bottom:3px">Ask HiveMind</div>
+            <div style="font-size:12px;color:#777;line-height:1.4">What's trending today? What happened in Durban? Summarize today's biggest conversations.</div>
           </div>
-          <div onclick="filterByLocation('Cape Town')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div style="font-size:28px;margin-bottom:6px">🌊</div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Cape Town</div>
+          <div style="color:#F6C21A;font-size:18px;flex-shrink:0">›</div>
+        </div>
+
+        <!-- Hive Pulse section -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">⚡ Hive Pulse</div>
+            <span style="font-size:11px;color:#555;background:#111;padding:3px 10px;border-radius:50px;border:1px solid #222">Live</span>
           </div>
-          <div onclick="filterByLocation('Durban')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div style="font-size:28px;margin-bottom:6px">🌴</div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Durban</div>
-          </div>
-          <div onclick="filterByLocation('Pretoria')" style="padding:16px;background:#111;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-            <div style="font-size:28px;margin-bottom:6px">🌾</div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Pretoria</div>
+          <div id="explore-pulse-container">
+            <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
           </div>
         </div>
-        <div id="location-results"></div>
 
-        <!-- Trending -->
-        <div class="trending-card">
-          <div class="trending-title">Trending 🔥</div>
-          <div>
-            <span class="trending-tag" onclick="openHashtag('hiveapp')">#hiveapp</span>
-            <span class="trending-tag" onclick="openHashtag('buildinpublic')">#buildinpublic</span>
-            <span class="trending-tag" onclick="openHashtag('vibes')">#vibes</span>
-            <span class="trending-tag" onclick="openHashtag('southafrica')">#southafrica</span>
-            <span class="trending-tag" onclick="openHashtag('joburg')">#joburg</span>
-            <span class="trending-tag" onclick="openHashtag('capetown')">#capetown</span>
+        <!-- Hive Radar / Location -->
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">📡 Hive Radar</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div onclick="filterByLocation('Johannesburg')" class="explore-location-card"><div style="font-size:24px;margin-bottom:4px">🏙️</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Johannesburg</div></div>
+            <div onclick="filterByLocation('Cape Town')" class="explore-location-card"><div style="font-size:24px;margin-bottom:4px">🌊</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Cape Town</div></div>
+            <div onclick="filterByLocation('Durban')" class="explore-location-card"><div style="font-size:24px;margin-bottom:4px">🌴</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Durban</div></div>
+            <div onclick="filterByLocation('Pretoria')" class="explore-location-card"><div style="font-size:24px;margin-bottom:4px">🌾</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Pretoria</div></div>
+          </div>
+          <div id="location-results"></div>
+        </div>
+
+        <!-- Trending Hashtags -->
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">🔥 Trending Hashtags</div>
+          <div id="explore-hashtags">
+            <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Discover People -->
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">👥 Discover People</div>
+          <div id="explore-people">
+            <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Recommended Groups -->
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">🍯 Recommended Groups</div>
+          <div id="explore-groups">
+            <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Trending Posts -->
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">📈 Trending Posts</div>
+          <div id="explore-trending-posts">
+            <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
           </div>
         </div>
       </div>
@@ -2610,6 +2700,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (panel === 'notifs') loadNotifications();
     if (panel === 'messages') loadConversations();
     if (panel === 'saved') loadBookmarks();
+    if (panel === 'explore') loadExplorePage();
     if (panel === 'groups') loadGroups();
   }
 
@@ -6257,6 +6348,133 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
     await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
     showToast('Now following! 🐝');
+  }
+
+  // EXPLORE PAGE
+  let exploreLoaded = false;
+  let exploreChip = 'trending';
+
+  function setExploreChip(el, chip) {
+    document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    exploreChip = chip;
+  }
+
+  async function loadExplorePage() {
+    if (exploreLoaded) return;
+    exploreLoaded = true;
+    await Promise.all([
+      loadExploreHashtags(),
+      loadExplorePeople(),
+      loadExploreGroups(),
+      loadExploreTrendingPosts(),
+      loadExplorePulseCard(),
+    ]);
+  }
+
+  async function loadExploreHashtags() {
+    const container = document.getElementById('explore-hashtags');
+    if (!container) return;
+    const { data: posts } = await sb.from('posts')
+      .select('body').gt('created_at', new Date(Date.now() - 48*60*60*1000).toISOString()).limit(200);
+    const counts = {};
+    (posts || []).forEach(p => {
+      (p.body || '').match(/#(\w+)/g)?.forEach(tag => { const t = tag.toLowerCase(); counts[t] = (counts[t]||0)+1; });
+    });
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const fallback = ['#hiveapp','#southafrica','#vibes','#joburg','#capetown','#amapiano','#psl','#durban'];
+    const items = sorted.length > 0 ? sorted : fallback.map(t=>[t,0]);
+    container.innerHTML = items.map(([tag,count],i)=>`
+      <div class="explore-hashtag-card" onclick="openHashtag('${tag.slice(1)}')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#444">${i+1}</span>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)">${tag}</div>
+            <div style="font-size:11px;color:#666;margin-top:1px">${count>0?count+' post'+(count!==1?'s':''):'Trending on Hive'}</div>
+          </div>
+        </div>
+        <span style="color:#F6C21A;font-size:16px">›</span>
+      </div>`).join('');
+  }
+
+  async function loadExplorePeople() {
+    const container = document.getElementById('explore-people');
+    if (!container) return;
+    const { data: following } = currentUser ? await sb.from('follows').select('following_id').eq('follower_id',currentUser.id) : {data:[]};
+    const ids = (following||[]).map(f=>f.following_id);
+    if (currentUser) ids.push(currentUser.id);
+    let q = sb.from('profiles').select('id,username,full_name,avatar_url,verified,bio').limit(6);
+    if (ids.length>0) q = q.not('id','in',`(${ids.join(',')})`);
+    const {data:users} = await q;
+    if (!users||!users.length) { container.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0">No new people to discover yet 🐝</div>'; return; }
+    const BADGE = `<svg style="display:inline-block;vertical-align:middle;margin-left:2px" width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 1.5L17.5 5.75V14.25L10 18.5L2.5 14.25V5.75L10 1.5Z" fill="#0d0d0d" stroke="#F6C21A" stroke-width="1.4"/><path d="M10 3.5L16 7V13L10 16.5L4 13V7L10 3.5Z" fill="#0d0d0d" stroke="#2D8CFF" stroke-width="0.8"/><path d="M7 10L9 12L13 8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    container.innerHTML = users.map(u=>{
+      const name=u.full_name||u.username||'Unknown';
+      return `<div class="explore-person-card">
+        <div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
+          ${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">`:name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0;cursor:pointer" onclick="openUserProfile('${u.id}')">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${u.verified?BADGE:''}</div>
+          <div style="font-size:12px;color:#666">@${u.username||''}</div>
+          ${u.bio?`<div style="font-size:12px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.bio}</div>`:''}
+        </div>
+        <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadExploreGroups() {
+    const container = document.getElementById('explore-groups');
+    if (!container) return;
+    const {data:groups} = await sb.from('hive_groups').select('*').limit(5);
+    if (!groups||!groups.length) { container.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0">No groups yet 🍯</div>'; return; }
+    container.innerHTML = groups.map(g=>`
+      <div class="explore-group-card" onclick="openGroup('${g.id}')">
+        <div style="width:44px;height:44px;border-radius:14px;background:${g.cover_color||'#1a1200'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${g.avatar||'🍯'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${g.name}</div>
+          <div style="font-size:12px;color:#666">${g.description||''}</div>
+        </div>
+        <button onclick="event.stopPropagation();joinGroupFromExplore(this,'${g.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Join</button>
+      </div>`).join('');
+  }
+
+  async function loadExploreTrendingPosts() {
+    const container = document.getElementById('explore-trending-posts');
+    if (!container) return;
+    const cutoff = new Date(Date.now()-48*60*60*1000).toISOString();
+    const {data:posts} = await sb.from('posts').select('*,profiles(username,full_name,avatar_url,verified)').is('reply_to',null).gt('created_at',cutoff).order('created_at',{ascending:false}).limit(20);
+    if (!posts||!posts.length) { container.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0">No trending posts yet 🐝</div>'; return; }
+    container.innerHTML='';
+    posts.slice(0,5).forEach(post=>container.appendChild(createPostCard(post)));
+  }
+
+  async function loadExplorePulseCard() {
+    const container = document.getElementById('explore-pulse-container');
+    if (!container) return;
+    const {data:posts} = await sb.from('posts').select('body').order('created_at',{ascending:false}).limit(100);
+    const allText = (posts||[]).map(p=>p.body||'').join(' ');
+    const counts = {};
+    (allText.match(/#\w+/g)||[]).forEach(tag=>{ const t=tag.toLowerCase(); counts[t]=(counts[t]||0)+1; });
+    const topTags = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const items = [
+      { emoji:'🔥', text: topTags[0]?`${topTags[0][0]} is buzzing with ${topTags[0][1]} post${topTags[0][1]!==1?'s':''}!`:'Hive is buzzing today!' },
+      { emoji:'⚡', text: topTags[1]?`${topTags[1][0]} is trending right now`:'Hot conversations happening now' },
+      { emoji:'🌍', text:'South Africans are active on Hive today' },
+    ];
+    container.innerHTML = items.map(item=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(246,194,26,0.04);border:1px solid rgba(246,194,26,0.1);border-radius:14px;margin-bottom:8px">
+        <span style="font-size:20px;flex-shrink:0">${item.emoji}</span>
+        <span style="font-size:13px;color:#ccc;flex:1">${item.text}</span>
+        <button onclick="openHiveMind()" style="padding:5px 12px;background:rgba(246,194,26,0.1);border:1px solid rgba(246,194,26,0.3);color:#F6C21A;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;flex-shrink:0;white-space:nowrap">Ask 🐝</button>
+      </div>`).join('');
+  }
+
+  async function joinGroupFromExplore(btn, groupId) {
+    if (!currentUser) { showToast('Sign in first!'); return; }
+    const {error} = await sb.from('group_members').insert({group_id:groupId,user_id:currentUser.id,role:'member'});
+    if (!error) { btn.textContent='Joined ✓'; btn.style.background='#F6C21A'; btn.style.color='#000'; btn.disabled=true; showToast('Joined! 🍯'); }
   }
 
   // ONBOARDING
