@@ -118,6 +118,34 @@ body {
 }
 @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
 @keyframes fadeUp { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes cardFadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes likeHeartPop { 0%{transform:scale(1)} 25%{transform:scale(1.4)} 50%{transform:scale(0.9)} 75%{transform:scale(1.15)} 100%{transform:scale(1)} }
+@keyframes fabPulse { 0%,100%{box-shadow:0 4px 20px rgba(246,194,26,0.45)} 50%{box-shadow:0 4px 28px rgba(246,194,26,0.7),0 0 0 6px rgba(246,194,26,0.1)} }
+@keyframes fabRotate { from{transform:rotate(0deg)} to{transform:rotate(45deg)} }
+@keyframes tabSlide { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+/* Post card fade in */
+.post-card { animation: cardFadeIn 0.3s ease both; }
+/* Like heart pop */
+.like-btn.liked .action-icon { animation: likeHeartPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+/* FAB idle pulse */
+.mobile-nav-fab { animation: fabPulse 3s ease-in-out infinite; }
+/* FAB active stops pulse */
+.mobile-nav-fab:active { animation: none; transform: scale(0.93) rotate(45deg); }
+/* Compose input gold focus ring */
+.compose-input:focus { outline: none; }
+.compose-right:focus-within .compose-input {
+  border-bottom: 1.5px solid rgba(246,194,26,0.4);
+}
+/* Action button press */
+.action-btn:active { transform: scale(0.88); }
+/* Post card lift on tap */
+.post-card:active { background: rgba(246,194,26,0.02); }
+/* Hashtag gold */
+.post-hashtag { color: #F6C21A; cursor: pointer; font-weight: 500; }
+.post-mention { color: #2D8CFF; cursor: pointer; font-weight: 500; }
+.post-mention:hover { text-decoration: underline; }
+/* Smooth panel transitions */
+.panel { animation: fadeUp 0.2s ease both; }
 @keyframes beeFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-14px) rotate(5deg)} }
 @keyframes splashPulse { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.05)} }
 @keyframes loadBar { from{width:0%} to{width:100%} }
@@ -315,38 +343,60 @@ body {
 .stories-bar {
   display: flex; gap: 16px;
   overflow-x: auto; scrollbar-width: none;
-  padding-bottom: 16px;
+  padding: 4px 0 16px;
 }
 .stories-bar::-webkit-scrollbar { display: none; }
 .story-item {
   display: flex; flex-direction: column;
   align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0;
+  transition: transform 0.2s;
 }
+.story-item:active { transform: scale(0.93); }
 .story-avatar {
-  width: 56px; height: 56px; border-radius: 50%;
+  width: 58px; height: 58px; border-radius: 50%;
   background: var(--card);
   display: flex; align-items: center; justify-content: center;
   font-size: 24px;
-  border: 2.5px solid var(--gold); transition: transform 0.2s;
+  border: 2.5px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
-.story-avatar:hover { transform: scale(1.05); }
-.story-name { font-size: 11px; color: var(--muted); }
+.story-avatar:hover { transform: scale(1.06); }
+.story-avatar.has-vibe {
+  border-width: 2.5px; border-style: solid;
+  box-shadow: 0 0 0 2px #000;
+}
+/* Unseen vibe — glowing ring */
+.story-avatar.has-vibe.unseen {
+  box-shadow: 0 0 0 2px #000, 0 0 12px rgba(246,194,26,0.5);
+}
+/* Viewed — fade ring */
+.story-avatar.has-vibe.viewed {
+  filter: grayscale(0.6); opacity: 0.7;
+}
+.story-name {
+  font-size: 11px; color: #888;
+  font-family: 'DM Sans', sans-serif;
+  max-width: 60px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* Feed tabs */
 .feed-tabs { display: flex; gap: 0; }
 .feed-tab {
   flex: 1; padding: 14px 0; text-align: center;
-  font-size: 14px; font-weight: 600; color: var(--muted);
+  font-size: 13px; font-weight: 600; color: #666;
   cursor: pointer; border: none; background: none;
   border-bottom: 2px solid transparent;
-  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  transition: color 0.2s, border-color 0.2s;
+  font-family: 'Syne', sans-serif; letter-spacing: 0.1px;
 }
-.feed-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-.feed-tab.active { color: var(--text); border-bottom-color: var(--gold); }
+.feed-tab:hover { color: var(--text); }
+.feed-tab.active { color: var(--text); border-bottom-color: #F6C21A; font-weight: 700; }
 
 /* ===== COMPOSE ===== */
 .compose-box {
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   display: flex; gap: 12px;
 }
@@ -1681,7 +1731,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div id="composer-username" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:8px;color:var(--text)"></div>
 
       <!-- Text area -->
-      <textarea id="composer-textarea" class="composer-textarea" placeholder="What's the vibe? 🐝" oninput="onComposerInput(this)" onkeyup="checkMentions(this)"></textarea>
+      <textarea id="composer-textarea" class="composer-textarea" placeholder="Share your vibe… 🐝" oninput="onComposerInput(this)" onkeyup="checkMentions(this)"></textarea>
 
       <!-- Mention dropdown -->
       <div id="mention-dropdown" style="display:none;position:absolute;top:100%;left:0"></div>
@@ -1971,7 +2021,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <span style="font-size:12px;color:var(--gold);font-weight:600">Starting a thread</span>
             <button onclick="cancelNewThread()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 0 0 4px">✕</button>
           </div>
-          <input class="compose-input" placeholder="What's the vibe? 🐝" id="compose-text" readonly onclick="openComposer()" style="cursor:pointer">
+          <input class="compose-input" placeholder="Share your vibe… 🐝" id="compose-text" readonly onclick="openComposer()" style="cursor:pointer">
           <!-- HiveMind Button -->
           <button onclick="openHiveMind()" style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.3);border-radius:50px;padding:8px 16px;color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;transition:all 0.2s;width:fit-content" onmouseover="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.25),rgba(245,197,24,0.1))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05))'">
             🐝 Ask HiveMind
