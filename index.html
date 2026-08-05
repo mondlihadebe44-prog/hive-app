@@ -1020,26 +1020,58 @@ body.light .hivemind-btn:hover { border-color: var(--gold); background: rgba(245
 .mobile-nav {
   display: none;
   position: fixed; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,0.95); backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
-  padding: 8px 0;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  background: rgba(0,0,0,0.96); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
   z-index: 100;
-  justify-content: space-around;
+  justify-content: space-around; align-items: center;
 }
 .mobile-nav-item {
   display: flex; flex-direction: column; align-items: center;
-  gap: 2px; cursor: pointer; padding: 8px 16px;
-  border: none; background: none; color: var(--muted);
-  font-size: 10px; transition: color 0.2s; position: relative;
+  gap: 3px; cursor: pointer; padding: 6px 18px;
+  border: none; background: none; color: #555;
+  font-size: 10px; font-family: 'DM Sans', sans-serif;
+  font-weight: 500; transition: color 0.2s; position: relative;
+  flex: 1;
 }
-.mobile-nav-item.active { color: var(--gold); }
-.mobile-nav-icon { font-size: 22px; }
+.mobile-nav-item.active { color: #F6C21A; }
+.mobile-nav-item.active .mobile-nav-svg { stroke: #F6C21A; }
+.mobile-nav-svg {
+  width: 23px; height: 23px; stroke: #555;
+  transition: stroke 0.2s; flex-shrink: 0;
+}
+/* Center FAB */
+.mobile-nav-fab {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #F6C21A; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-bottom: 4px;
+  box-shadow: 0 4px 20px rgba(246,194,26,0.45);
+  transition: all 0.2s; position: relative; z-index: 1;
+}
+.mobile-nav-fab svg { width: 22px; height: 22px; stroke: #000; }
+.mobile-nav-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(246,194,26,0.6); }
+.mobile-nav-fab:active { transform: scale(0.95); }
+/* Profile avatar in nav */
+.mobile-nav-avatar {
+  width: 25px; height: 25px; border-radius: 50%;
+  background: #333; overflow: hidden; border: 1.5px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s;
+}
+.mobile-nav-avatar svg { width: 14px; height: 14px; stroke: #888; }
+.mobile-nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mobile-nav-item.active .mobile-nav-avatar { border-color: #F6C21A; }
 .mobile-badge {
-  position: absolute; top: 6px; right: 12px;
-  width: 8px; height: 8px; background: var(--orange);
-  border-radius: 50%; display: none;
+  position: absolute; top: 4px; right: 14px;
+  width: 8px; height: 8px; background: #ff4444;
+  border-radius: 50%; display: none; border: 1.5px solid #000;
 }
+body.light .mobile-nav { background: rgba(255,255,255,0.97); border-top: 1px solid #e8e8e8; }
+body.light .mobile-nav-item { color: #999; }
+body.light .mobile-nav-item.active { color: #F6C21A; }
+body.light .mobile-nav-svg { stroke: #999; }
+body.light .mobile-nav-item.active .mobile-nav-svg { stroke: #F6C21A; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -2402,27 +2434,28 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
 <!-- MOBILE NAV -->
 <nav class="mobile-nav" id="mobile-nav">
-  <button class="mobile-nav-item active" onclick="setNav(this,'feed')">
-    <span class="mobile-nav-icon">🏠</span>Home
+  <button class="mobile-nav-item active" onclick="setNav(this,'feed')" id="mobile-nav-home">
+    <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
   </button>
-  <button class="mobile-nav-item" onclick="openGlobalSearch()">
-    <span class="mobile-nav-icon">🔍</span>Search
+  <button class="mobile-nav-item" onclick="setNav(this,'explore')" id="mobile-nav-explore">
+    <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Explore</span>
   </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'notifs')">
-    <span class="mobile-nav-icon">🔔</span>Alerts
+  <!-- Center FAB -->
+  <button class="mobile-nav-fab" onclick="openComposer()" id="mobile-nav-create">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button class="mobile-nav-item" onclick="setNav(this,'messages')" id="mobile-nav-messages" style="position:relative">
+    <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Inbox</span>
     <span class="mobile-badge" id="mobile-notif-badge"></span>
   </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'messages')">
-    <span class="mobile-nav-icon">✉️</span>DMs
-  </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'saved')">
-    <span class="mobile-nav-icon">🔖</span>Saved
-  </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'groups')">
-    <span class="mobile-nav-icon">🍯</span>Groups
-  </button>
-  <button class="mobile-nav-item" onclick="setNav(this,'profile')">
-    <span class="mobile-nav-icon">👤</span>Profile
+  <button class="mobile-nav-item" onclick="setNav(this,'profile')" id="mobile-nav-profile">
+    <div class="mobile-nav-avatar" id="mobile-nav-avatar-img">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <span>Profile</span>
   </button>
 </nav>
 
@@ -2568,6 +2601,15 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         const el = document.getElementById(id);
         if (el) { el.innerHTML = avatarHTML; el.style.background = data.avatar_url ? 'transparent' : color; }
       });
+
+      // Update mobile nav profile avatar
+      const mobileNavAvatar = document.getElementById('mobile-nav-avatar-img');
+      if (mobileNavAvatar) {
+        mobileNavAvatar.innerHTML = data.avatar_url
+          ? `<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover">`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+        mobileNavAvatar.style.background = data.avatar_url ? 'transparent' : '#222';
+      }
 
       document.getElementById('nav-name').textContent = data.full_name || '';
       document.getElementById('nav-handle').textContent = '@' + (data.username || '');
