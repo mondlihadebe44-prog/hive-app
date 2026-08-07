@@ -590,28 +590,70 @@ body {
 .post-card.thread-card { border-bottom: none !important; }
 
 /* Comments */
-.comments-section { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.comments-section { display: none; border-top: 1px solid #181818; margin-top: 10px; padding-top: 4px; }
 .comments-section.open { display: block; }
-.comment { display: flex; gap: 10px; margin-bottom: 12px; border-left: 2px dotted var(--muted); padding-left: 12px; margin-left: 4px; }
+/* Sort bar */
+.comments-sort-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-bottom: 1px solid #111;
+}
+.comments-sort-btn {
+  padding: 4px 12px; border-radius: 50px; border: 1px solid #222;
+  background: none; color: #666; font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.comments-sort-btn.active { background: #F6C21A; color: #000; border-color: #F6C21A; }
+/* Comment item */
+.comment {
+  display: flex; gap: 10px; padding: 10px 16px;
+  animation: fadeUp 0.2s ease both;
+  position: relative;
+}
+.comment:hover { background: rgba(255,255,255,0.015); }
 .comment-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Syne', sans-serif; font-weight: 700;
-  font-size: 13px; color: #000; flex-shrink: 0;
+  font-size: 13px; color: #000; flex-shrink: 0; overflow: hidden;
 }
-.comment-name { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
-.comment-text { font-size: 13px; color: #aaa; line-height: 1.5; }
-.comment-input-row { display: flex; gap: 8px; margin-top: 8px; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+.comment-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: #fff; }
+.comment-time { font-size: 11px; color: #555; }
+.comment-text { font-size: 14px; color: #ccc; line-height: 1.5; word-break: break-word; }
+.comment-actions { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.comment-action-btn {
+  background: none; border: none; color: #555; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  padding: 3px 0; transition: color 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.comment-action-btn:hover { color: #F6C21A; }
+.comment-action-btn.liked { color: #ff4d6d; }
+/* Pinned */
+.comment.pinned { background: rgba(246,194,26,0.04); border-left: 2px solid #F6C21A; }
+/* Nested reply */
+.comment-replies { padding-left: 44px; border-left: 1.5px solid #1e1e1e; margin-left: 27px; }
+/* Comment input */
+.comment-input-row { display: flex; gap: 8px; padding: 10px 16px; align-items: center; border-top: 1px solid #111; }
 .comment-input {
-  flex: 1; background: var(--card); border: 1px solid var(--border);
-  border-radius: 20px; padding: 8px 14px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+  flex: 1; background: #111; border: 1px solid #1e1e1e;
+  border-radius: 22px; padding: 9px 16px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  transition: border-color 0.2s;
 }
+.comment-input:focus { border-color: rgba(246,194,26,0.4); }
+.comment-input::placeholder { color: #444; }
 .comment-send {
-  padding: 8px 16px; background: var(--gold); border: none;
-  border-radius: 20px; color: #000; font-weight: 700;
-  font-size: 12px; cursor: pointer; font-family: 'Syne', sans-serif;
+  width: 36px; height: 36px; background: #F6C21A; border: none;
+  border-radius: 50%; color: #000; font-weight: 700; font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s;
 }
+.comment-send:hover { transform: scale(1.08); box-shadow: 0 2px 12px rgba(246,194,26,0.4); }
+body.light .comment-name { color: #0a0a0a; }
+body.light .comment-text { color: #444; }
+body.light .comment-input { background: #f5f5f5; border-color: #e0e0e0; color: #0a0a0a; }
+body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 
 /* ===== RIGHT SIDEBAR ===== */
 .right-sidebar {
@@ -3078,10 +3120,19 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon">🧵</span></button>` : '')}
         </div>
         <div class="comments-section" id="comments-${post.id}">
-          <div class="comments-list"></div>
+          <div class="comments-sort-bar">
+            <span style="font-size:11px;color:#555;font-family:'DM Sans',sans-serif">Sort:</span>
+            <button class="comments-sort-btn active" onclick="sortComments('${post.id}','newest',this)">Newest</button>
+            <button class="comments-sort-btn" onclick="sortComments('${post.id}','top',this)">Top</button>
+            <button class="comments-sort-btn" onclick="sortComments('${post.id}','oldest',this)">Oldest</button>
+          </div>
+          <div class="comments-list" id="comments-list-${post.id}"></div>
           <div class="comment-input-row">
-            <input class="comment-input" placeholder="Add a comment..." id="comment-input-${post.id}">
-            <button class="comment-send" onclick="submitComment('${post.id}')">Send</button>
+            <div class="comment-avatar" id="comment-avatar-${post.id}" style="width:32px;height:32px;flex-shrink:0;background:#F6C21A;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:12px">${(currentProfile?.full_name||'U')[0]?.toUpperCase()||'U'}</div>
+            <input class="comment-input" placeholder="Add a comment…" id="comment-input-${post.id}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment('${post.id}')}">
+            <button class="comment-send" onclick="submitComment('${post.id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
           </div>
         </div>
       </div>`;
@@ -3233,21 +3284,112 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (section.classList.contains('open')) await loadComments(postId);
   }
 
+  let commentSort = {}; // postId → 'newest'|'top'|'oldest'
+
+  function sortComments(postId, sort, btn) {
+    commentSort[postId] = sort;
+    btn.closest('.comments-sort-bar').querySelectorAll('.comments-sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadComments(postId);
+  }
+
   async function loadComments(postId) {
     const section = document.getElementById('comments-' + postId);
-    const list = section.querySelector('.comments-list');
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Loading...</div>';
-    const { data: comments } = await sb.from('comments').select('*, profiles(username,full_name)').eq('post_id', postId).order('created_at', { ascending: true });
+    const list = document.getElementById('comments-list-' + postId) || section?.querySelector('.comments-list');
+    if (!list) return;
+    list.innerHTML = '<div style="color:#555;font-size:13px;padding:12px 16px">Loading…</div>';
+
+    const sort = commentSort[postId] || 'newest';
+    const ascending = sort === 'oldest';
+
+    const { data: comments } = await sb.from('comments')
+      .select('*, profiles(id,username,full_name,avatar_url,verified)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending });
+
     list.innerHTML = '';
-    if (!comments || comments.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px">No comments yet 🐝</div>'; return; }
-    comments.forEach(c => {
+    if (!comments || comments.length === 0) {
+      list.innerHTML = '<div style="color:#555;font-size:13px;padding:12px 16px">No comments yet — be the first! 🐝</div>';
+      return;
+    }
+
+    // Sort by top (most liked) — using like_count if available, else just show all
+    let sorted = [...comments];
+    if (sort === 'top') sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+
+    // Pinned first
+    const pinned = sorted.filter(c => c.pinned);
+    const rest = sorted.filter(c => !c.pinned);
+    const final = [...pinned, ...rest];
+
+    final.forEach((c, idx) => {
       const p = c.profiles || {};
-      const name = p.full_name || 'Unknown';
+      const name = p.full_name || p.username || 'Unknown';
+      const badge = p.verified ? `<svg style="display:inline-block;vertical-align:middle;margin-left:2px" width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 1.5L17.5 5.75V14.25L10 18.5L2.5 14.25V5.75L10 1.5Z" fill="#0d0d0d" stroke="#F6C21A" stroke-width="1.4"/><path d="M7 10L9 12L13 8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
+
       const div = document.createElement('div');
-      div.className = 'comment';
-      div.innerHTML = `<div class="comment-avatar" style="background:${getColor(name)}">${name[0].toUpperCase()}</div><div><div class="comment-name">${name}</div><div class="comment-text">${c.body}</div></div>`;
+      div.className = 'comment' + (c.pinned ? ' pinned' : '');
+      div.style.animationDelay = `${idx * 0.04}s`;
+
+      const avatarHTML = p.avatar_url
+        ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : name[0].toUpperCase();
+
+      div.innerHTML = `
+        <div class="comment-avatar" style="background:${p.avatar_url ? 'transparent' : getColor(name)};cursor:pointer" onclick="openUserProfile('${p.id}')">
+          ${avatarHTML}
+        </div>
+        <div class="comment-body">
+          <div class="comment-header">
+            ${c.pinned ? '<span style="font-size:10px;background:#F6C21A;color:#000;border-radius:50px;padding:1px 8px;font-family:\'Syne\',sans-serif;font-weight:700">📌 Pinned</span>' : ''}
+            <span class="comment-name">${name}${badge}</span>
+            <span class="comment-time">${timeAgo(c.created_at)}</span>
+          </div>
+          <div class="comment-text">${formatBody(c.body || '')}</div>
+          <div class="comment-actions">
+            <button class="comment-action-btn like-comment-btn" onclick="likeComment(this,'${c.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              <span>${c.like_count || 0}</span>
+            </button>
+            <button class="comment-action-btn" onclick="replyToComment('${postId}','${c.id}','${name}')">Reply</button>
+            ${currentUser && c.user_id === currentUser.id ? `<button class="comment-action-btn" onclick="deleteComment('${c.id}','${postId}')" style="color:#444">Delete</button>` : ''}
+          </div>
+        </div>`;
       list.appendChild(div);
     });
+  }
+
+  async function likeComment(btn, commentId) {
+    if (!currentUser) { showToast('Sign in to like!'); return; }
+    btn.classList.toggle('liked');
+    const countEl = btn.querySelector('span');
+    const count = parseInt(countEl.textContent) || 0;
+    if (btn.classList.contains('liked')) {
+      countEl.textContent = count + 1;
+      btn.querySelector('svg').style.fill = '#ff4d6d';
+      btn.querySelector('svg').style.stroke = '#ff4d6d';
+    } else {
+      countEl.textContent = Math.max(0, count - 1);
+      btn.querySelector('svg').style.fill = 'none';
+      btn.querySelector('svg').style.stroke = 'currentColor';
+    }
+  }
+
+  function replyToComment(postId, commentId, name) {
+    const input = document.getElementById('comment-input-' + postId);
+    if (!input) return;
+    input.value = `@${name.replace(' ', '')} `;
+    input.focus();
+    input.dataset.replyTo = commentId;
+    // Scroll to input
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function deleteComment(commentId, postId) {
+    if (!currentUser) return;
+    await sb.from('comments').delete().eq('id', commentId).eq('user_id', currentUser.id);
+    loadComments(postId);
+    showToast('Comment deleted');
   }
 
   async function submitComment(postId) {
@@ -3256,12 +3398,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const input = document.getElementById('comment-input-' + postId);
     const text = input.value.trim();
     if (!text) return;
+    const body = text;
     input.value = '';
-    await sb.from('comments').insert({ post_id: postId, user_id: session.user.id, body: text });
+    delete input.dataset.replyTo;
+
+    await sb.from('comments').insert({ post_id: postId, user_id: session.user.id, body });
+
+    // Send mention notifications
+    const mentions = [...new Set((body.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
+    for (const username of mentions) {
+      const { data: mentioned } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+      if (mentioned && mentioned.id !== session.user.id) {
+        await sb.from('notifications').insert({ user_id: mentioned.id, from_user_id: session.user.id, type: 'comment', post_id: postId });
+      }
+    }
+
     await loadComments(postId);
     const card = document.querySelector(`[data-post-id="${postId}"]`);
     if (card) { const el = card.querySelector('.comment-count'); if (el) el.textContent = parseInt(el.textContent || 0) + 1; }
-    showToast('Comment posted! 💬');
   }
 
   async function postVibe() {
