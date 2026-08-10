@@ -1,5 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html l
+    <!-- CHAT VIEW -->
+      <div id="chat-view" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);flex-direction:column">
+        <!-- Chat header -->
+        <div class="chat-header" style="flex-shrink:0">
+          <button class="chat-back" onclick="showConversations()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div id="chat-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="currentChatUser && openUserProfile(currentChatUser.id)">?</div>
+          <div style="flex:1;cursor:pointer" onclick="currentChatUser && openUserProfile(currentChatUser.id)">
+            <div id="chat-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px"></div>
+            <div id="chat-status" style="font-size:11px;color:#4ade80;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block"></span>Active now</div>
+          </div>
+          <button onclick="showChatOptions()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;padding:6px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <!-- Reply preview bar — single display:none, no conflict -->
+        <div id="chat-reply-bar" style="display:none;flex-shrink:0;padding:8px 16px;background:#111;border-bottom:1px solid #1e1e1e;align-items:center;gap:8px">
+          <div style="flex:1;border-left:3px solid #F6C21A;padding-left:8px">
+            <div id="chat-reply-name" style="font-size:12px;color:#F6C21A;font-weight:700;margin-bottom:2px"></div>
+            <div id="chat-reply-text" style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:250px"></div>
+          </div>
+          <button onclick="cancelReply()" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <!-- Typing indicator -->
+        <div id="typing-indicator" style="display:none;padding:8px 20px;flex-shrink:0">
+          <div style="display:inline-flex;align-items:center;gap:4px;background:#111;padding:8px 14px;border-radius:18px 18px 18px 4px">
+            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite 0.2s"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite 0.4s"></div>
+          </div>
+        </div>
+        <!-- Messages area — flex:1 fills all remaining space between header and input -->
+        <div id="chat-messages" style="flex:1;min-height:0;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:4px;scrollbar-width:none"></div>
+        <!-- Input area — always at bottom -->
+        <div style="flex-shrink:0;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid #181818;display:flex;align-items:center;gap:8px;background:var(--bg)">
+          <button onclick="document.getElementById('dm-image-upload').click()" style="background:none;border:none;color:#555;cursor:pointer;padding:6px;display:flex;align-items:center;transition:color 0.2s;flex-shrink:0" onmouseover="this.style.color='#F6C21A'" onmouseout="this.style.color='#555'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <input type="file" id="dm-image-upload" accept="image/*" style="display:none" onchange="sendImageDM(this)">
+          <div id="chat-input-wrap" style="flex:1;display:flex;align-items:center;background:#111;border:1.5px solid #1e1e1e;border-radius:24px;padding:9px 16px;gap:8px;transition:border-color 0.2s" onfocusin="this.style.borderColor='rgba(246,194,26,0.4)'" onfocusout="this.style.borderColor='#1e1e1e'">
+            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-width:0">
+          </div>
+          <button id="chat-send-btn" onclick="sendMessage()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#F6C21A;border:none;color:#000;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 2px 12px rgba(246,194,26,0.3)" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+          <button id="chat-mic-btn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#1a1a1a;border:1.5px solid #2a2a2a;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <!-- Recording indicator -->
+        <div id="recording-indicator" style="display:none;flex-shrink:0;padding:8px 16px;background:rgba(255,50,50,0.1);border-top:1px solid rgba(255,50,50,0.2);align-items:center;gap:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite"></div>
+          <div style="color:#ff4444;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">Recording… <span id="recording-time">0:00</span></div>
+          <button onclick="cancelRecording()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer">Cancel</button>
+        </div>
+      </div>
+    </div>
+ang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2340,64 +2399,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         </div>
       </div>
 
-      <!-- CHAT VIEW -->
-      <div id="chat-view" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);flex-direction:column">
-        <!-- Chat header -->
-        <div class="chat-header" style="flex-shrink:0">
-          <button class="chat-back" onclick="showConversations()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-          </button>
-          <div id="chat-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="currentChatUser && openUserProfile(currentChatUser.id)">?</div>
-          <div style="flex:1;cursor:pointer" onclick="currentChatUser && openUserProfile(currentChatUser.id)">
-            <div id="chat-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px"></div>
-            <div id="chat-status" style="font-size:11px;color:#4ade80;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block"></span>Active now</div>
-          </div>
-          <button onclick="showChatOptions()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;padding:6px">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <!-- Reply preview bar — single display:none, no conflict -->
-        <div id="chat-reply-bar" style="display:none;flex-shrink:0;padding:8px 16px;background:#111;border-bottom:1px solid #1e1e1e;align-items:center;gap:8px">
-          <div style="flex:1;border-left:3px solid #F6C21A;padding-left:8px">
-            <div id="chat-reply-name" style="font-size:12px;color:#F6C21A;font-weight:700;margin-bottom:2px"></div>
-            <div id="chat-reply-text" style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:250px"></div>
-          </div>
-          <button onclick="cancelReply()" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer">✕</button>
-        </div>
-        <!-- Typing indicator -->
-        <div id="typing-indicator" style="display:none;padding:8px 20px;flex-shrink:0">
-          <div style="display:inline-flex;align-items:center;gap:4px;background:#111;padding:8px 14px;border-radius:18px 18px 18px 4px">
-            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite"></div>
-            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite 0.2s"></div>
-            <div style="width:6px;height:6px;border-radius:50%;background:#555;animation:pulse 1s ease-in-out infinite 0.4s"></div>
-          </div>
-        </div>
-        <!-- Messages area — flex:1 fills all remaining space between header and input -->
-        <div id="chat-messages" style="flex:1;min-height:0;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:4px;scrollbar-width:none"></div>
-        <!-- Input area — always at bottom -->
-        <div style="flex-shrink:0;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid #181818;display:flex;align-items:center;gap:8px;background:var(--bg)">
-          <button onclick="document.getElementById('dm-image-upload').click()" style="background:none;border:none;color:#555;cursor:pointer;padding:6px;display:flex;align-items:center;transition:color 0.2s;flex-shrink:0" onmouseover="this.style.color='#F6C21A'" onmouseout="this.style.color='#555'">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </button>
-          <input type="file" id="dm-image-upload" accept="image/*" style="display:none" onchange="sendImageDM(this)">
-          <div id="chat-input-wrap" style="flex:1;display:flex;align-items:center;background:#111;border:1.5px solid #1e1e1e;border-radius:24px;padding:9px 16px;gap:8px;transition:border-color 0.2s" onfocusin="this.style.borderColor='rgba(246,194,26,0.4)'" onfocusout="this.style.borderColor='#1e1e1e'">
-            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-width:0">
-          </div>
-          <button id="chat-send-btn" onclick="sendMessage()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#F6C21A;border:none;color:#000;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 2px 12px rgba(246,194,26,0.3)" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-          <button id="chat-mic-btn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#1a1a1a;border:1.5px solid #2a2a2a;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </button>
-        </div>
-        <!-- Recording indicator -->
-        <div id="recording-indicator" style="display:none;flex-shrink:0;padding:8px 16px;background:rgba(255,50,50,0.1);border-top:1px solid rgba(255,50,50,0.2);align-items:center;gap:10px">
-          <div style="width:10px;height:10px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite"></div>
-          <div style="color:#ff4444;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">Recording… <span id="recording-time">0:00</span></div>
-          <button onclick="cancelRecording()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer">Cancel</button>
-        </div>
-      </div>
-    </div>
+      
 
     <!-- PROFILE -->
     <div id="profile-panel" class="panel">
