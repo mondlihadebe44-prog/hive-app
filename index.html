@@ -2053,7 +2053,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     <!-- FEED -->
     <div id="feed-panel" class="panel active">
       <div class="feed-header">
-        <div class="feed-title">Your Hive 🍯</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 4px">
+          <div class="feed-title">Your Hive 🍯</div>
+          <button onclick="setNav(document.getElementById('nav-notifs'),'notifs')" style="position:relative;background:none;border:none;cursor:pointer;padding:6px;color:var(--text);transition:color 0.2s" onmouseover="this.style.color='#F6C21A'" onmouseout="this.style.color='var(--text)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span id="feed-notif-dot" style="display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;background:#F6C21A;border-radius:50%;border:2px solid #000"></span>
+          </button>
+        </div>
         <div class="stories-bar" id="vibe-check-bar">
           <!-- Add Vibe Check button -->
           <div class="story-item" onclick="openAddVibeCheck()">
@@ -4330,8 +4336,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (!currentUser) return;
     const { count } = await sb.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('read', false);
     const show = count > 0 ? 'block' : 'none';
-    document.getElementById('notif-badge').style.display = show;
-    document.getElementById('mobile-notif-badge').style.display = show;
+    const badge = document.getElementById('notif-badge');
+    const mobileBadge = document.getElementById('mobile-notif-badge');
+    const feedDot = document.getElementById('feed-notif-dot');
+    if (badge) badge.style.display = show;
+    if (mobileBadge) mobileBadge.style.display = show;
+    if (feedDot) feedDot.style.display = show;
   }
 
   async function markAllRead() {
@@ -4545,16 +4555,21 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const div = document.createElement('div');
       div.style.cssText = `display:flex;justify-content:${isMe ? 'flex-end' : 'flex-start'};align-items:flex-end;gap:6px;margin-bottom:4px`;
 
+      const hasImage = !!m.image_url;
+      const hasText = !!m.body;
+      const hasVoice = !!m.voice_url;
+      const bubbleMinWidth = hasImage ? '180px' : 'auto';
+
       const otherAvatar = `<div style="width:26px;height:26px;border-radius:50%;background:${getColor(currentChatUser.full_name||'User')};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentChatUser.avatar_url?`<img src="${currentChatUser.avatar_url}" style="width:100%;height:100%;object-fit:cover">`:(currentChatUser.full_name||'U')[0].toUpperCase()}</div>`;
       const myAvatar = `<div style="width:26px;height:26px;border-radius:50%;background:${getColor(currentProfile?.full_name||'Me')};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${currentProfile?.avatar_url?`<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover">`:(currentProfile?.full_name||'M')[0].toUpperCase()}</div>`;
 
       div.innerHTML = `
         ${!isMe ? otherAvatar : ''}
-        <div style="max-width:70%;padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'var(--gold)':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5">
-          ${m.voice_url ? createVoiceNotePlayer(m.voice_url, m.voice_duration || 0, isMe) : ''}
-          ${m.image_url?`<img src="${m.image_url}" style="width:100%;border-radius:10px;margin-bottom:4px;max-height:200px;object-fit:cover">`:''}
-          ${m.body?`<div>${m.body}</div>`:''}
-          <div style="font-size:10px;color:${isMe?'rgba(0,0,0,0.45)':'var(--muted)'};margin-top:3px;text-align:right">${timeAgo(m.created_at)} ${isMe?'✓✓':''}</div>
+        <div style="max-width:72%;min-width:${bubbleMinWidth};padding:${hasImage && !hasText ? '6px' : '10px 14px'};border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isMe?'#F6C21A':'#1e1e1e'};color:${isMe?'#000':'var(--text)'};font-size:14px;line-height:1.5;overflow:hidden">
+          ${hasVoice ? createVoiceNotePlayer(m.voice_url, m.voice_duration || 0, isMe) : ''}
+          ${hasImage ? `<img src="${m.image_url}" style="width:100%;display:block;border-radius:${hasText ? '10px' : '12px'};margin-bottom:${hasText ? '8px' : '0'};max-height:280px;object-fit:cover">` : ''}
+          ${hasText ? `<div>${m.body}</div>` : ''}
+          <div style="font-size:10px;color:${isMe?'rgba(0,0,0,0.45)':'#555'};margin-top:${hasImage && !hasText ? '4px' : '3px'};text-align:right;padding:${hasImage && !hasText ? '0 4px 2px' : '0'}">${timeAgo(m.created_at)} ${isMe ? `<span style="color:${m.read?'#2D8CFF':'rgba(0,0,0,0.4)'}">✓✓</span>` : ''}</div>
         </div>
         ${isMe ? myAvatar : ''}`;
       chatEl.appendChild(div);
