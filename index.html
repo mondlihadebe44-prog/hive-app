@@ -2807,56 +2807,108 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   async function loadProfile() {
-    if (!currentUser) return;
-    const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-    if (data) {
+    try {
+      // Get session fresh every time
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        console.warn('loadProfile: no session');
+        return;
+      }
+      currentUser = session.user;
+
+      const { data, error } = await sb.from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error) { console.error('loadProfile error:', error); return; }
+      if (!data) { console.warn('loadProfile: no profile data'); return; }
+
       currentProfile = data;
-      const initial = (data.full_name || data.username || 'U')[0].toUpperCase();
+
+      // Avatar HTML
       const color = getColor(data.full_name || 'User');
       const avatarHTML = data.avatar_url
         ? `<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : initial;
+        : (data.full_name || data.username || 'U')[0].toUpperCase();
 
+      // Update all avatar elements safely
       ['nav-avatar','compose-avatar','profile-avatar-big'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.innerHTML = avatarHTML; el.style.background = data.avatar_url ? 'transparent' : color; }
+        if (el) {
+          el.innerHTML = avatarHTML;
+          el.style.background = data.avatar_url ? 'transparent' : color;
+        }
       });
 
-      // Update mobile nav profile avatar
-      const mobileNavAvatar = document.getElementById('mobile-nav-avatar-img');
-      if (mobileNavAvatar) {
-        mobileNavAvatar.innerHTML = data.avatar_url
-          ? `<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover">`
-          : `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-        mobileNavAvatar.style.background = data.avatar_url ? 'transparent' : '#222';
+      // Mobile nav avatar
+      const mobileAvatar = document.getElementById('mobile-nav-avatar-img');
+      if (mobileAvatar) {
+        mobileAvatar.innerHTML = data.avatar_url
+          ? `<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
       }
 
-      document.getElementById('nav-name').textContent = data.full_name || '';
-      document.getElementById('nav-handle').textContent = '@' + (data.username || '');
-      document.getElementById('profile-name-big').textContent = data.full_name || '';
+      // Sidebar name/handle
+      const navName = document.getElementById('nav-name');
+      if (navName) navName.textContent = data.full_name || data.username || '';
+      const navHandle = document.getElementById('nav-handle');
+      if (navHandle) navHandle.textContent = '@' + (data.username || '');
+
+      // Composer avatar
+      const composeAvatar = document.getElementById('composer-avatar');
+      if (composeAvatar) {
+        composeAvatar.innerHTML = avatarHTML;
+        composeAvatar.style.background = data.avatar_url ? 'transparent' : color;
+      }
+
+      // Profile panel fields
+      const nameEl = document.getElementById('profile-name-big');
+      if (nameEl) nameEl.textContent = data.full_name || data.username || '';
+
       const badgeEl = document.getElementById('profile-verified-badge');
       if (badgeEl) badgeEl.style.display = data.verified ? 'inline-flex' : 'none';
-      document.getElementById('profile-handle-big').textContent = '@' + (data.username || '');
-      document.getElementById('profile-bio-big').textContent = data.bio || '';
+
+      const handleEl = document.getElementById('profile-handle-big');
+      if (handleEl) handleEl.textContent = '@' + (data.username || '');
+
+      const bioEl = document.getElementById('profile-bio-big');
+      if (bioEl) bioEl.textContent = data.bio || '';
 
       // Location
-      if (data.location) {
-        document.getElementById('profile-location').style.display = 'inline';
-        document.getElementById('profile-location-text').textContent = data.location;
+      const locEl = document.getElementById('profile-location');
+      const locText = document.getElementById('profile-location-text');
+      if (locEl && locText) {
+        if (data.location) {
+          locEl.style.display = 'inline';
+          locText.textContent = data.location;
+        } else {
+          locEl.style.display = 'none';
+        }
       }
 
       // Joined date
-      const joined = new Date(data.created_at);
-      const month = joined.toLocaleString('default', { month: 'long' });
-      const year = joined.getFullYear();
-      document.getElementById('profile-joined-text').textContent = `Joined ${month} ${year}`;
-
-      if (data.cover_url) {
-        const cp = document.getElementById('cover-photo');
-        if (cp) { cp.src = data.cover_url; cp.style.display = 'block'; }
+      const joinedEl = document.getElementById('profile-joined-text');
+      if (joinedEl && data.created_at) {
+        const joined = new Date(data.created_at);
+        joinedEl.textContent = 'Joined ' + joined.toLocaleString('default', { month: 'long' }) + ' ' + joined.getFullYear();
       }
+
+      // Cover photo
+      const cp = document.getElementById('cover-photo');
+      if (cp && data.cover_url) { cp.src = data.cover_url; cp.style.display = 'block'; }
+
+      // Apply saved theme
+      if (data.theme && data.theme !== 'default') {
+        document.body.classList.remove('theme-midnight','theme-blossom','theme-inferno','theme-forest','theme-pride');
+        document.body.classList.add('theme-' + data.theme);
+      }
+
+    } catch(e) {
+      console.error('loadProfile exception:', e);
     }
   }
+
 
   function showApp() {
     document.getElementById('auth').style.display = 'none';
