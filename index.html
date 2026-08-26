@@ -3054,7 +3054,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   async function loadPosts(tab = 'foryou', append = false) {
     if (!append) { currentPostsPage = 0; allPostsLoaded = false; currentFeedTab = tab; }
     const container = document.getElementById('posts-container');
-    if (!append) container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>';
+    if (!append) container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
 
     const from = currentPostsPage * POSTS_PER_PAGE;
     const to = from + POSTS_PER_PAGE - 1;
@@ -3072,9 +3072,15 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }
 
     const { data: posts, error } = await query.order('created_at', { ascending: false }).range(from, to);
+
     if (!append) container.innerHTML = '';
 
-    if (error || !posts || posts.length === 0) {
+    if (error) {
+      if (!append) container.innerHTML = `<div class="empty-wrap"><div style="font-size:40px;margin-bottom:12px">⚠️</div><div class="empty-text">Couldn't load posts<br><span style="font-size:13px;color:#555">${error.message}</span></div><button onclick="loadPosts('${tab}')" style="margin-top:16px;padding:10px 24px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer">Try again</button></div>`;
+      return;
+    }
+
+    if (!posts || posts.length === 0) {
       if (!append) {
         container.innerHTML = '';
         await renderSuggestedPeopleCard(container, "Welcome to Hive! 🐝", "Follow some people to fill up your feed");
@@ -3084,14 +3090,26 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       return;
     }
 
-    for (const post of posts) {
+    // BATCH load all replies in ONE query instead of N+1
+    const postIds = posts.map(p => p.id);
+    const { data: allReplies } = await sb.from('posts')
+      .select('*, profiles(username,full_name,avatar_url,verified)')
+      .in('reply_to', postIds)
+      .order('created_at', { ascending: true });
+
+    // Group replies by parent post_id
+    const repliesByPost = {};
+    (allReplies || []).forEach(r => {
+      if (!repliesByPost[r.reply_to]) repliesByPost[r.reply_to] = [];
+      if (repliesByPost[r.reply_to].length < 3) repliesByPost[r.reply_to].push(r);
+    });
+
+    // Render posts with their replies
+    posts.forEach(post => {
       const card = createPostCard(post);
       container.appendChild(card);
-      const { data: replies } = await sb.from('posts')
-        .select('*, profiles(username,full_name,avatar_url,verified)')
-        .eq('reply_to', post.id).eq('user_id', post.user_id)
-        .order('created_at', { ascending: true }).limit(3);
-      if (replies && replies.length > 0) {
+      const replies = repliesByPost[post.id] || [];
+      if (replies.length > 0) {
         card.dataset.threadStart = post.id;
         card.classList.add('thread-card');
         let lastReplyCard = card;
@@ -3107,7 +3125,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         sep.style.cssText = 'height:1.5px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:0 20px';
         container.appendChild(sep);
       }
-    }
+    });
 
     if (posts.length === POSTS_PER_PAGE) { currentPostsPage++; allPostsLoaded = false; }
     else { allPostsLoaded = true; }
