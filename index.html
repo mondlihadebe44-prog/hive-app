@@ -6997,24 +6997,42 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   async function searchUsers(query) {
     const results = document.getElementById('explore-search-results');
     if (!query || query.length < 1) { results.innerHTML = ''; return; }
-    const { data: users } = await sb.from('profiles').select('id,username,full_name,avatar_url,verified,location').or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).limit(10);
-    if (!users || users.length === 0) { results.innerHTML = '<div style="color:var(--muted);padding:12px">No users found</div>'; return; }
-    results.innerHTML = '';
+    results.innerHTML = '<div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>';
+
+    const { data: users, error } = await sb.from('profiles')
+      .select('id,username,full_name,avatar_url,verified,location,bio')
+      .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+      .limit(10);
+
+    if (error || !users || users.length === 0) {
+      results.innerHTML = `<div style="text-align:center;padding:24px;color:#555">
+        <div style="font-size:32px;margin-bottom:8px">🔍</div>
+        <div>No results for "<strong>${query}</strong>"</div>
+      </div>`;
+      return;
+    }
+
+    const BADGE = `<svg style="display:inline-block;vertical-align:middle;margin-left:2px" width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 1.5L17.5 5.75V14.25L10 18.5L2.5 14.25V5.75L10 1.5Z" fill="#0d0d0d" stroke="#F6C21A" stroke-width="1.4"/><path d="M7 10L9 12L13 8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    results.innerHTML = `<div style="font-family:'Syne',sans-serif;font-size:11px;color:#555;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">People</div>`;
+
     users.forEach(u => {
       const name = u.full_name || u.username || 'Unknown';
-      const verified = u.verified ? ' 🐝' : '';
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:all 0.2s';
-      div.onmouseover = () => div.style.borderColor = 'var(--gold)';
-      div.onmouseout = () => div.style.borderColor = 'var(--border)';
+      div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;cursor:pointer;border:1px solid #1e1e1e;margin-bottom:8px;transition:all 0.2s;background:#111';
+      div.onmouseover = () => { div.style.borderColor = '#F6C21A'; div.style.background = 'rgba(246,194,26,0.04)'; };
+      div.onmouseout = () => { div.style.borderColor = '#1e1e1e'; div.style.background = '#111'; };
+      div.onclick = () => openUserProfile(u.id);
       div.innerHTML = `
-        <div style="width:44px;height:44px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px">
+        <div style="width:46px;height:46px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;font-size:18px;flex-shrink:0">
           ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase()}
         </div>
-        <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
-          <div style="font-size:13px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
-        </div>`;
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${u.verified ? BADGE : ''}</div>
+          <div style="font-size:12px;color:#666">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
+          ${u.bio ? `<div style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${u.bio}</div>` : ''}
+        </div>
+        <button onclick="event.stopPropagation();followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
       results.appendChild(div);
     });
   }
@@ -7067,8 +7085,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   async function loadExplorePage() {
-    if (exploreLoaded) return;
-    exploreLoaded = true;
+    // Always reload - don't cache stale data
     await Promise.all([
       loadExploreHashtags(),
       loadExplorePeople(),
@@ -7159,17 +7176,38 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   async function loadExplorePulseCard() {
     const container = document.getElementById('explore-pulse-container');
     if (!container) return;
-    const {data:posts} = await sb.from('posts').select('body').order('created_at',{ascending:false}).limit(100);
-    const allText = (posts||[]).map(p=>p.body||'').join(' ');
+
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: posts } = await sb.from('posts')
+      .select('body,created_at,user_id')
+      .gt('created_at', cutoff24h)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<div style="color:#555;font-size:13px;padding:8px 0">No activity in the last 24 hours yet — be the first to post! 🐝</div>';
+      return;
+    }
+
+    // Count hashtags from real posts
     const counts = {};
-    (allText.match(/#\w+/g)||[]).forEach(tag=>{ const t=tag.toLowerCase(); counts[t]=(counts[t]||0)+1; });
-    const topTags = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    (posts || []).forEach(p => {
+      (p.body || '').match(/#(\w+)/g)?.forEach(tag => {
+        const t = tag.toLowerCase();
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+
+    const topTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const uniquePosters = new Set(posts.map(p => p.user_id)).size;
+
     const items = [
-      { emoji:'🔥', text: topTags[0]?`${topTags[0][0]} is buzzing with ${topTags[0][1]} post${topTags[0][1]!==1?'s':''}!`:'Hive is buzzing today!' },
-      { emoji:'⚡', text: topTags[1]?`${topTags[1][0]} is trending right now`:'Hot conversations happening now' },
-      { emoji:'🌍', text:'South Africans are active on Hive today' },
+      { emoji: '🔥', text: topTags[0] ? `${topTags[0][0]} is buzzing with ${topTags[0][1]} post${topTags[0][1] !== 1 ? 's' : ''} in the last 24h` : `${posts.length} posts shared in the last 24 hours` },
+      { emoji: '⚡', text: topTags[1] ? `${topTags[1][0]} is trending right now` : `${uniquePosters} people active on Hive today` },
+      { emoji: '🌍', text: `${posts.length} vibes shared · ${uniquePosters} active users today` },
     ];
-    container.innerHTML = items.map(item=>`
+
+    container.innerHTML = items.map(item => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(246,194,26,0.04);border:1px solid rgba(246,194,26,0.1);border-radius:14px;margin-bottom:8px">
         <span style="font-size:20px;flex-shrink:0">${item.emoji}</span>
         <span style="font-size:13px;color:#ccc;flex:1">${item.text}</span>
