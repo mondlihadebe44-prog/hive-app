@@ -2708,6 +2708,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         loadProfile().then(function() { showApp(); });
       }
     });
+
+    // Listen for session changes (sign in, sign out, token refresh, expiry)
+    sb.auth.onAuthStateChange(function(event, session) {
+      if (event === 'SIGNED_IN' && session) {
+        currentUser = session.user;
+        loadProfile();
+        checkUnreadNotifications();
+      } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+        currentUser = null;
+        currentProfile = null;
+        // Return to auth screen
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('auth').style.display = 'flex';
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token silently refreshed — update user reference
+        currentUser = session.user;
+      }
+    });
   }, 1500);
 
   // AUTH
@@ -3411,9 +3429,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   async function toggleLike(btn, postId) {
     if (!currentUser) { showToast('Sign in to react!'); return; }
+    if (btn.dataset.liking === '1') return; // debounce rapid taps
+    btn.dataset.liking = '1';
+
     const isLiked = btn.classList.contains('liked');
     const countEl = btn.querySelector('.like-count');
     const count = parseInt(countEl.textContent) || 0;
+
     if (isLiked) {
       btn.classList.remove('liked');
       countEl.textContent = Math.max(0, count - 1);
@@ -3421,15 +3443,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     } else {
       btn.classList.add('liked');
       countEl.textContent = count + 1;
-      // Trigger heart pop animation
       const svg = btn.querySelector('.act-svg');
       if (svg) { svg.style.animation = 'none'; void svg.offsetWidth; svg.style.animation = 'likeHeartPop 0.4s cubic-bezier(0.34,1.56,0.64,1)'; }
-      await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id, reaction: 'like' });
+      // Upsert prevents duplicate rows on rapid tap
+      await sb.from('likes').upsert(
+        { post_id: postId, user_id: currentUser.id, reaction: 'like' },
+        { onConflict: 'post_id,user_id', ignoreDuplicates: true }
+      );
       const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
       if (post && post.user_id !== currentUser.id) {
-        await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
+        // Use upsert to prevent duplicate like notifications too
+        await sb.from('notifications').upsert(
+          { user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId },
+          { onConflict: 'user_id,from_user_id,type,post_id', ignoreDuplicates: true }
+        );
       }
     }
+
+    delete btn.dataset.liking; // release guard
   }
 
   async function loadFollowStatus(userId, card) {
