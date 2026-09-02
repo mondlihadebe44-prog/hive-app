@@ -6098,6 +6098,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   let currentGroupId = null;
   let selectedGroupEmoji = '🐝';
 
+  async function openGroup(groupId) {
+    const { data: group } = await sb.from('hive_groups').select('*').eq('id', groupId).single();
+    if (group) openGroupFeed(group);
+    else showToast('Group not found 🐝');
+  }
+
   function selectGroupEmoji(el, emoji) {
     document.querySelectorAll('.group-emoji-opt').forEach(e => e.classList.remove('selected'));
     el.classList.add('selected');
