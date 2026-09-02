@@ -1107,13 +1107,14 @@ body.light .hivemind-btn:hover { border-color: var(--gold); background: rgba(245
 @keyframes vibeProgress { from{width:0%} to{width:100%} }
 
 .toast {
-  position: fixed; bottom: 32px; left: 50%;
+  position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--gold); color: #000;
-  padding: 12px 24px; border-radius: 50px;
+  background: #1a1a1a; color: #fff; border: 1px solid #2a2a2a;
+  padding: 11px 22px; border-radius: 50px;
   font-family: 'Syne', sans-serif; font-weight: 700;
-  font-size: 14px; opacity: 0; transition: all 0.3s;
+  font-size: 14px; opacity: 0; transition: all 0.25s;
   pointer-events: none; z-index: 9999; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -1178,7 +1179,10 @@ body.light .mobile-nav-item.active .mobile-nav-svg { stroke: #F6C21A; }
 @media (max-width: 768px) {
   .sidebar { display: none !important; }
   .mobile-nav { display: flex !important; }
-  .main-content { margin-left: 0 !important; max-width: 100% !important; border-right: none !important; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .main-content { margin-left: 0 !important; max-width: 100% !important; border-right: none !important; }
+  /* Every panel needs bottom padding so content clears the mobile nav */
+  .panel { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  #chat-view { padding-bottom: 0 !important; } /* chat-view has its own safe area handling */
   .right-sidebar { display: none !important; }
   .post-card { padding: 14px 16px; gap: 10px; }
   .compose-box { padding: 14px 16px; gap: 10px; }
@@ -1186,6 +1190,10 @@ body.light .mobile-nav-item.active .mobile-nav-svg { stroke: #F6C21A; }
   .action-btn { padding: 8px 10px; }
   .feed-header { padding: 12px 16px 0; }
   .panel-header { padding: 14px 16px; }
+  /* Prevent image overflow */
+  img { max-width: 100%; }
+  /* Fix composer from being hidden behind keyboard on iOS */
+  .composer-modal { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 @media (min-width: 769px) and (max-width: 1099px) {
@@ -2313,7 +2321,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       </div>
 
       <div id="posts-container">
-        <div class="loading-wrap"><div class="spinner"></div>Loading vibes...</div>
+        <div class="loading-wrap"><div class="spinner"></div></div>
       </div>
       <div class="load-more" id="load-more-text"></div>
     </div>
