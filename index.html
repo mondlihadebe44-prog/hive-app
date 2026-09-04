@@ -4039,11 +4039,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_PRESET);
-      formData.append('resource_type', 'video');
+      formData.append('upload_preset', CLOUDINARY_PRESET.trim());
+      formData.append('resource_type', 'auto');
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`);
       xhr.timeout = 120000; // 2 min timeout
 
       xhr.upload.onprogress = (e) => {
@@ -4054,6 +4054,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       };
 
       xhr.onload = () => {
+        console.log('[Cloudinary] status:', xhr.status, 'response:', xhr.responseText.slice(0, 300));
         try {
           const data = JSON.parse(xhr.responseText);
           if (xhr.status === 200 && data.secure_url) {
