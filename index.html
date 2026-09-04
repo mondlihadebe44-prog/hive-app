@@ -3655,7 +3655,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           btn.textContent = `${pct}%`;
         });
       } catch(e) {
-        showToast('Video upload failed! Try a shorter clip.');
+        showToast(e.message || 'Video upload failed. Please try again.');
         btn.innerHTML = '+'; btn.disabled = false; return;
       }
     } else if (selectedGifUrl) {
@@ -3811,7 +3811,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (composerVideoFile) {
       postBtn.textContent = '0%';
       try { videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = `${pct}%`); }
-      catch(e) { showToast('Video upload failed!'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
+      catch(e) { showToast(e.message || 'Video upload failed. Please try again.'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
     } else if (composerGifUrl) {
       imageUrl = composerGifUrl;
     } else if (composerImageFiles.length > 0) {
@@ -4027,6 +4027,16 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   async function uploadVideoToCloudinary(file, onProgress) {
     return new Promise((resolve, reject) => {
+      // Client-side validation
+      if (!file.type.startsWith('video/')) {
+        reject(new Error('Please select a video file (MP4, MOV, etc.)'));
+        return;
+      }
+      if (file.size > 100 * 1024 * 1024) {
+        reject(new Error('Video is too large. Max 100MB.'));
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_PRESET);
@@ -4034,6 +4044,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
+      xhr.timeout = 120000; // 2 min timeout
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && onProgress) {
@@ -4043,14 +4054,28 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       };
 
       xhr.onload = () => {
-        if (xhr.status === 200) {
+        try {
           const data = JSON.parse(xhr.responseText);
-          resolve(data.secure_url);
-        } else {
-          reject(new Error('Upload failed'));
+          if (xhr.status === 200 && data.secure_url) {
+            resolve(data.secure_url);
+          } else {
+            const errMsg = data.error?.message || `Upload failed (${xhr.status})`;
+            if (errMsg.toLowerCase().includes('preset')) {
+              reject(new Error('Upload preset not enabled for video. Go to Cloudinary dashboard → Settings → Upload → enable video on the "Hiveapp upload" preset.'));
+            } else if (errMsg.toLowerCase().includes('size') || errMsg.toLowerCase().includes('large')) {
+              reject(new Error('Video file is too large. Try a shorter clip.'));
+            } else if (errMsg.toLowerCase().includes('format') || errMsg.toLowerCase().includes('invalid')) {
+              reject(new Error('Video format not supported. Please use MP4.'));
+            } else {
+              reject(new Error(errMsg));
+            }
+          }
+        } catch(parseErr) {
+          reject(new Error(`Upload failed (${xhr.status}). Please try again.`));
         }
       };
-      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.onerror = () => reject(new Error('Network error. Check your connection and try again.'));
+      xhr.ontimeout = () => reject(new Error('Upload timed out. Try a shorter or smaller video.'));
       xhr.send(formData);
     });
   }
