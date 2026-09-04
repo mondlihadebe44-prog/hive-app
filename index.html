@@ -3998,22 +3998,46 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const file = input.files[0];
     if (!file) return;
 
-    // Check duration before accepting
-    const video = document.getElementById('video-preview');
+    console.log('[Video] Selected file:', file.name, file.type, file.size);
+
+    // Accept the file immediately regardless of type check
+    // iOS records as video/quicktime which is valid
+    selectedVideoFile = file;
+    removeImage(); removeGif();
+    document.getElementById('image-preview-container').style.display = 'none';
+    document.getElementById('video-preview-container').style.display = 'block';
+    document.getElementById('video-duration-warning').style.display = 'none';
+
+    // Try to check duration — but don't block on it for iOS compatibility
     const url = URL.createObjectURL(file);
+    const video = document.getElementById('video-preview');
     video.src = url;
+
+    // Set a timeout — if metadata doesn't load in 3s, just proceed
+    let metadataLoaded = false;
+    const metaTimeout = setTimeout(() => {
+      if (!metadataLoaded) {
+        console.log('[Video] Metadata timeout — proceeding without duration check');
+      }
+    }, 3000);
+
     video.onloadedmetadata = () => {
+      metadataLoaded = true;
+      clearTimeout(metaTimeout);
       if (video.duration > 60) {
         document.getElementById('video-duration-warning').style.display = 'block';
         selectedVideoFile = null;
         input.value = '';
+        video.src = '';
+        document.getElementById('video-preview-container').style.display = 'none';
         return;
       }
       document.getElementById('video-duration-warning').style.display = 'none';
-      selectedVideoFile = file;
-      removeImage(); removeGif(); // can't mix with photos or GIFs
-      document.getElementById('image-preview-container').style.display = 'none';
-      document.getElementById('video-preview-container').style.display = 'block';
+    };
+    video.onerror = () => {
+      clearTimeout(metaTimeout);
+      // Video preview failed but file may still upload fine — keep selectedVideoFile
+      console.log('[Video] Preview error — file still selected for upload');
     };
   }
 
@@ -4027,15 +4051,16 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   async function uploadVideoToCloudinary(file, onProgress) {
     return new Promise((resolve, reject) => {
-      // Client-side validation
-      if (!file.type.startsWith('video/')) {
-        reject(new Error('Please select a video file (MP4, MOV, etc.)'));
-        return;
-      }
+      // Basic validation — accept any video type including iOS quicktime
       if (file.size > 100 * 1024 * 1024) {
         reject(new Error('Video is too large. Max 100MB.'));
         return;
       }
+      if (file.size === 0) {
+        reject(new Error('Video file is empty. Please try again.'));
+        return;
+      }
+      console.log('[Cloudinary] Uploading:', file.name, file.type, Math.round(file.size/1024) + 'KB');
 
       const formData = new FormData();
       formData.append('file', file);
