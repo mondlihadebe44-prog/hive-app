@@ -3886,17 +3886,33 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   function addComposerVideo(input) {
-    const file = input.files[0]; if (!file) return;
+    const file = input.files[0];
+    if (!file) return;
+
+    console.log('[Composer Video] Selected:', file.name, file.type, Math.round(file.size/1024) + 'KB');
+
+    // Set file immediately — don't wait for metadata (iOS Safari fix)
+    composerVideoFile = file;
+    composerImageFiles = [];
+    composerGifUrl = null;
+
     const video = document.getElementById('composer-video-el');
     video.src = URL.createObjectURL(file);
+    document.getElementById('composer-image-previews').style.display = 'none';
+    document.getElementById('composer-gif-preview').style.display = 'none';
+    document.getElementById('composer-video-preview').style.display = 'block';
+    updateComposerUI();
+
+    // Duration check — non-blocking, iOS may not fire this
     video.onloadedmetadata = () => {
-      if (video.duration > 60) { showToast('Max 60 seconds!'); return; }
-      composerVideoFile = file;
-      composerImageFiles = []; composerGifUrl = null;
-      document.getElementById('composer-image-previews').style.display = 'none';
-      document.getElementById('composer-gif-preview').style.display = 'none';
-      document.getElementById('composer-video-preview').style.display = 'block';
-      updateComposerUI();
+      if (video.duration > 60) {
+        showToast('Max 60 seconds!');
+        composerVideoFile = null;
+        video.src = '';
+        document.getElementById('composer-video-preview').style.display = 'none';
+        document.getElementById('composer-video-input').value = '';
+        updateComposerUI();
+      }
     };
   }
 
