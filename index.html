@@ -4005,9 +4005,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     });
   }
 
-  // VIDEO UPLOAD via Cloudinary
-  const CLOUDINARY_CLOUD = 'dsljdbrrc';
-  const CLOUDINARY_PRESET = 'Hiveapp upload';
+  // VIDEO UPLOAD via Supabase Storage (posts bucket)
   let selectedVideoFile = null;
 
   function previewVideo(input) {
@@ -4066,60 +4064,57 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   async function uploadVideoToCloudinary(file, onProgress) {
-    return new Promise((resolve, reject) => {
-      // Basic validation — accept any video type including iOS quicktime
-      if (file.size > 100 * 1024 * 1024) {
-        reject(new Error('Video is too large. Max 100MB.'));
-        return;
-      }
-      if (file.size === 0) {
-        reject(new Error('Video file is empty. Please try again.'));
-        return;
-      }
-      console.log('[Cloudinary] Uploading:', file.name, file.type, Math.round(file.size/1024) + 'KB');
+    if (!file) throw new Error('No file selected.');
+    if (file.size === 0) throw new Error('Video file is empty. Please try again.');
+    if (file.size > 100 * 1024 * 1024) throw new Error('Video is too large. Max 100MB.');
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_PRESET.trim());
-      formData.append('resource_type', 'auto');
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Please sign in to upload videos.');
 
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`);
-      xhr.timeout = 120000; // 2 min timeout
+    const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+    const fileName = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const contentType = file.type || 'video/mp4';
 
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && onProgress) {
-          const pct = Math.round((e.loaded / e.total) * 100);
-          onProgress(pct);
+    console.log('[Video] Uploading to Supabase Storage:', fileName, contentType, Math.round(file.size/1024/1024*10)/10 + 'MB');
+
+    // Simulate progress (Supabase JS SDK doesn't expose upload progress)
+    let pct = 0;
+    const progressInterval = setInterval(() => {
+      pct = Math.min(pct + 5, 90);
+      if (onProgress) onProgress(pct);
+    }, 400);
+
+    try {
+      const { error } = await sb.storage.from('posts').upload(fileName, file, {
+        contentType,
+        upsert: false,
+        cacheControl: '3600'
+      });
+
+      clearInterval(progressInterval);
+
+      if (error) {
+        console.error('[Video] Supabase upload error:', error.message);
+        if (error.message.includes('size') || error.message.includes('exceeded')) {
+          throw new Error('Video too large. Try a shorter clip.');
+        } else if (error.message.includes('policy') || error.message.includes('permission') || error.message.includes('Unauthorized')) {
+          throw new Error('Upload permission denied. Please sign out and sign in again.');
+        } else {
+          throw new Error(error.message || 'Upload failed. Please try again.');
         }
-      };
+      }
 
-      xhr.onload = () => {
-        console.log('[Cloudinary] status:', xhr.status, 'response:', xhr.responseText.slice(0, 300));
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (xhr.status === 200 && data.secure_url) {
-            resolve(data.secure_url);
-          } else {
-            const errMsg = data.error?.message || `Upload failed (${xhr.status})`;
-            if (errMsg.toLowerCase().includes('preset')) {
-              reject(new Error('Upload preset not enabled for video. Go to Cloudinary dashboard → Settings → Upload → enable video on the "Hiveapp upload" preset.'));
-            } else if (errMsg.toLowerCase().includes('size') || errMsg.toLowerCase().includes('large')) {
-              reject(new Error('Video file is too large. Try a shorter clip.'));
-            } else if (errMsg.toLowerCase().includes('format') || errMsg.toLowerCase().includes('invalid')) {
-              reject(new Error('Video format not supported. Please use MP4.'));
-            } else {
-              reject(new Error(errMsg));
-            }
-          }
-        } catch(parseErr) {
-          reject(new Error(`Upload failed (${xhr.status}). Please try again.`));
-        }
-      };
-      xhr.onerror = () => reject(new Error('Network error. Check your connection and try again.'));
-      xhr.ontimeout = () => reject(new Error('Upload timed out. Try a shorter or smaller video.'));
-      xhr.send(formData);
-    });
+      const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+      if (!urlData?.publicUrl) throw new Error('Could not get video URL. Please try again.');
+
+      if (onProgress) onProgress(100);
+      console.log('[Video] Upload success:', urlData.publicUrl);
+      return urlData.publicUrl;
+
+    } catch(e) {
+      clearInterval(progressInterval);
+      throw e;
+    }
   }
   let selectedImageFiles = [];
   let selectedGifUrl = null;
