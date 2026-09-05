@@ -4066,7 +4066,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   async function uploadVideoToCloudinary(file, onProgress) {
     if (!file) throw new Error('No file selected.');
     if (file.size === 0) throw new Error('Video file is empty. Please try again.');
-    if (file.size > 100 * 1024 * 1024) throw new Error('Video is too large. Max 100MB.');
+    if (file.size > 50 * 1024 * 1024) throw new Error('Video is too large. Max 50MB on free plan.');
 
     const { data: { session } } = await sb.auth.getSession();
     if (!session) throw new Error('Please sign in to upload videos.');
@@ -4077,7 +4077,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     console.log('[Video] Uploading to Supabase Storage:', fileName, contentType, Math.round(file.size/1024/1024*10)/10 + 'MB');
 
-    // Simulate progress (Supabase JS SDK doesn't expose upload progress)
+    // Convert to ArrayBuffer — fixes "no content provided" on iOS Safari
+    const arrayBuffer = await file.arrayBuffer();
+    const fileData = new Uint8Array(arrayBuffer);
+    console.log('[Video] ArrayBuffer size:', fileData.length, 'bytes');
+    if (fileData.length === 0) throw new Error('Video file appears empty. Please select it again.');
+
+    // Simulate progress
     let pct = 0;
     const progressInterval = setInterval(() => {
       pct = Math.min(pct + 5, 90);
@@ -4085,7 +4091,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }, 400);
 
     try {
-      const { error } = await sb.storage.from('posts').upload(fileName, file, {
+      const { error } = await sb.storage.from('posts').upload(fileName, fileData, {
         contentType,
         upsert: false,
         cacheControl: '3600'
