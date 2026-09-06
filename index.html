@@ -548,7 +548,8 @@ body {
 }
 .action-btn:hover { background: rgba(245,197,24,0.08); color: var(--gold); }
 .action-icon { font-size: 17px; display:flex;align-items:center; }
-.act-svg { width:18px;height:18px;flex-shrink:0;stroke:currentColor;transition:stroke 0.2s,fill 0.2s; }
+.act-svg { width:20px;height:20px;flex-shrink:0;stroke:currentColor;transition:stroke 0.2s,fill 0.2s; }
+.action-btn { min-height:44px;min-width:44px;padding:6px 10px; }
 /* Like active — fill heart gold */
 .like-btn.liked .act-svg { stroke:#ff4d6d;fill:#ff4d6d; }
 /* Bookmark active — fill gold */
@@ -3258,7 +3259,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         const endY = toRect.top - containerRect.top - gap;
         const xCenter = fromRect.left - containerRect.left + (fromRect.width / 2);
         const height = Math.max(0, endY - startY);
-        line.style.cssText = `position:absolute;top:${startY}px;left:${xCenter}px;width:2px;height:${height}px;background:var(--gold);transform:translateX(-50%);pointer-events:none;z-index:1;border-radius:2px`;
+        line.style.cssText = `position:absolute;top:${startY}px;left:${xCenter}px;width:1.5px;height:${height}px;background:var(--gold);opacity:0.5;transform:translateX(-50%);pointer-events:none;z-index:1;border-radius:2px`;
         chain[i].parentElement.appendChild(line);
       }
     });
@@ -3289,7 +3290,8 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div class="post-card-right">
         <div class="post-header-row">
           <div class="post-name-row">
-            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name} ${verified}</span>
+            <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name}</span>
+            ${verified}
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
             <span class="post-handle">${timeAgo(post.created_at)}</span>
@@ -3810,7 +3812,23 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     let imageUrl = null, imageUrls = [], videoUrl = null;
     if (composerVideoFile) {
       postBtn.textContent = '0%';
-      try { videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = pct >= 85 ? '⏳ Processing…' : `${pct}%`); }
+      try { 
+        videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = pct >= 85 ? '⏳ Processing…' : `${pct}%`);
+        // Upload thumbnail if generated
+        if (composerVideoThumbnail) {
+          try {
+            const thumbResp = await fetch(composerVideoThumbnail);
+            const thumbBlob = await thumbResp.blob();
+            const thumbArr = new Uint8Array(await thumbBlob.arrayBuffer());
+            const { data: { session: s } } = await sb.auth.getSession();
+            const thumbPath = `${s.user.id}/thumb-${Date.now()}.jpg`;
+            await sb.storage.from('posts').upload(thumbPath, thumbArr, { contentType: 'image/jpeg', upsert: false });
+            const { data: td } = sb.storage.from('posts').getPublicUrl(thumbPath);
+            if (td?.publicUrl) videoUrl = videoUrl + '|thumb:' + td.publicUrl;
+          } catch(e) { console.log('[Thumb] Upload skipped:', e.message); }
+        }
+        composerVideoThumbnail = null;
+      }
       catch(e) { showToast(e.message || 'Video upload failed. Please try again.'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
     } else if (composerGifUrl) {
       imageUrl = composerGifUrl;
@@ -3891,29 +3909,73 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     console.log('[Composer Video] Selected:', file.name, file.type, Math.round(file.size/1024) + 'KB');
 
-    // Set file immediately — don't wait for metadata (iOS Safari fix)
     composerVideoFile = file;
     composerImageFiles = [];
     composerGifUrl = null;
 
+    const objectUrl = URL.createObjectURL(file);
     const video = document.getElementById('composer-video-el');
-    video.src = URL.createObjectURL(file);
+    video.src = objectUrl;
     document.getElementById('composer-image-previews').style.display = 'none';
     document.getElementById('composer-gif-preview').style.display = 'none';
     document.getElementById('composer-video-preview').style.display = 'block';
     updateComposerUI();
 
-    // Duration check — non-blocking, iOS may not fire this
+    // Generate thumbnail from first frame
+    generateVideoThumbnail(file, objectUrl).then(thumbUrl => {
+      if (thumbUrl) {
+        video.poster = thumbUrl;
+        composerVideoThumbnail = thumbUrl;
+        console.log('[Video] Thumbnail generated');
+      }
+    }).catch(() => {});
+
+    // Duration check — non-blocking
     video.onloadedmetadata = () => {
       if (video.duration > 60) {
         showToast('Max 60 seconds!');
         composerVideoFile = null;
+        composerVideoThumbnail = null;
         video.src = '';
+        video.poster = '';
         document.getElementById('composer-video-preview').style.display = 'none';
         document.getElementById('composer-video-input').value = '';
         updateComposerUI();
       }
     };
+  }
+
+  let composerVideoThumbnail = null;
+
+  async function generateVideoThumbnail(file, objectUrl) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = objectUrl;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+      video.currentTime = 0.5; // seek to 0.5s for first frame
+
+      const timeout = setTimeout(() => resolve(null), 5000);
+
+      video.addEventListener('seeked', () => {
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.min(video.videoWidth, 640);
+          canvas.height = Math.min(video.videoHeight, 360);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => {
+            if (blob) resolve(URL.createObjectURL(blob));
+            else resolve(null);
+          }, 'image/jpeg', 0.7);
+        } catch(e) { resolve(null); }
+      }, { once: true });
+
+      video.addEventListener('error', () => { clearTimeout(timeout); resolve(null); }, { once: true });
+      video.load();
+    });
   }
 
   function removeComposerVideo() {
@@ -7450,7 +7512,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     // Video takes priority
     if (post.video_url) {
       return `<div style="position:relative;margin-bottom:12px;border-radius:16px;overflow:hidden;background:#000;max-height:400px">
-        <video src="${post.video_url}" style="width:100%;max-height:400px;object-fit:contain;display:block" controls playsinline preload="metadata"></video>
+        <div style="position:relative;border-radius:14px;overflow:hidden;background:#111;margin-bottom:4px">${(() => { const vp=(post.video_url||'').split('|thumb:'); return `<video src="${vp[0]}" ${vp[1]?`poster="${vp[1]}"`:'preload="metadata"'} style="width:100%;max-height:400px;object-fit:contain;display:block" controls playsinline></video>`; })()}</div>
       </div>`;
     }
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
