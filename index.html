@@ -3652,7 +3652,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       btn.textContent = '0%';
       try {
         videoUrl = await uploadVideoToCloudinary(selectedVideoFile, (pct) => {
-          btn.textContent = `${pct}%`;
+          btn.textContent = pct >= 85 ? '⏳ Processing…' : `${pct}%`;
         });
       } catch(e) {
         showToast(e.message || 'Video upload failed. Please try again.');
@@ -3810,7 +3810,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     let imageUrl = null, imageUrls = [], videoUrl = null;
     if (composerVideoFile) {
       postBtn.textContent = '0%';
-      try { videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = `${pct}%`); }
+      try { videoUrl = await uploadVideoToCloudinary(composerVideoFile, pct => postBtn.textContent = pct >= 85 ? '⏳ Processing…' : `${pct}%`); }
       catch(e) { showToast(e.message || 'Video upload failed. Please try again.'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
     } else if (composerGifUrl) {
       imageUrl = composerGifUrl;
@@ -4083,12 +4083,14 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     console.log('[Video] ArrayBuffer size:', fileData.length, 'bytes');
     if (fileData.length === 0) throw new Error('Video file appears empty. Please select it again.');
 
-    // Simulate progress
+    // Simulate progress — slow ramp to 85%, then hold with "Processing..." message
     let pct = 0;
     const progressInterval = setInterval(() => {
-      pct = Math.min(pct + 5, 90);
-      if (onProgress) onProgress(pct);
-    }, 400);
+      if (pct < 70) pct += 8;
+      else if (pct < 85) pct += 2;
+      // Hold at 85 — don't go to 90 until done
+      if (onProgress) onProgress(Math.min(pct, 85));
+    }, 600);
 
     try {
       const { error } = await sb.storage.from('posts').upload(fileName, fileData, {
