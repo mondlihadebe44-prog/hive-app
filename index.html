@@ -2642,6 +2642,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           <button onclick="shareProfile()" class="btn-press" style="flex:1;padding:11px;border-radius:50px;border:1.5px solid #2a2a2a;background:#111;color:#ccc;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='#F6C21A';this.style.color='#F6C21A'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#ccc'">↗ Share</button>
           <button onclick="showProModal()" class="btn-press" style="flex:1;padding:11px;border-radius:50px;border:1.5px solid rgba(246,194,26,0.5);background:rgba(246,194,26,0.06);color:#F6C21A;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;letter-spacing:0.2px" onmouseover="this.style.background='rgba(246,194,26,0.14)'" onmouseout="this.style.background='rgba(246,194,26,0.06)'">👑 Hive Pro</button>
         </div>
+
+        <!-- Sign Out -->
+        <button onclick="confirmSignOut()" style="width:100%;margin-top:12px;padding:11px;border-radius:50px;border:1px solid #2a2a2a;background:transparent;color:#666;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.borderColor='#ff4444';this.style.color='#ff4444'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#666'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
       </div>
 
       <!-- Profile Tabs -->
@@ -2829,10 +2835,18 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   async function signOut() {
-    await sb.auth.signOut(); currentUser = null; currentProfile = null;
+    await sb.auth.signOut();
+    currentUser = null;
+    currentProfile = null;
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
     showToast('Signed out! 👋');
+  }
+
+  async function confirmSignOut() {
+    if (!confirm('Sign out of Hive?')) return;
+    showToast('Signing out…');
+    await signOut();
   }
 
   async function loadProfile() {
