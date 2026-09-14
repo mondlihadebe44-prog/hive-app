@@ -2720,16 +2720,21 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         currentUser = session.user;
-        loadProfile();
+        // Show app if still on auth screen (handles Google OAuth redirect)
+        const appEl = document.getElementById('app');
+        const authEl = document.getElementById('auth');
+        if (authEl && authEl.style.display !== 'none') {
+          loadProfile().then(function() { showApp(); });
+        } else {
+          loadProfile();
+        }
         checkUnreadNotifications();
-      } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         currentProfile = null;
-        // Return to auth screen
         document.getElementById('app').style.display = 'none';
         document.getElementById('auth').style.display = 'flex';
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Token silently refreshed — update user reference
         currentUser = session.user;
       }
     });
