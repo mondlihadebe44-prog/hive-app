@@ -1925,6 +1925,10 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       </div>
       <div id="composer-video-preview" style="display:none;margin-top:12px;position:relative">
         <video id="composer-video-el" style="width:100%;border-radius:16px;max-height:280px;background:#000" controls playsinline></video>
+        <div id="composer-video-thumb-loading" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.7);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <div class="spinner" style="border-color:rgba(246,194,26,0.3);border-top-color:#F6C21A"></div>
+          <div style="color:#F6C21A;font-size:12px;font-family:'DM Sans',sans-serif">Preparing video…</div>
+        </div>
         <button onclick="removeComposerVideo()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:14px;cursor:pointer">✕</button>
       </div>
       <div id="composer-gif-preview" style="display:none;margin-top:12px;position:relative">
@@ -3944,20 +3948,29 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.getElementById('composer-video-preview').style.display = 'block';
     updateComposerUI();
 
-    // Generate thumbnail from first frame - pass blob URL
+    // Show loading state while thumbnail generates
+    const composerVidEl = document.getElementById('composer-video-el');
+    composerVidEl.poster = '';
+    const thumbLoadingEl = document.getElementById('composer-video-thumb-loading');
+    if (thumbLoadingEl) thumbLoadingEl.style.display = 'flex';
+
+    // Generate thumbnail from first frame
     generateVideoThumbnail(file, objectUrl).then(thumbBlob => {
+      if (thumbLoadingEl) thumbLoadingEl.style.display = 'none';
       if (thumbBlob) {
         composerVideoThumbnail = thumbBlob;
-        // Show preview poster immediately
         const reader = new FileReader();
-        reader.onload = (e) => { video.poster = e.target.result; };
+        reader.onload = (e) => { composerVidEl.poster = e.target.result; };
         reader.readAsDataURL(thumbBlob);
         console.log('[Video] Thumbnail blob ready:', thumbBlob.size, 'bytes');
       } else {
         composerVideoThumbnail = null;
-        console.log('[Video] No thumbnail generated');
+        console.log('[Video] No thumbnail generated — video will post without preview');
       }
-    }).catch(() => { composerVideoThumbnail = null; });
+    }).catch(() => {
+      if (thumbLoadingEl) thumbLoadingEl.style.display = 'none';
+      composerVideoThumbnail = null;
+    });
 
     // Duration check — non-blocking
     video.onloadedmetadata = () => {
@@ -3978,62 +3991,60 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   async function generateVideoThumbnail(file, objectUrl) {
     return new Promise((resolve) => {
-      const video = document.createElement('video');
-      // iOS Safari requirements: no crossOrigin on blob URLs, must be muted, must use playsInline
-      video.muted = true;
-      video.playsInline = true;
-      video.preload = 'metadata';
+      const vid = document.createElement('video');
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.preload = 'auto';
 
-      const timeout = setTimeout(() => {
-        console.log('[Thumb] Timeout — resolving null');
-        resolve(null);
-      }, 8000);
+      const cleanup = () => { try { vid.src = ''; } catch(e){} };
+      const timeout = setTimeout(() => { console.log('[Thumb] Timeout'); cleanup(); resolve(null); }, 10000);
 
-      // iOS needs loadeddata before seeking works
-      video.addEventListener('loadeddata', () => {
-        // Seek to 10% of duration or 0.5s, whichever is smaller
-        const seekTo = Math.min(0.5, (video.duration || 1) * 0.1);
-        video.currentTime = seekTo;
-      }, { once: true });
-
-      video.addEventListener('seeked', () => {
-        clearTimeout(timeout);
-        try {
-          const w = video.videoWidth || 640;
-          const h = video.videoHeight || 360;
-          const scale = Math.min(1, 640 / w);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(w * scale);
-          canvas.height = Math.round(h * scale);
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(blob => {
-            video.src = ''; // release
-            if (blob && blob.size > 0) {
-              console.log('[Thumb] Generated:', blob.size, 'bytes', canvas.width + 'x' + canvas.height);
-              resolve(blob); // return Blob directly, not object URL
-            } else {
-              resolve(null);
-            }
-          }, 'image/jpeg', 0.75);
-        } catch(e) {
-          clearTimeout(timeout);
-          console.log('[Thumb] Canvas error:', e.message);
-          resolve(null);
+      let retries = 0;
+      const capture = () => {
+        if (!vid.videoWidth || !vid.videoHeight) {
+          if (retries++ < 5) { setTimeout(capture, 300); return; }
+          clearTimeout(timeout); cleanup(); resolve(null); return;
         }
-      }, { once: true });
+        try {
+          const scale = Math.min(1, 640 / vid.videoWidth);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(vid.videoWidth * scale);
+          canvas.height = Math.round(vid.videoHeight * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+          // Detect black frame on iOS
+          const imgData = ctx.getImageData(0, 0, Math.min(20, canvas.width), Math.min(20, canvas.height));
+          const isBlack = Array.from(imgData.data).filter((_,i)=>i%4!==3).every(v=>v<15);
+          if (isBlack && retries < 3) {
+            retries++;
+            const nextTime = Math.min(vid.currentTime + 0.5, (vid.duration||2) - 0.05);
+            console.log('[Thumb] Black frame, retrying at:', nextTime);
+            vid.currentTime = nextTime;
+            return;
+          }
+          canvas.toBlob(blob => {
+            clearTimeout(timeout); cleanup();
+            if (blob && blob.size > 500) { console.log('[Thumb] OK:', blob.size, 'bytes'); resolve(blob); }
+            else resolve(null);
+          }, 'image/jpeg', 0.8);
+        } catch(e) { clearTimeout(timeout); cleanup(); console.log('[Thumb] Error:', e.message); resolve(null); }
+      };
 
-      video.addEventListener('error', (e) => {
-        clearTimeout(timeout);
-        console.log('[Thumb] Video error:', e.message || 'unknown');
-        resolve(null);
+      vid.addEventListener('seeked', capture, false);
+      vid.addEventListener('canplay', () => {
+        const dur = vid.duration;
+        const seekTo = (isFinite(dur) && dur > 0.15) ? Math.min(0.1, dur * 0.1) : 0;
+        console.log('[Thumb] canplay dur:', dur, 'seek:', seekTo);
+        vid.currentTime = seekTo;
       }, { once: true });
+      vid.addEventListener('error', () => { clearTimeout(timeout); cleanup(); resolve(null); }, { once: true });
 
-      video.src = objectUrl;
-      video.load();
+      vid.src = objectUrl;
+      vid.load();
     });
   }
 
+  
   function removeComposerVideo() {
     composerVideoFile = null;
     document.getElementById('composer-video-preview').style.display = 'none';
