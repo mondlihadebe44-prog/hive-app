@@ -1008,6 +1008,15 @@ body.light .explore-chip.active { background: #F6C21A; color: #000; }
 body.light .explore-location-card, body.light .explore-hashtag-card,
 body.light .explore-person-card, body.light .explore-group-card { background: #fff; border-color: #e0e0e0; }
 
+/* HiveMind home chips */
+.hm-chip {
+  flex-shrink: 0; padding: 5px 12px; border-radius: 50px;
+  border: 1px solid rgba(246,194,26,0.2); background: rgba(246,194,26,0.05);
+  color: #aaa; font-size: 11px; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; white-space: nowrap; transition: all 0.2s;
+}
+.hm-chip:hover { border-color: #F6C21A; color: #F6C21A; background: rgba(246,194,26,0.1); }
+
 .group-card {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 16px; background: #111;
@@ -2220,8 +2229,48 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         </div>
       </div>
 
-      <!-- COMPOSE -->
-      <div class="compose-box">
+      <!-- HIVEMIND HOME CARD -->
+      <div id="home-hivemind-card" style="margin:12px 16px 4px;border-radius:20px;background:linear-gradient(135deg,rgba(246,194,26,0.07),rgba(0,0,0,0.4));border:1px solid rgba(246,194,26,0.2);overflow:hidden">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#F6C21A,#D89B00);display:flex;align-items:center;justify-content:center;font-size:16px;animation:beeFloat 2.5s ease-in-out infinite">🐝</div>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#F6C21A">HiveMind</div>
+              <div style="font-size:10px;color:#555;font-family:'DM Sans',sans-serif">Your creative assistant inside Hive</div>
+            </div>
+          </div>
+          <button onclick="openHiveMind()" style="padding:5px 12px;border-radius:50px;border:1px solid rgba(246,194,26,0.4);background:rgba(246,194,26,0.1);color:#F6C21A;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(246,194,26,0.2)'" onmouseout="this.style.background='rgba(246,194,26,0.1)'">Open ›</button>
+        </div>
+        <!-- Input row -->
+        <div style="padding:0 16px 10px;display:flex;align-items:center;gap:8px">
+          <input id="home-hivemind-input" placeholder="What are you vibing about? 🐝" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(246,194,26,0.15);border-radius:50px;padding:9px 16px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor='rgba(246,194,26,0.5)'" onblur="this.style.borderColor='rgba(246,194,26,0.15)'" onkeydown="if(event.key==='Enter')homeHiveMindAsk()">
+          <button onclick="homeHiveMindAsk()" style="width:36px;height:36px;border-radius:50%;background:#F6C21A;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <!-- Suggestion chips -->
+        <div style="display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none">
+          <button onclick="homeHiveMindChip('Create a post idea for me')" class="hm-chip">✨ Post idea</button>
+          <button onclick="homeHiveMindChip('Give me trending topics to post about')" class="hm-chip">💡 Inspiration</button>
+          <button onclick="homeHiveMindChip('Help me write an engaging caption')" class="hm-chip">✍️ Caption</button>
+          <button onclick="homeHiveMindChip('Make my post more engaging and fun')" class="hm-chip">🔥 Spice it up</button>
+          <button onclick="homeHiveMindChip('Translate this for me')" class="hm-chip">🌍 Translate</button>
+        </div>
+        <!-- AI Response area (hidden by default) -->
+        <div id="home-hivemind-response" style="display:none;padding:0 16px 14px">
+          <div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:12px 14px;border:1px solid rgba(246,194,26,0.15)">
+            <div id="home-hivemind-response-text" style="font-size:13px;color:#ccc;font-family:'DM Sans',sans-serif;line-height:1.6;margin-bottom:10px"></div>
+            <div style="display:flex;gap:8px">
+              <button onclick="useHiveMindResponse()" style="flex:1;padding:8px;border-radius:50px;background:#F6C21A;border:none;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer">Use this ✓</button>
+              <button onclick="homeHiveMindAsk(true)" style="flex:1;padding:8px;border-radius:50px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#ccc;font-family:'Syne',sans-serif;font-weight:600;font-size:12px;cursor:pointer">Try another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPOSE (kept for thread mode, media previews, hidden input) -->
+      <div class="compose-box" style="display:flex;padding:10px 16px">
         <div class="compose-avatar" id="compose-avatar" onclick="openComposer()" style="cursor:pointer">?</div>
         <div class="compose-right" style="flex:1;min-width:0">
           <div id="thread-mode-banner" style="display:none;align-items:center;gap:6px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);border-radius:50px;padding:5px 12px;margin-bottom:8px;width:fit-content">
@@ -2230,11 +2279,6 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <button onclick="cancelNewThread()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 0 0 4px">✕</button>
           </div>
           <input class="compose-input" placeholder="Share your vibe… 🐝" id="compose-text" readonly onclick="openComposer()" style="cursor:pointer;width:100%">
-          <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:8px">
-            <button onclick="openHiveMind()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:50px;border:1px solid rgba(246,194,26,0.3);background:rgba(246,194,26,0.06);color:#F6C21A;cursor:pointer;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(246,194,26,0.14)'" onmouseout="this.style.background='rgba(246,194,26,0.06)'">
-              🐝 Ask HiveMind
-            </button>
-          </div>
           <div id="image-preview-container" style="display:none;margin-bottom:12px">
             <div id="image-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px"></div>
           </div>
@@ -7507,6 +7551,68 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (!currentUser) { showToast('Sign in first!'); return; }
     const {error} = await sb.from('group_members').insert({group_id:groupId,user_id:currentUser.id,role:'member'});
     if (!error) { btn.textContent='Joined ✓'; btn.style.background='#F6C21A'; btn.style.color='#000'; btn.disabled=true; showToast('Joined! 🍯'); }
+  }
+
+  // HOME HIVEMIND CARD
+  let lastHiveMindResponse = '';
+
+  function homeHiveMindChip(prompt) {
+    const input = document.getElementById('home-hivemind-input');
+    if (input) { input.value = prompt; input.focus(); }
+    homeHiveMindAsk();
+  }
+
+  async function homeHiveMindAsk(retry = false) {
+    const input = document.getElementById('home-hivemind-input');
+    const responseEl = document.getElementById('home-hivemind-response');
+    const responseText = document.getElementById('home-hivemind-response-text');
+    if (!input || !responseEl || !responseText) { openHiveMind(); return; }
+    const prompt = input.value.trim();
+    if (!prompt) { input.focus(); return; }
+
+    responseEl.style.display = 'block';
+    responseText.innerHTML = '<span style="color:#555;font-style:italic">🐝 HiveMind is thinking…</span>';
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(HIVEMIND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          message: `Help me with this Hive social media request: ${prompt}. Keep response short, friendly and ready to post. Use South African context where relevant.`,
+          mode: 'chat',
+          history: []
+        })
+      });
+      const data = await res.json();
+      const reply = data.reply || 'I had trouble thinking of something — try again!';
+      lastHiveMindResponse = reply;
+      responseText.textContent = reply;
+    } catch(e) {
+      responseText.innerHTML = '<span style="color:#ff4444">Could not connect to HiveMind. Try again.</span>';
+    }
+  }
+
+  function useHiveMindResponse() {
+    if (!lastHiveMindResponse) return;
+    openComposer();
+    setTimeout(() => {
+      const ta = document.getElementById('composer-textarea');
+      if (ta) {
+        ta.value = lastHiveMindResponse;
+        ta.dispatchEvent(new Event('input'));
+      }
+    }, 350);
+    // Clear home card
+    const responseEl = document.getElementById('home-hivemind-response');
+    const input = document.getElementById('home-hivemind-input');
+    if (responseEl) responseEl.style.display = 'none';
+    if (input) input.value = '';
+    lastHiveMindResponse = '';
   }
 
   // ONBOARDING
