@@ -345,90 +345,110 @@ body {
 
 /* Stories */
 .stories-bar {
-  display: flex; gap: 14px;
+  display: flex; gap: 10px;
   overflow-x: auto; scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 0 16px;
+  padding: 10px 0 14px;
 }
 .stories-bar::-webkit-scrollbar { display: none; }
-.stories-bar::-webkit-scrollbar { display: none; }
+/* Each story card item */
 .story-item {
   display: flex; flex-direction: column;
-  align-items: center; gap: 7px; cursor: pointer; flex-shrink: 0;
+  align-items: center; gap: 6px;
+  cursor: pointer; flex-shrink: 0;
   transition: transform 0.18s;
   -webkit-tap-highlight-color: transparent;
 }
-.story-item:active { transform: scale(0.94); }
 .story-item:active { transform: scale(0.93); }
-.story-avatar {
-  width: 66px; height: 66px;
-  /* Hexagonal clip using polygon — 6 sides, flat-top */
-  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
-  background: var(--card);
+/* Outer hex container — the GOLD BORDER */
+.story-card {
+  width: 88px; height: 120px;
+  position: relative; flex-shrink: 0;
+  /* Pointy-top hexagon: 6 sides */
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(160deg, #F6C21A 0%, #D89B00 100%);
   display: flex; align-items: center; justify-content: center;
-  font-size: 26px;
-  transition: transform 0.18s, filter 0.18s;
-  position: relative;
+  transition: filter 0.2s;
+}
+/* Inner hex — dark gap between border and content */
+.story-card-inner {
+  width: calc(100% - 6px); height: calc(100% - 6px);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: #111;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  position: relative;
 }
-.story-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.story-avatar:hover { transform: scale(1.06); }
-.story-avatar.has-vibe {
-  border-width: 2.5px; border-style: solid;
-  box-shadow: 0 0 0 2px #000;
+/* Content inside: fills inner hex */
+.story-card-inner img,
+.story-card-inner video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
 }
-/* Unseen vibe — glowing ring */
-.story-avatar.has-vibe.unseen {
-  box-shadow: 0 0 0 2px #000, 0 0 12px rgba(246,194,26,0.5);
+/* Default background with emoji when no media */
+.story-card-bg {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  background: #1a1a1a;
 }
-/* Viewed — fade ring */
-.story-avatar.has-vibe.viewed {
-  filter: grayscale(0.6); opacity: 0.7;
+/* Viewed state */
+.story-card.viewed {
+  background: #333;
+  filter: brightness(0.75);
 }
+/* Your Vibe card */
+.story-card.my-vibe {
+  background: linear-gradient(160deg, #F6C21A 0%, #D89B00 100%);
+}
+/* + button overlay */
+.story-add-btn {
+  position: absolute; bottom: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 22px; height: 22px;
+  background: #F6C21A; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #000;
+  border: 2px solid #000;
+  z-index: 5;
+  pointer-events: none;
+}
+/* Username overlay at bottom of card */
+.story-card-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 18px 4px 6px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  text-align: center;
+  pointer-events: none;
+}
+.story-card-label span {
+  font-size: 9px; color: #fff; font-family: 'DM Sans', sans-serif;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block;
+}
+/* Segment dots strip below the card */
+.story-segs {
+  display: flex; gap: 3px; align-items: center;
+  justify-content: center;
+  height: 4px; max-width: 80px;
+}
+.story-seg-dot {
+  height: 3px; border-radius: 2px; flex: 1;
+  max-width: 18px; min-width: 4px;
+  background: #F6C21A;
+  transition: background 0.2s;
+}
+.story-seg-dot.viewed { background: #444; }
+/* Card name below segments */
 .story-name {
   font-size: 11px; color: #aaa;
   font-family: 'DM Sans', sans-serif;
-  max-width: 68px; text-align: center;
+  max-width: 80px; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   letter-spacing: 0.1px;
+  margin-top: 1px;
 }
-.story-hex-wrap {
-  width: 76px; height: 76px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-}
-/* Gold hex outline ring behind avatar */
-.story-hex-wrap::before {
-  content: '';
-  position: absolute; inset: 0;
-  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
-  background: linear-gradient(135deg, #F6C21A, #D89B00);
-  z-index: 0;
-}
-.story-hex-wrap::after {
-  content: '';
-  position: absolute; inset: 3px;
-  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
-  background: #0d0d0d;
-  z-index: 1;
-}
-.story-hex-wrap .story-avatar {
-  position: relative; z-index: 2;
-  width: 62px; height: 62px;
-}
-/* Viewed state: grey ring */
-.story-hex-wrap.viewed::before {
-  background: #333;
-}
-/* Your Vibe first card — always gold */
-.story-hex-wrap.my-vibe::before {
-  background: linear-gradient(135deg, #F6C21A, #D89B00);
-}
-/* Segmented ring SVG sits on top */
-.story-seg-ring {
-  position: absolute; inset: 0; z-index: 3; pointer-events: none;
-}
-/* HiveMind slim banner */
 .hm-slim-banner {
   display: flex; align-items: center; gap: 10px;
   margin: 6px 16px 2px;
@@ -2290,9 +2310,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div class="stories-bar" id="vibe-check-bar">
           <!-- Add Vibe Check button -->
           <div class="story-item" onclick="openAddVibeCheck()">
-            <div class="story-hex-wrap my-vibe" id="my-vibe-hex">
-              <div class="story-avatar" id="my-vibe-avatar">😎</div>
-              <div style="position:absolute;bottom:2px;right:2px;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;border:2px solid #000;z-index:4">+</div>
+            <div class="story-card my-vibe">
+              <div class="story-card-inner" id="my-vibe-avatar">
+                <div class="story-card-bg">😎</div>
+              </div>
+              <div class="story-add-btn">+</div>
             </div>
             <div class="story-name">Your Vibe</div>
           </div>
@@ -6910,6 +6932,18 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   // Build segmented SVG story ring — n segments, color matches vibe color
+  function buildHexSegments(viewedArr) {
+    // Returns the segment dots strip HTML for below the story card
+    const n = viewedArr ? viewedArr.length : 1;
+    if (n <= 1) return ''; // single vibe — no strip needed
+    let dots = '';
+    for (let i = 0; i < n; i++) {
+      const cls = viewedArr && viewedArr[i] ? 'story-seg-dot viewed' : 'story-seg-dot';
+      dots += `<div class="${cls}"></div>`;
+    }
+    return `<div class="story-segs">${dots}</div>`;
+  }
+
   function buildStoryRing(n, color, viewedArr) {
     // viewedArr: optional array of booleans, one per segment (true = viewed)
     const size = 66, r = 30, cx = 33, cy = 33;
@@ -6963,19 +6997,25 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const group = vibeUserGroups[groupIdx];
     if (!group) return;
     const viewedArr = getGroupViewedArr(group.vibes);
-    // Update hex wrap viewed class
-    const hexWrap = item.querySelector('.story-hex-wrap');
-    if (hexWrap) {
-      const allViewed = viewedArr.every(Boolean);
-      hexWrap.classList.toggle('viewed', allViewed);
+    const allViewed = viewedArr.every(Boolean);
+    // Update card viewed class
+    const card = item.querySelector('.story-card');
+    if (card) card.classList.toggle('viewed', allViewed);
+    // Update segment dots
+    const existingSegs = item.querySelector('.story-segs');
+    const newSegsHTML = buildHexSegments(viewedArr);
+    if (existingSegs) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = newSegsHTML;
+      existingSegs.replaceWith(tmp.firstChild || document.createTextNode(''));
+    } else if (newSegsHTML) {
+      item.insertAdjacentHTML('beforeend', newSegsHTML);
     }
-    // Replace SVG ring
-    const svg = item.querySelector('svg');
-    if (!svg) return;
-    const newRing = buildStoryRing(group.vibes.length, null, viewedArr);
-    const tmp = document.createElement('div');
-    tmp.innerHTML = newRing;
-    svg.replaceWith(tmp.firstChild);
+    // Update individual dot states
+    const dots = item.querySelectorAll('.story-seg-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('viewed', !!(viewedArr && viewedArr[i]));
+    });
   }
 
   async function loadVibeChecks() {
@@ -7003,20 +7043,9 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     bar.innerHTML = ''; bar.appendChild(addBtn);
 
     if (currentProfile?.avatar_url) {
-      document.getElementById('my-vibe-avatar').innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      document.getElementById('my-vibe-avatar').innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`;
     }
-    // Gold + badge on my-vibe avatar
-    const myVibeWrap = document.getElementById('my-vibe-avatar');
-    if (myVibeWrap) {
-      // Remove existing + badge if any
-      myVibeWrap.querySelectorAll('.vibe-add-badge').forEach(e => e.remove());
-      const plusBadge = document.createElement('div');
-      plusBadge.className = 'vibe-add-badge';
-      plusBadge.style.cssText = 'position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;background:#F6C21A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#000;border:2px solid #000;line-height:1;cursor:pointer;z-index:2';
-      plusBadge.textContent = '+';
-      myVibeWrap.style.position = 'relative';
-      myVibeWrap.appendChild(plusBadge);
-    }
+    // + button is now static HTML in story-card
 
     vibeUserGroups.forEach((group, gIdx) => {
       const p = group.profile || {};
@@ -7026,18 +7055,19 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       item.className = 'story-item';
       item.onclick = () => { currentGroupIndex = gIdx; currentVibeIndex = 0; openVibeViewer(firstVibe, group.vibes, gIdx); };
       const avatarInner = p.avatar_url
-        ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : `<span style="font-size:22px">${firstVibe.emoji}</span>`;
+        ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`
+        : `<div class="story-card-bg">${firstVibe.emoji}</div>`;
       const viewedArr = getGroupViewedArr(group.vibes);
       const allViewed = viewedArr.every(Boolean);
+      const segsHTML = buildHexSegments(viewedArr);
       item.innerHTML = `
-        <div class="story-hex-wrap${allViewed ? ' viewed' : ''}">
-          ${buildStoryRing(group.vibes.length, null, viewedArr)}
-          <div class="story-avatar">
+        <div class="story-card${allViewed ? ' viewed' : ''}">
+          <div class="story-card-inner">
             ${avatarInner}
+            <div class="story-card-label"><span>${name}</span></div>
           </div>
         </div>
-        <div class="story-name">${name}</div>`;
+        ${segsHTML}`;
       bar.appendChild(item);
     });
   }
