@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Hive 🐝</title>
 <meta name="description" content="Hive - Your community. Your vibe.">
 <meta name="theme-color" content="#F5C518">
@@ -89,11 +89,20 @@ body.theme-pride {
 
 * { margin:0; padding:0; box-sizing:border-box; }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  height: 100%;
+}
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
 }
 
 /* ===== SPLASH ===== */
@@ -147,7 +156,7 @@ body {
 .post-mention { color: #2D8CFF; cursor: pointer; font-weight: 500; }
 .post-mention:hover { text-decoration: underline; }
 /* Smooth panel transitions */
-.panel { animation: fadeUp 0.2s ease both; }
+.panel { animation: fadeUp 0.2s ease both; overflow-x: hidden; max-width: 100%; }
 @keyframes beeFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-14px) rotate(5deg)} }
 @keyframes splashPulse { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.05)} }
 @keyframes loadBar { from{width:0%} to{width:100%} }
@@ -204,7 +213,7 @@ body {
   width: 100%; padding: 14px 16px;
   background: #0a0a0a; border: 1.5px solid #1a1a1a;
   border-radius: 12px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  font-family: 'DM Sans', sans-serif; font-size: 16px; outline: none;
   transition: border-color 0.2s;
 }
 .field input:focus { border-color: var(--gold); background: #0d0a00; }
@@ -346,9 +355,13 @@ body {
 /* Stories */
 .stories-bar {
   display: flex; gap: 10px;
-  overflow-x: auto; scrollbar-width: none;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding: 10px 0 14px;
+  /* Contain horizontal scroll to this element only */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .stories-bar::-webkit-scrollbar { display: none; }
 /* Each story card item */
@@ -794,7 +807,7 @@ body {
 .comment-input {
   flex: 1; background: #111; border: 1px solid #1e1e1e;
   border-radius: 22px; padding: 9px 16px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  font-family: 'DM Sans', sans-serif; font-size: 16px; outline: none;
   transition: border-color 0.2s;
 }
 .comment-input:focus { border-color: rgba(246,194,26,0.4); }
@@ -828,7 +841,7 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 }
 .search-box input {
   background: none; border: none; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; flex: 1;
+  font-family: 'DM Sans', sans-serif; font-size: 16px; outline: none; flex: 1;
 }
 .search-box input::placeholder { color: var(--muted); }
 
@@ -1035,7 +1048,7 @@ body.light .profile-tab-btn.active { color: #0a0a0a; }
 .chat-input {
   flex: 1; background: #111; border: 1px solid var(--border);
   border-radius: 50px; padding: 10px 18px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  font-family: 'DM Sans', sans-serif; font-size: 16px; outline: none;
 }
 .chat-send {
   padding: 10px 20px; background: var(--gold); border: none;
@@ -1471,7 +1484,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </button>
           <input type="file" id="dm-image-upload" accept="image/*" style="display:none" onchange="sendImageDM(this)">
           <div id="chat-input-wrap" style="flex:1;display:flex;align-items:center;background:#111;border:1.5px solid #1e1e1e;border-radius:24px;padding:9px 16px;gap:8px;transition:border-color 0.2s" onfocusin="this.style.borderColor='rgba(246,194,26,0.4)'" onfocusout="this.style.borderColor='#1e1e1e'">
-            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-width:0">
+            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;min-width:0">
           </div>
           <button id="chat-send-btn" onclick="sendMessage()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#F6C21A;border:none;color:#000;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 2px 12px rgba(246,194,26,0.3)" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1532,7 +1545,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </button>
           <input type="file" id="dm-image-upload" accept="image/*" style="display:none" onchange="sendImageDM(this)">
           <div id="chat-input-wrap" style="flex:1;display:flex;align-items:center;background:#111;border:1.5px solid #1e1e1e;border-radius:24px;padding:9px 16px;gap:8px;transition:border-color 0.2s" onfocusin="this.style.borderColor='rgba(246,194,26,0.4)'" onfocusout="this.style.borderColor='#1e1e1e'">
-            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-width:0">
+            <input id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="onChatInput(this)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;min-width:0">
           </div>
           <button id="chat-send-btn" onclick="sendMessage()" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:#F6C21A;border:none;color:#000;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 2px 12px rgba(246,194,26,0.3)" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1685,7 +1698,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     <!-- Text -->
     <div style="margin-bottom:16px">
-      <input id="vibe-text" placeholder="Add a message... (optional)" oninput="updateVibePreview()" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input id="vibe-text" placeholder="Add a message... (optional)" oninput="updateVibePreview()" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
 
     <!-- Color picker -->
@@ -1766,11 +1779,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     </div>
     <div class="field" style="margin-bottom:12px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Group Name</label>
-      <input type="text" id="group-name" placeholder="e.g. The Squad, Work Crew..." style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="group-name" placeholder="e.g. The Squad, Work Crew..." style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div class="field" style="margin-bottom:20px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Description (optional)</label>
-      <input type="text" id="group-desc" placeholder="What's this group about?" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="group-desc" placeholder="What's this group about?" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <button onclick="createGroup()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Create Group 🍯</button>
   </div>
@@ -1785,7 +1798,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     </div>
     <div class="search-box" style="margin-bottom:16px">
       <span>🔍</span>
-      <input placeholder="Search users to invite..." id="invite-search" oninput="searchUsersToInvite(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;flex:1">
+      <input placeholder="Search users to invite..." id="invite-search" oninput="searchUsersToInvite(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;flex:1">
     </div>
     <div id="invite-results"></div>
   </div>
@@ -1848,13 +1861,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     </div>
     <div class="field" style="margin-bottom:16px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Question</label>
-      <input type="text" id="poll-question" placeholder="What's your vibe today?" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="poll-question" placeholder="What's your vibe today?" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div id="poll-options-list" style="margin-bottom:8px"></div>
     <button onclick="addPollOption()" id="add-poll-option-btn" style="background:none;border:1.5px dashed var(--border);color:var(--gold);padding:10px;border-radius:12px;width:100%;font-size:13px;cursor:pointer;margin-bottom:20px;font-family:'Syne',sans-serif;font-weight:700">+ Add option</button>
     <div class="field" style="margin-bottom:20px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Poll runs for</label>
-      <select id="poll-duration" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <select id="poll-duration" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
         <option value="1">1 day</option>
         <option value="3" selected>3 days</option>
         <option value="7">7 days</option>
@@ -1982,7 +1995,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     <div style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6">Enter your email address and we'll send you a link to reset your password.</div>
     <div class="field" style="margin-bottom:20px">
       <label>Email Address</label>
-      <input type="email" id="reset-email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="email" id="reset-email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div id="reset-message" style="display:none;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:10px 14px;color:#00FF88;font-size:13px;margin-bottom:16px"></div>
     <div id="reset-error" style="display:none;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:10px 14px;color:#ff6b6b;font-size:13px;margin-bottom:16px"></div>
@@ -2001,13 +2014,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     <div class="field" style="margin-bottom:12px">
       <label>New Password</label>
       <div style="position:relative">
-        <input type="password" id="new-password" placeholder="Min. 8 characters" style="width:100%;padding:14px 44px 14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <input type="password" id="new-password" placeholder="Min. 8 characters" style="width:100%;padding:14px 44px 14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
         <button type="button" onclick="togglePassVisibility('new-password',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:16px;cursor:pointer">👁</button>
       </div>
     </div>
     <div class="field" style="margin-bottom:24px">
       <label>Confirm Password</label>
-      <input type="password" id="confirm-password" placeholder="Repeat your password" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="password" id="confirm-password" placeholder="Repeat your password" style="width:100%;padding:14px 16px;background:#0a0a0a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div id="new-password-error" style="display:none;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:10px 14px;color:#ff6b6b;font-size:13px;margin-bottom:16px"></div>
     <button onclick="saveNewPassword()" id="save-password-btn" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Save New Password 🐝</button>
@@ -2040,7 +2053,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:#111;border-radius:0 0 0 0">
       <div style="display:flex;gap:8px;align-items:flex-end">
         <div style="flex:1;background:#1a1a1a;border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
-          <textarea id="hivemind-input" placeholder="Ask HiveMind anything..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHiveMind()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" style="width:100%;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none;line-height:1.5"></textarea>
+          <textarea id="hivemind-input" placeholder="Ask HiveMind anything..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHiveMind()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" style="width:100%;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none;line-height:1.5"></textarea>
         </div>
         <button onclick="sendHiveMind()" id="hivemind-send-btn" style="width:42px;height:42px;min-width:42px;border-radius:50%;background:var(--gold);border:none;color:#000;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
       </div>
@@ -2137,26 +2150,26 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     </div>
     <div class="field" style="margin-bottom:16px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Full Name</label>
-      <input type="text" id="edit-name" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="edit-name" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div class="field" style="margin-bottom:16px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Username</label>
-      <input type="text" id="edit-username" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="edit-username" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <div class="field" style="margin-bottom:24px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Bio</label>
-      <textarea id="edit-bio" rows="3" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea>
+      <textarea id="edit-bio" rows="3" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none"></textarea>
     </div>
     <div class="field" style="margin-bottom:24px">
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">📍 Location</label>
-      <input type="text" id="edit-location" placeholder="e.g. Johannesburg" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      <input type="text" id="edit-location" placeholder="e.g. Johannesburg" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none">
     </div>
     <button onclick="saveProfile()" style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer" id="save-profile-btn">Save Changes</button>
   </div>
 </div>
 
 <!-- SPLASH -->
-<div id="splash">
+<div id="splash" style="overflow:hidden">
   <!-- Honeycomb background pattern -->
   <div style="position:absolute;inset:0;opacity:0.06;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2252%22><polygon points=%2215,2 45,2 58,25 45,48 15,48 2,25%22 fill=%22none%22 stroke=%22%23F5C518%22 stroke-width=%221.5%22/></svg>');background-size:60px 52px"></div>
 
@@ -2426,7 +2439,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </div>
           <div class="search-box" style="margin-bottom:16px">
             <span>🔍</span>
-            <input id="gif-search-input" placeholder="Search GIFs..." oninput="searchGifs(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;flex:1">
+            <input id="gif-search-input" placeholder="Search GIFs..." oninput="searchGifs(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;flex:1">
           </div>
           <div id="gif-results" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
         </div>
@@ -2492,7 +2505,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <!-- Search bar -->
         <div class="search-box" style="margin:0">
           <span>🔍</span>
-          <input placeholder="Search Hive…" id="explore-search" oninput="searchUsers(this.value)" style="font-size:15px">
+          <input placeholder="Search Hive…" id="explore-search" oninput="searchUsers(this.value)" style="font-size:16px">
         </div>
         <!-- Category chips -->
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none">
@@ -2600,7 +2613,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div style="padding:12px 16px">
           <div class="search-box">
             <span>🔍</span>
-            <input id="dm-search" placeholder="Search conversations..." oninput="searchUsersForDM(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;flex:1">
+            <input id="dm-search" placeholder="Search conversations..." oninput="searchUsersForDM(this.value)" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;flex:1">
           </div>
           <div id="dm-search-results" style="margin-top:8px"></div>
         </div>
@@ -2618,7 +2631,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div style="padding:16px 20px">
           <div class="search-box">
             <span>🔍</span>
-            <input id="new-dm-search" placeholder="Search people to message..." oninput="searchUsersForDM(this.value,'new-dm-results')" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;flex:1">
+            <input id="new-dm-search" placeholder="Search people to message..." oninput="searchUsersForDM(this.value,'new-dm-results')" style="background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;flex:1">
           </div>
           <div id="new-dm-results" style="margin-top:12px"></div>
         </div>
