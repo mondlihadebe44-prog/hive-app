@@ -360,17 +360,34 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .story-item:active { transform: scale(0.93); }
-/* Outer hex container — HONEYDEW border for active/unwatched */
+
+/* ── Hex story card ─────────────────────────────────────
+   The outer .story-card is clipped to the hex polygon.
+   Its background is the conic honeydew gradient — this
+   IS the border you see (the thin ring around the inner hex).
+   No circular container anywhere.
+───────────────────────────────────────────────────────── */
 .story-card {
   width: 88px; height: 120px;
   position: relative; flex-shrink: 0;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  background: linear-gradient(160deg, #B9FFA3 0%, #7FE868 100%);
+  /* Conic gradient cycles through all 5 Honeydew shades —
+     wraps around the hex shape naturally */
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #B9FFA3 0%,
+    #C9FFA3 20%,
+    #D9FFA3 40%,
+    #E9FFA3 60%,
+    #F9FFA3 80%,
+    #B9FFA3 100%
+  );
   display: flex; align-items: center; justify-content: center;
-  transition: filter 0.2s, background 0.2s;
-  filter: drop-shadow(0 0 6px rgba(185,255,163,0.35));
+  transition: filter 0.25s, background 0.25s;
+  filter: drop-shadow(0 0 7px rgba(185,255,163,0.45));
 }
-/* Inner hex — dark gap between border and content */
+
+/* Inner hex — 3px dark inset, clips all content to hex */
 .story-card-inner {
   width: calc(100% - 6px); height: calc(100% - 6px);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
@@ -379,31 +396,50 @@ body {
   overflow: hidden;
   position: relative;
 }
-/* Content inside: fills inner hex */
+
+/* Content fills inner hex */
 .story-card-inner img,
 .story-card-inner video {
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
 }
-/* Default background with emoji when no media */
+
+/* No-media placeholder */
 .story-card-bg {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   font-size: 32px;
   background: #1a1a1a;
 }
-/* Viewed state — muted honeydew so distinction is clear */
+
+/* Viewed — all segments watched: muted dark-green, no glow */
 .story-card.viewed {
-  background: #2e3d2a;
-  filter: brightness(0.7);
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #243320 0%,
+    #2a3d26 33%,
+    #2e4429 66%,
+    #243320 100%
+  );
+  filter: brightness(0.65);
 }
-/* Your Vibe card — honeydew accent + gold + button */
+
+/* Your Vibe — same honeydew gradient as active */
 .story-card.my-vibe {
-  background: linear-gradient(160deg, #B9FFA3 0%, #7FE868 100%);
-  filter: drop-shadow(0 0 6px rgba(185,255,163,0.3));
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #B9FFA3 0%,
+    #C9FFA3 20%,
+    #D9FFA3 40%,
+    #E9FFA3 60%,
+    #F9FFA3 80%,
+    #B9FFA3 100%
+  );
+  filter: drop-shadow(0 0 7px rgba(185,255,163,0.4));
 }
-/* + button overlay — gold, keeps Hive identity */
+
+/* Gold + button on Your Vibe — keeps Hive gold identity */
 .story-add-btn {
   position: absolute; bottom: 10px; left: 50%;
   transform: translateX(-50%);
@@ -415,7 +451,8 @@ body {
   z-index: 5;
   pointer-events: none;
 }
-/* Username overlay at bottom of card */
+
+/* Name overlay inside card */
 .story-card-label {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 18px 4px 6px;
@@ -428,7 +465,11 @@ body {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   display: block;
 }
-/* Segment dots strip below the card */
+
+/* ── Segment indicator strip ────────────────────────────
+   Sits below the card. N dots = N Vibe Checks.
+   Unwatched = honeydew bright. Watched = muted dark.
+───────────────────────────────────────────────────────── */
 .story-segs {
   display: flex; gap: 3px; align-items: center;
   justify-content: center;
@@ -437,11 +478,20 @@ body {
 .story-seg-dot {
   height: 3px; border-radius: 2px; flex: 1;
   max-width: 18px; min-width: 4px;
-  background: #B9FFA3;
+  /* Each dot picks a shade from the honeydew range via nth-child */
+  background: #C9FFA3;
   transition: background 0.2s;
 }
-.story-seg-dot.viewed { background: #2e4a28; }
-/* Card name below segments */
+.story-seg-dot:nth-child(5n+1) { background: #B9FFA3; }
+.story-seg-dot:nth-child(5n+2) { background: #C9FFA3; }
+.story-seg-dot:nth-child(5n+3) { background: #D9FFA3; }
+.story-seg-dot:nth-child(5n+4) { background: #E9FFA3; }
+.story-seg-dot:nth-child(5n+5) { background: #F9FFA3; }
+.story-seg-dot.viewed {
+  background: #2a3d26 !important;
+}
+
+/* Card username label below segs */
 .story-name {
   font-size: 11px; color: #aaa;
   font-family: 'DM Sans', sans-serif;
