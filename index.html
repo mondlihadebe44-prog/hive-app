@@ -3581,7 +3581,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   function handleTouchStart(btn, postId) {
-    touchTimer = setTimeout(() => showReactions(btn), 500);
+    touchTimer = setTimeout(() => { hiveHaptic('light'); showReactions(btn); }, 500);
   }
 
   function handleTouchEnd(btn) {
@@ -3590,6 +3590,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   async function react(postId, reaction, btn) {
     if (!currentUser) { showToast('Sign in to react!'); return; }
+    hiveHaptic('selection');
     const emoji = reactionEmojis[reaction];
     const countEl = btn.querySelector('.like-count');
     const icon = btn.querySelector('.action-icon');
@@ -3600,6 +3601,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       await sb.from('likes').update({ reaction }).eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
       btn.classList.add('liked');
+      hiveHaptic('light');
       countEl.textContent = parseInt(countEl.textContent || 0) + 1;
       await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id, reaction });
       const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
@@ -3612,7 +3614,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     showToast('Reacted with ' + emoji);
   }
 
-  async function toggleLike(btn, postId) {
+  async   // ── Hive Haptic Helper ──────────────────────────────────────
+  // Progressive enhancement: fails silently on unsupported devices.
+  // Patterns are intentionally short and subtle.
+  function hiveHaptic(type = 'light') {
+    if (!navigator.vibrate) return;
+    try {
+      const patterns = {
+        light:     [8],
+        medium:    [12],
+        success:   [8, 40, 12],
+        selection: [6],
+      };
+      navigator.vibrate(patterns[type] || patterns.light);
+    } catch(e) {}
+  }
+  // ─────────────────────────────────────────────────────────────
+
+  function toggleLike(btn, postId) {
     if (!currentUser) { showToast('Sign in to react!'); return; }
     if (btn.dataset.liking === '1') return; // debounce rapid taps
     btn.dataset.liking = '1';
@@ -3624,6 +3643,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (isLiked) {
       btn.classList.remove('liked');
       countEl.textContent = Math.max(0, count - 1);
+      hiveHaptic('light');
       await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
     } else {
       btn.classList.add('liked');
@@ -3668,10 +3688,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     btn.classList.toggle('following');
     if (isFollowing) {
       btn.textContent = 'Follow';
+      hiveHaptic('light');
       await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
       showToast('Unfollowed');
     } else {
       btn.textContent = 'Following';
+      hiveHaptic('success');
       await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
       if (userId !== currentUser.id) await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
       showToast('Now following! 🐝');
@@ -4051,6 +4073,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     composerDraft = '';
     closeComposer();
+    hiveHaptic('success');
     showToast('Vibe posted! 🐝✨');
     const container = document.getElementById('posts-container');
     const empty = container.querySelector('.empty-wrap');
@@ -5296,6 +5319,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       if (post && post.user_id !== currentUser.id) {
         await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'repost', post_id: postId });
       }
+      hiveHaptic('success');
       showToast('Rebuzzed! 🔁🐝');
     }
   }
@@ -6896,6 +6920,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (x < width / 2) {
       // Tap left — go back within group or to previous group
       if (currentVibeIndex > 0) {
+        hiveHaptic('selection');
         currentVibeIndex--;
         openVibeViewer(group.vibes[currentVibeIndex], group.vibes, groupIdx);
       } else if (groupIdx > 0) {
@@ -6907,6 +6932,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     } else {
       // Tap right — go forward within group or to next group
       if (currentVibeIndex < group.vibes.length - 1) {
+        hiveHaptic('selection');
         currentVibeIndex++;
         openVibeViewer(group.vibes[currentVibeIndex], group.vibes, groupIdx);
       } else {
@@ -7306,10 +7332,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const isBookmarked = btn.classList.contains('bookmarked');
     if (isBookmarked) {
       btn.classList.remove('bookmarked');
+      hiveHaptic('light');
       await sb.from('bookmarks').delete().eq('post_id', postId).eq('user_id', currentUser.id);
       showToast('Bookmark removed');
     } else {
       btn.classList.add('bookmarked');
+      hiveHaptic('light');
       await sb.from('bookmarks').insert({ post_id: postId, user_id: currentUser.id });
       showToast('Saved! 🔖');
     }
