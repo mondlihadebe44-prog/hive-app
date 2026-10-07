@@ -4575,7 +4575,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.getElementById('gif-picker-modal').style.display = 'none';
   }
 
-  function searchGifs(query) {
+  async function searchGifs(query) {
     clearTimeout(gifSearchTimeout);
     gifSearchTimeout = setTimeout(async () => {
       const results = document.getElementById('gif-results');
@@ -5676,7 +5676,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   // Check if returning from PayFast payment
-  function checkPaymentReturn() {
+  async function checkPaymentReturn() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       showToast('Payment received! Activating Hive Pro... 👑');
@@ -7880,7 +7880,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }
   }
 
-  function previewOnboardAvatar(input) {
+  async function previewOnboardAvatar(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
