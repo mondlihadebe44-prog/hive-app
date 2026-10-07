@@ -2863,24 +2863,44 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 <script>
   const SUPABASE_URL = 'https://yaqdplheuddatviwaijl.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk';
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Safety net: if anything throws during init, always dismiss the splash
+  function dismissSplash() {
+    const splashEl = document.getElementById('splash');
+    const authEl = document.getElementById('auth');
+    if (splashEl) splashEl.style.display = 'none';
+    if (authEl && authEl.style.display === 'none') authEl.style.display = 'flex';
+  }
+  // Hard fallback — splash gone within 5s no matter what
+  setTimeout(dismissSplash, 5000);
+
+  let sb;
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch(e) {
+    dismissSplash();
+    console.error('Supabase failed to load:', e);
+  }
 
   let currentUser = null;
   let currentProfile = null;
 
   // INIT
   setTimeout(function() {
-    checkPasswordReset();
-    document.getElementById('splash').style.display = 'none';
-    document.getElementById('auth').style.display = 'flex';
+    try {
+      checkPasswordReset();
+    } catch(e) {}
+    dismissSplash();
+    if (!sb) return; // Supabase unavailable — stay on auth screen
     sb.auth.getSession().then(function(result) {
       if (result.data && result.data.session) {
         currentUser = result.data.session.user;
         loadProfile().then(function() { showApp(); });
       }
-    });
+    }).catch(function() { dismissSplash(); });
 
     // Listen for session changes (sign in, sign out, token refresh, expiry)
+    if (!sb) return;
     sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         currentUser = session.user;
