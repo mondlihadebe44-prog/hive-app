@@ -2868,8 +2868,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   function dismissSplash() {
     const splashEl = document.getElementById('splash');
     const authEl = document.getElementById('auth');
+    const appEl = document.getElementById('app');
     if (splashEl) splashEl.style.display = 'none';
-    if (authEl && authEl.style.display === 'none') authEl.style.display = 'flex';
+    // Show auth only if the main app isn't already visible
+    const appVisible = appEl && appEl.style.display && appEl.style.display !== 'none';
+    if (authEl && !appVisible) authEl.style.display = 'flex';
   }
   // Hard fallback — splash gone within 5s no matter what
   setTimeout(dismissSplash, 5000);
