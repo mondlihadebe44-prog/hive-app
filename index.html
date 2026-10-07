@@ -346,6 +346,7 @@ body {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   z-index: 50; padding: 16px 20px 0;
+  padding-top: calc(16px + env(safe-area-inset-top));
 }
 .feed-title {
   font-family: 'Syne', sans-serif;
@@ -871,6 +872,7 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
   background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 16px 20px; z-index: 50;
+  padding-top: calc(16px + env(safe-area-inset-top));
   display: flex; align-items: center; justify-content: space-between;
 }
 .panel-title {
@@ -1028,6 +1030,7 @@ body.light .profile-tab-btn.active { color: #0a0a0a; }
 .chat-view.active { display: flex; }
 .chat-header {
   padding: 16px 20px; border-bottom: 1px solid var(--border);
+  padding-top: calc(16px + env(safe-area-inset-top));
   display: flex; align-items: center; gap: 12px;
   background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
   position: sticky; top: 0; z-index: 50;
