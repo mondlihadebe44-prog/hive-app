@@ -3516,6 +3516,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div class="quote-container" id="quote-container-${post.id}"></div>
         ${renderPostMedia(post)}
         <div class="poll-container" id="poll-container-${post.id}"></div>
+        <div class="rebuzz-attr" style="display:none;font-size:12px;color:#4ECDC4;margin:2px 0 6px"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
             <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
@@ -5428,6 +5429,18 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     input.value = '';
   }
 
+  // IDs of people the viewer follows, cached briefly so feed cards don't each re-query
+  let followedCache = { forUser: null, at: 0, ids: new Set() };
+  async function getFollowedIds() {
+    if (!currentUser) return new Set();
+    const fresh = Date.now() - followedCache.at < 60000;
+    if (followedCache.forUser !== currentUser.id || !fresh) {
+      const { data } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+      followedCache = { forUser: currentUser.id, at: Date.now(), ids: new Set((data || []).map(f => f.following_id)) };
+    }
+    return followedCache.ids;
+  }
+
   async function loadRepostCount(postId, card) {
     const { count } = await sb.from('reposts').select('*', { count: 'exact', head: true }).eq('post_id', postId);
     const el = card.querySelector('.repost-count');
@@ -5436,28 +5449,64 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const { data } = await sb.from('reposts').select('id').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle();
       if (data) { const btn = card.querySelector('.repost-btn'); if (btn) { btn.style.color = '#4ECDC4'; } }
     }
+
+    // Feed attribution: "Rebuzzed by <someone you follow>" (text only, never HTML)
+    const attr = card.querySelector('.rebuzz-attr');
+    if (attr && currentUser) {
+      const { data: rows } = await sb.from('reposts').select('user_id').eq('post_id', postId).neq('user_id', currentUser.id).limit(50);
+      const followed = await getFollowedIds();
+      const friend = (rows || []).find(r => followed.has(r.user_id));
+      if (friend) {
+        const { data: prof } = await sb.from('profiles').select('username,full_name').eq('id', friend.user_id).maybeSingle();
+        attr.textContent = '🔁 Rebuzzed by ' + (prof?.full_name || prof?.username || 'someone you follow');
+        attr.style.display = 'block';
+      }
+    }
   }
+
+  const rebuzzBusy = new Set();
 
   async function toggleRepost(btn, postId) {
     if (!currentUser) { showToast('Sign in to rebuzz!'); return; }
-    const isReposted = btn.style.color === 'rgb(78, 205, 196)';
+    // Ignore repeated taps while this post's Rebuzz is still saving
+    if (rebuzzBusy.has(postId)) return;
+    rebuzzBusy.add(postId);
+
+    const wasReposted = btn.style.color === 'rgb(78, 205, 196)';
     const countEl = btn.querySelector('.repost-count');
     const count = parseInt(countEl.textContent) || 0;
-    if (isReposted) {
-      btn.style.color = ''; countEl.textContent = Math.max(0, count - 1);
-      await sb.from('reposts').delete().eq('post_id', postId).eq('user_id', currentUser.id);
-      showToast('Rebuzz removed');
+    const applyUI = (reposted, n) => { btn.style.color = reposted ? '#4ECDC4' : ''; countEl.textContent = Math.max(0, n); };
+    applyUI(!wasReposted, wasReposted ? count - 1 : count + 1);
+    btn.style.opacity = '0.6';
+
+    let error = null;
+    let alreadyHad = false;
+    if (wasReposted) {
+      ({ error } = await sb.from('reposts').delete().eq('post_id', postId).eq('user_id', currentUser.id));
     } else {
-      btn.style.color = '#4ECDC4'; countEl.textContent = count + 1;
-      await sb.from('reposts').insert({ post_id: postId, user_id: currentUser.id });
-      // Notify post owner
-      const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
-      if (post && post.user_id !== currentUser.id) {
-        await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'repost', post_id: postId });
-      }
-      hiveHaptic('success');
-      showToast('Rebuzzed! 🔁🐝');
+      ({ error } = await sb.from('reposts').insert({ post_id: postId, user_id: currentUser.id }));
+      // 23505 = already rebuzzed (e.g. from another tab): keep it, but don't notify again
+      if (error && error.code === '23505') { error = null; alreadyHad = true; }
     }
+
+    rebuzzBusy.delete(postId);
+    btn.style.opacity = '';
+    if (error) {
+      applyUI(wasReposted, count); // put back what the database still has
+      console.error('Rebuzz failed:', error);
+      showToast("Couldn't update your Rebuzz. Please try again.");
+      return;
+    }
+    if (wasReposted) { showToast('Rebuzz removed'); return; }
+    if (alreadyHad) return;
+
+    // Notify post owner (new Rebuzz only)
+    const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
+    if (post && post.user_id !== currentUser.id) {
+      await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'repost', post_id: postId });
+    }
+    hiveHaptic('success');
+    showToast('Rebuzzed! 🔁🐝');
   }
 
   // REPOST MENU (Rebuzz vs Quote)
@@ -5468,12 +5517,13 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (activeRepostMenu) { activeRepostMenu.remove(); activeRepostMenu = null; }
 
     const isReposted = btn.style.color === 'rgb(78, 205, 196)';
+    const menuLabel = (icon, title, sub) => `<span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left"><span style="font-weight:600">${icon} ${title}</span><span style="font-size:12px;color:var(--muted)">${sub}</span></span>`;
     const menu = document.createElement('div');
     menu.style.cssText = 'position:absolute;bottom:38px;left:0;background:#1a1a1a;border:1px solid var(--border);border-radius:16px;padding:8px;z-index:200;min-width:170px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
 
     const rebuzzBtn = document.createElement('button');
     rebuzzBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    rebuzzBtn.innerHTML = isReposted ? '🔁 Undo Rebuzz' : '🔁 Rebuzz';
+    rebuzzBtn.innerHTML = isReposted ? menuLabel('🔁', 'Undo Rebuzz', 'Remove your Rebuzz') : menuLabel('🔁', 'Rebuzz', 'Share this post');
     rebuzzBtn.onmouseover = () => rebuzzBtn.style.background = 'rgba(255,255,255,0.06)';
     rebuzzBtn.onmouseout = () => rebuzzBtn.style.background = 'none';
     rebuzzBtn.onclick = (e) => { e.stopPropagation(); toggleRepost(btn, postId); menu.remove(); activeRepostMenu = null; };
@@ -5481,7 +5531,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     const quoteBtn = document.createElement('button');
     quoteBtn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;cursor:pointer;border-radius:10px;transition:background 0.2s';
-    quoteBtn.innerHTML = '✏️ Quote';
+    quoteBtn.innerHTML = menuLabel('✏️', 'Quote', 'Share with your thoughts');
     quoteBtn.onmouseover = () => quoteBtn.style.background = 'rgba(255,255,255,0.06)';
     quoteBtn.onmouseout = () => quoteBtn.style.background = 'none';
     quoteBtn.onclick = (e) => { e.stopPropagation(); menu.remove(); activeRepostMenu = null; openQuoteComposer(postId); };
@@ -5513,13 +5563,14 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     if (post) {
       const p = post.profiles || {};
       const name = p.full_name || 'Unknown';
-      const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : name[0].toUpperCase();
+      const esc = (t) => Object.assign(document.createElement('span'), { textContent: t || '' }).outerHTML;
+      const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : esc(name[0].toUpperCase());
       document.getElementById('quote-original-post').innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div style="width:28px;height:28px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${esc(name)}</div>
         </div>
-        <div style="font-size:14px;color:#aaa;line-height:1.5">${post.body || ''}</div>
+        <div style="font-size:14px;color:#aaa;line-height:1.5">${esc(post.body)}</div>
         ${post.image_url ? `<img src="${post.image_url}" style="width:100%;border-radius:10px;margin-top:8px;max-height:160px;object-fit:cover">` : ''}`;
     }
 
