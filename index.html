@@ -3761,6 +3761,19 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       .eq('post_id', postId)
       .order('created_at', { ascending });
 
+    // Comment likes come from comment_likes: per-comment count and whether I liked it
+    const likeCounts = {};
+    const likedByMe = new Set();
+    const commentIds = (comments || []).map(c => c.id);
+    if (commentIds.length) {
+      const { data: likeRows, error: likeErr } = await sb.from('comment_likes').select('comment_id,user_id').in('comment_id', commentIds);
+      if (likeErr) console.error('Could not load comment likes:', likeErr);
+      (likeRows || []).forEach(r => {
+        likeCounts[r.comment_id] = (likeCounts[r.comment_id] || 0) + 1;
+        if (currentUser && r.user_id === currentUser.id) likedByMe.add(r.comment_id);
+      });
+    }
+
     list.innerHTML = '';
     if (!comments || comments.length === 0) {
       list.innerHTML = '<div style="color:#555;font-size:13px;padding:12px 16px">No comments yet — be the first! 🐝</div>';
@@ -3769,7 +3782,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     // Sort by top (most liked) — using like_count if available, else just show all
     let sorted = [...comments];
-    if (sort === 'top') sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+    if (sort === 'top') sorted.sort((a, b) => (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0));
 
     // Pinned first
     const pinned = sorted.filter(c => c.pinned);
@@ -3795,6 +3808,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
     ordered.forEach(({ c, isReply }, idx) => {
       const p = c.profiles || {};
+      const liked = likedByMe.has(c.id);
       const name = p.full_name || p.username || 'Unknown';
       const badge = p.verified ? `<svg style="display:inline-block;vertical-align:middle;margin-left:2px" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#1877F2"/><circle cx="10" cy="10" r="9" fill="none" stroke="#F6C21A" stroke-width="1.5"/><path d="M6.5 10L8.5 12L13.5 7.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 
@@ -3819,9 +3833,9 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </div>
           <div class="comment-text">${formatBody(c.body || '')}</div>
           <div class="comment-actions">
-            <button class="comment-action-btn like-comment-btn" onclick="likeComment(this,'${c.id}')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-              <span>${c.like_count || 0}</span>
+            <button class="comment-action-btn like-comment-btn${liked ? ' liked' : ''}" onclick="likeComment(this,'${c.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="${liked ? '#ff4d6d' : 'none'}" stroke="${liked ? '#ff4d6d' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              <span>${likeCounts[c.id] || 0}</span>
             </button>
             <button class="comment-action-btn" onclick="replyToComment('${postId}','${c.id}','${name}','${c.user_id}')">Reply</button>
             ${currentUser && c.user_id === currentUser.id ? `<button class="comment-action-btn" onclick="deleteComment('${c.id}','${postId}')" style="color:#444">Delete</button>` : ''}
@@ -3831,19 +3845,41 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     });
   }
 
+  const commentLikeBusy = new Set();
+
+  function applyCommentLikeUI(btn, liked, count) {
+    btn.classList.toggle('liked', liked);
+    btn.querySelector('span').textContent = Math.max(0, count);
+    const svg = btn.querySelector('svg');
+    svg.style.fill = liked ? '#ff4d6d' : 'none';
+    svg.style.stroke = liked ? '#ff4d6d' : 'currentColor';
+  }
+
   async function likeComment(btn, commentId) {
     if (!currentUser) { showToast('Sign in to like!'); return; }
-    btn.classList.toggle('liked');
-    const countEl = btn.querySelector('span');
-    const count = parseInt(countEl.textContent) || 0;
-    if (btn.classList.contains('liked')) {
-      countEl.textContent = count + 1;
-      btn.querySelector('svg').style.fill = '#ff4d6d';
-      btn.querySelector('svg').style.stroke = '#ff4d6d';
+    // Ignore rapid taps while this comment's like is still saving
+    if (commentLikeBusy.has(commentId)) return;
+    commentLikeBusy.add(commentId);
+
+    const wasLiked = btn.classList.contains('liked');
+    const count = parseInt(btn.querySelector('span').textContent) || 0;
+    applyCommentLikeUI(btn, !wasLiked, wasLiked ? count - 1 : count + 1);
+
+    let error = null;
+    if (wasLiked) {
+      ({ error } = await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id));
     } else {
-      countEl.textContent = Math.max(0, count - 1);
-      btn.querySelector('svg').style.fill = 'none';
-      btn.querySelector('svg').style.stroke = 'currentColor';
+      ({ error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: currentUser.id }));
+      // 23505 = already liked (e.g. from another tab): the database already has the like, so keep it
+      if (error && error.code === '23505') error = null;
+    }
+
+    commentLikeBusy.delete(commentId);
+    if (error) {
+      // Put back the state the database still has
+      applyCommentLikeUI(btn, wasLiked, count);
+      console.error('Comment like failed:', error);
+      showToast("Couldn't save your like. Please try again.");
     }
   }
 
