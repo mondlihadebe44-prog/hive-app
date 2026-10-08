@@ -3776,7 +3776,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const rest = sorted.filter(c => !c.pinned);
     const final = [...pinned, ...rest];
 
-    final.forEach((c, idx) => {
+    // Replies (reply_to set) render directly under their top-level comment, indented
+    const byId = new Map(final.map(c => [c.id, c]));
+    const rootOf = c => { let cur = c, guard = 0; while (cur.reply_to && byId.has(cur.reply_to) && guard++ < 50) cur = byId.get(cur.reply_to); return cur; };
+    const topLevel = final.filter(c => !c.reply_to || !byId.has(c.reply_to));
+    const replyMap = new Map();
+    final.filter(c => c.reply_to && byId.has(c.reply_to)).forEach(c => {
+      const r = rootOf(c).id;
+      if (!replyMap.has(r)) replyMap.set(r, []);
+      replyMap.get(r).push(c);
+    });
+    const ordered = [];
+    topLevel.forEach(c => {
+      ordered.push({ c, isReply: false });
+      (replyMap.get(c.id) || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .forEach(r => ordered.push({ c: r, isReply: true }));
+    });
+
+    ordered.forEach(({ c, isReply }, idx) => {
       const p = c.profiles || {};
       const name = p.full_name || p.username || 'Unknown';
       const badge = p.verified ? `<svg style="display:inline-block;vertical-align:middle;margin-left:2px" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#1877F2"/><circle cx="10" cy="10" r="9" fill="none" stroke="#F6C21A" stroke-width="1.5"/><path d="M6.5 10L8.5 12L13.5 7.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
@@ -3784,6 +3801,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const div = document.createElement('div');
       div.className = 'comment' + (c.pinned ? ' pinned' : '');
       div.style.animationDelay = `${idx * 0.04}s`;
+      if (isReply) { div.classList.add('comment-reply'); div.style.marginLeft = '28px'; }
 
       const avatarHTML = p.avatar_url
         ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
@@ -3805,7 +3823,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
               <span>${c.like_count || 0}</span>
             </button>
-            <button class="comment-action-btn" onclick="replyToComment('${postId}','${c.id}','${name}')">Reply</button>
+            <button class="comment-action-btn" onclick="replyToComment('${postId}','${c.id}','${name}','${c.user_id}')">Reply</button>
             ${currentUser && c.user_id === currentUser.id ? `<button class="comment-action-btn" onclick="deleteComment('${c.id}','${postId}')" style="color:#444">Delete</button>` : ''}
           </div>
         </div>`;
@@ -3829,13 +3847,48 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }
   }
 
-  function replyToComment(postId, commentId, name) {
+  function setCommentReply(postId, commentId, userId, name) {
+    const input = document.getElementById('comment-input-' + postId);
+    if (!input) return;
+    input.dataset.replyTo = commentId;
+    input.dataset.replyToUser = userId || '';
+    input.dataset.replyToName = name || '';
+    let bar = document.getElementById('comment-reply-state-' + postId);
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'comment-reply-state-' + postId;
+      bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 16px;font-size:12px;color:var(--gold);background:#0d0d0d;border-top:1px solid #111';
+      const label = document.createElement('span');
+      label.className = 'comment-reply-label';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.textContent = 'Cancel';
+      cancel.style.cssText = 'background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 8px';
+      cancel.onclick = () => cancelCommentReply(postId);
+      bar.append(label, cancel);
+      input.parentNode.insertBefore(bar, input);
+    }
+    bar.querySelector('.comment-reply-label').textContent = 'Replying to @' + (name || 'user');
+  }
+
+  function clearCommentReply(input, postId) {
+    delete input.dataset.replyTo;
+    delete input.dataset.replyToUser;
+    delete input.dataset.replyToName;
+    document.getElementById('comment-reply-state-' + postId)?.remove();
+  }
+
+  function cancelCommentReply(postId) {
+    const input = document.getElementById('comment-input-' + postId);
+    if (input) clearCommentReply(input, postId);
+  }
+
+  function replyToComment(postId, commentId, name, userId) {
     const input = document.getElementById('comment-input-' + postId);
     if (!input) return;
     input.value = `@${name.replace(' ', '')} `;
+    setCommentReply(postId, commentId, userId, name);
     input.focus();
-    input.dataset.replyTo = commentId;
-    // Scroll to input
     input.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -3853,18 +3906,34 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const text = input.value.trim();
     if (!text) return;
     const body = text;
+    const replyTo = input.dataset.replyTo || null;
+    const replyToUser = input.dataset.replyToUser || null;
+    const replyToName = input.dataset.replyToName || '';
     input.value = '';
-    delete input.dataset.replyTo;
+    clearCommentReply(input, postId);
 
-    await sb.from('comments').insert({ post_id: postId, user_id: session.user.id, body });
+    // Normal comments send no reply_to at all, so they behave exactly as before
+    const payload = { post_id: postId, user_id: session.user.id, body };
+    if (replyTo) payload.reply_to = replyTo;
+    const { error } = await sb.from('comments').insert(payload);
+    if (error) {
+      showToast(replyTo ? 'Could not post reply. Try again.' : 'Could not post comment.');
+      if (replyTo) { input.value = body; setCommentReply(postId, replyTo, replyToUser, replyToName); }
+      return;
+    }
 
-    // Send mention notifications
+    // Send mention notifications (skip the reply target: they get the reply notification instead)
     const mentions = [...new Set((body.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
     for (const username of mentions) {
       const { data: mentioned } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-      if (mentioned && mentioned.id !== session.user.id) {
+      if (mentioned && mentioned.id !== session.user.id && mentioned.id !== replyToUser) {
         await sb.from('notifications').insert({ user_id: mentioned.id, from_user_id: session.user.id, type: 'comment', post_id: postId });
       }
+    }
+
+    // Reply notification (no self-notify)
+    if (replyTo && replyToUser && replyToUser !== session.user.id) {
+      await sb.from('notifications').insert({ user_id: replyToUser, from_user_id: session.user.id, type: 'reply', post_id: postId });
     }
 
     await loadComments(postId);
@@ -4845,6 +4914,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       comment: { icon: '💬', color: '#2D8CFF', msg: 'commented on your post', pluralMsg: 'people commented' },
       message: { icon: '✉️', color: '#9C6FFF', msg: 'sent you a message', pluralMsg: 'new messages' },
       repost:  { icon: '🔁', color: '#00CC88', msg: 'rebuzzed your vibe', pluralMsg: 'people rebuzzed' },
+      reply:   { icon: '↩️', color: '#2D8CFF', msg: 'replied to your comment', pluralMsg: 'people replied to your comments' },
     };
 
     list.innerHTML = '';
