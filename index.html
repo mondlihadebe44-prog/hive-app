@@ -2585,7 +2585,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
         <!-- Recommended Groups -->
         <div style="margin-bottom:20px">
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">🍯 Recommended Groups</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px">🍯 Discover Hives</div>
           <div id="explore-groups">
             <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div>
           </div>
@@ -7887,20 +7887,196 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     }).join('');
   }
 
+  // DISCOVER HIVES (inside Explore). Uses existing hive_groups + group_members only.
+  const hiveEsc = (t) => Object.assign(document.createElement('span'), { textContent: t == null ? '' : String(t) }).outerHTML;
+  let discoverState = { groups: [], counts: {}, myRoles: new Map(), filter: 'discover', query: '' };
+  const hiveActionBusy = new Set();
+
   async function loadExploreGroups() {
     const container = document.getElementById('explore-groups');
     if (!container) return;
-    const {data:groups} = await sb.from('hive_groups').select('*').limit(5);
-    if (!groups||!groups.length) { container.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0">No groups yet 🍯</div>'; return; }
-    container.innerHTML = groups.map(g=>`
-      <div class="explore-group-card" onclick="openGroup('${g.id}')">
-        <div style="width:44px;height:44px;border-radius:14px;background:${g.cover_color||'#1a1200'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${g.avatar||'🍯'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${g.name}</div>
-          <div style="font-size:12px;color:#666">${g.description||''}</div>
+    if (!document.getElementById('discover-list')) {
+      container.innerHTML = `
+        <input id="discover-search" type="search" placeholder="Search Hives by name or description…" oninput="setDiscoverQuery(this.value)" style="width:100%;box-sizing:border-box;background:#111;border:1.5px solid var(--border);border-radius:50px;padding:10px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:10px">
+        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto">
+          <button class="explore-chip active" onclick="setDiscoverFilter(this,'discover')">Discover</button>
+          <button class="explore-chip" onclick="setDiscoverFilter(this,'joined')">Joined</button>
+          <button class="explore-chip" onclick="setDiscoverFilter(this,'all')">All</button>
         </div>
-        <button onclick="event.stopPropagation();joinGroupFromExplore(this,'${g.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Join</button>
-      </div>`).join('');
+        <div id="discover-list"><div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div></div></div>`;
+    }
+    const [{ data: groups, error: gErr }, { data: members, error: mErr }] = await Promise.all([
+      sb.from('hive_groups').select('*').limit(100),
+      sb.from('group_members').select('group_id,user_id,role'),
+    ]);
+    const list = document.getElementById('discover-list');
+    if (gErr || mErr) {
+      if (list) list.innerHTML = '<div style="color:#555;font-size:13px;padding:8px 0">Couldn\'t load Hives. Please try again.</div>';
+      return;
+    }
+    discoverState.groups = groups || [];
+    discoverState.counts = {};
+    discoverState.myRoles = new Map();
+    (members || []).forEach(m => {
+      discoverState.counts[m.group_id] = (discoverState.counts[m.group_id] || 0) + 1;
+      if (currentUser && m.user_id === currentUser.id) discoverState.myRoles.set(m.group_id, m.role);
+    });
+    renderDiscoverHives();
+  }
+
+  function setDiscoverQuery(value) { discoverState.query = value || ''; renderDiscoverHives(); }
+
+  function setDiscoverFilter(btn, filter) {
+    discoverState.filter = filter;
+    btn.parentElement.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderDiscoverHives();
+  }
+
+  function renderDiscoverHives() {
+    const list = document.getElementById('discover-list');
+    if (!list) return;
+    const q = discoverState.query.trim().toLowerCase();
+    const f = discoverState.filter;
+    const items = discoverState.groups.filter(g => {
+      const joined = discoverState.myRoles.has(g.id);
+      if (f === 'discover' && joined) return false;
+      if (f === 'joined' && !joined) return false;
+      if (!q) return true;
+      return (g.name || '').toLowerCase().includes(q) || (g.description || '').toLowerCase().includes(q);
+    });
+    if (!items.length) {
+      const msg = q ? 'No Hives match your search' : (f === 'joined' ? "You haven't joined any Hives yet 🍯" : 'No Hives to discover right now 🍯');
+      list.innerHTML = `<div style="color:#555;font-size:13px;padding:8px 0">${msg}</div>`;
+      return;
+    }
+    list.innerHTML = '';
+    items.forEach(g => list.appendChild(buildHiveCard(g)));
+  }
+
+  function buildHiveCard(g) {
+    const joined = discoverState.myRoles.has(g.id);
+    const count = discoverState.counts[g.id] || 0;
+    const card = document.createElement('div');
+    card.className = 'explore-group-card';
+    card.style.cursor = 'pointer';
+    card.onclick = () => openHivePreview(g.id);
+    card.innerHTML = `
+      <div style="width:44px;height:44px;border-radius:14px;background:${hiveEsc(g.cover_color) || '#1a1200'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${hiveEsc(g.avatar) || '🍯'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${hiveEsc(g.name)}</div>
+        <div style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hiveEsc(g.description) || 'No description yet'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">👥 ${count} member${count !== 1 ? 's' : ''}</div>
+      </div>`;
+    const btn = document.createElement('button');
+    btn.style.cssText = joined
+      ? 'padding:7px 14px;border-radius:50px;border:1.5px solid #555;background:transparent;color:#aaa;font-family:\'Syne\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0'
+      : 'padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:\'Syne\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0';
+    btn.textContent = joined ? 'Joined ✓' : 'Join';
+    btn.onclick = (ev) => { ev.stopPropagation(); if (joined) openHivePreview(g.id); else joinHive(g.id); };
+    card.appendChild(btn);
+    return card;
+  }
+
+  function openHivePreview(groupId) {
+    const g = discoverState.groups.find(x => x.id === groupId);
+    if (!g) return;
+    let modal = document.getElementById('hive-preview-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'hive-preview-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;display:flex;align-items:flex-end;justify-content:center';
+      modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+      document.body.appendChild(modal);
+    }
+    const role = discoverState.myRoles.get(groupId);
+    const joined = !!role;
+    const count = discoverState.counts[groupId] || 0;
+    modal.innerHTML = `
+      <div style="background:#111;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:36px">${hiveEsc(g.avatar) || '🍯'}</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">${hiveEsc(g.name)}</div>
+            <div style="font-size:12px;color:var(--muted)">👥 ${count} member${count !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div style="font-size:14px;color:#ccc;line-height:1.5;margin-bottom:20px">${hiveEsc(g.description) || 'No description yet.'}</div>
+        <div id="hive-preview-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+      </div>`;
+    const actions = modal.querySelector('#hive-preview-actions');
+    const mkBtn = (label, primary, onclick) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.style.cssText = primary
+        ? 'flex:1;padding:12px;border-radius:50px;border:none;background:#F6C21A;color:#000;font-family:\'Syne\',sans-serif;font-weight:800;font-size:14px;cursor:pointer'
+        : 'flex:1;padding:12px;border-radius:50px;border:1.5px solid #555;background:transparent;color:#ccc;font-family:\'Syne\',sans-serif;font-weight:700;font-size:14px;cursor:pointer';
+      b.onclick = onclick;
+      actions.appendChild(b);
+    };
+    if (!joined) {
+      mkBtn('Join Hive', true, async () => { const ok = await joinHive(groupId); if (ok) openHivePreview(groupId); });
+    } else {
+      mkBtn('Open Hive', true, () => { modal.style.display = 'none'; openGroup(groupId); });
+      if (role === 'admin') {
+        const note = document.createElement('div');
+        note.style.cssText = 'width:100%;font-size:12px;color:var(--muted);text-align:center';
+        note.textContent = 'Admins can\'t leave their own Hive yet.';
+        actions.appendChild(note);
+      } else {
+        mkBtn('Leave', false, async () => { const ok = await leaveHive(groupId); if (ok) openHivePreview(groupId); });
+      }
+    }
+    modal.style.display = 'flex';
+  }
+
+  async function joinHive(groupId) {
+    if (!currentUser) { showToast('Sign in first!'); return false; }
+    if (hiveActionBusy.has(groupId)) return false;
+    hiveActionBusy.add(groupId);
+
+    // Check first so the same person can't join twice
+    const { data: existing, error: checkErr } = await sb.from('group_members').select('user_id,role').eq('group_id', groupId).eq('user_id', currentUser.id).maybeSingle();
+    let error = checkErr;
+    let role = existing?.role || 'member';
+    if (!error && !existing) {
+      ({ error } = await sb.from('group_members').insert({ group_id: groupId, user_id: currentUser.id, role: 'member' }));
+      if (error && error.code === '23505') error = null; // already a member (e.g. another tab)
+    }
+    hiveActionBusy.delete(groupId);
+
+    if (error) {
+      console.error('Join Hive failed:', error);
+      showToast("Couldn't join this Hive. Please try again.");
+      return false;
+    }
+    if (!discoverState.myRoles.has(groupId)) {
+      discoverState.counts[groupId] = (discoverState.counts[groupId] || 0) + 1;
+    }
+    discoverState.myRoles.set(groupId, role);
+    showToast('Joined! 🍯');
+    renderDiscoverHives();
+    return true;
+  }
+
+  async function leaveHive(groupId) {
+    if (!currentUser) return false;
+    if (discoverState.myRoles.get(groupId) === 'admin') { showToast("Admins can't leave their own Hive yet."); return false; }
+    if (hiveActionBusy.has(groupId)) return false;
+    hiveActionBusy.add(groupId);
+    const { data: removed, error } = await sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', currentUser.id).select('user_id');
+    hiveActionBusy.delete(groupId);
+    // If the database removed nothing, the membership is still there: don't show a false "left"
+    if (error || !removed || removed.length === 0) {
+      console.error('Leave Hive failed:', error);
+      showToast("Couldn't leave this Hive. Please try again.");
+      return false;
+    }
+    discoverState.myRoles.delete(groupId);
+    discoverState.counts[groupId] = Math.max(0, (discoverState.counts[groupId] || 1) - 1);
+    showToast('You left the Hive');
+    renderDiscoverHives();
+    return true;
   }
 
   async function loadExploreTrendingPosts() {
@@ -7955,11 +8131,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       </div>`).join('');
   }
 
-  async function joinGroupFromExplore(btn, groupId) {
-    if (!currentUser) { showToast('Sign in first!'); return; }
-    const {error} = await sb.from('group_members').insert({group_id:groupId,user_id:currentUser.id,role:'member'});
-    if (!error) { btn.textContent='Joined ✓'; btn.style.background='#F6C21A'; btn.style.color='#000'; btn.disabled=true; showToast('Joined! 🍯'); }
-  }
+  async function joinGroupFromExplore(btn, groupId) { await joinHive(groupId); }
 
   // HOME HIVEMIND CARD
   let lastHiveMindResponse = '';
