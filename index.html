@@ -1024,9 +1024,9 @@ body.light .profile-tabs-bar { background: #fff; border-color: #e0e0e0; }
 body.light .profile-tab-btn.active { color: #0a0a0a; }
 
 /* Messages */
-.messages-panel { display: none; flex-direction: column; height: 100vh; }
+.messages-panel { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
 .messages-panel.active { display: flex; }
-.chat-view { display: none; flex-direction: column; height: 100vh; }
+.chat-view { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
 .chat-view.active { display: flex; }
 .chat-header {
   padding: 16px 20px; border-bottom: 1px solid var(--border);
@@ -1188,6 +1188,9 @@ body.light .explore-person-card, body.light .explore-group-card { background: #f
 }
 .group-card:hover { border-color: var(--gold); }
 
+/* iPhone safe areas: bottom-sheet modals clear the home indicator */
+div[style*="align-items:flex-end"] > div { padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important; }
+
 /* Full-Screen Composer */
 #fullscreen-composer {
   position: fixed; inset: 0; z-index: 500;
@@ -1198,6 +1201,7 @@ body.light .explore-person-card, body.light .explore-group-card { background: #f
 .composer-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px; border-bottom: 1px solid var(--border);
+  padding-top: calc(14px + env(safe-area-inset-top));
   flex-shrink: 0;
 }
 .composer-body {
@@ -1570,7 +1574,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
 <!-- ONBOARDING -->
 <div id="onboarding" style="display:none;position:fixed;inset:0;background:#000;z-index:998;overflow-y:auto">
-  <div style="max-width:440px;margin:0 auto;padding:40px 24px">
+  <div style="max-width:440px;margin:0 auto;padding:max(40px, calc(env(safe-area-inset-top) + 16px)) 24px calc(40px + env(safe-area-inset-bottom))">
 
     <!-- Step 1 - Welcome -->
     <div id="onboard-1">
@@ -1743,9 +1747,9 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 <div id="vibe-viewer" style="display:none;position:fixed;inset:0;z-index:700;background:#000" onclick="handleViewerTap(event)">
   <div id="vibe-viewer-bg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:relative">
     <!-- Progress bar -->
-    <div style="position:absolute;top:0;left:0;right:0;padding:50px 16px 12px;display:flex;gap:4px" id="vibe-progress-bars"></div>
+    <div style="position:absolute;top:0;left:0;right:0;padding:max(50px, calc(env(safe-area-inset-top) + 12px)) 16px 12px;display:flex;gap:4px" id="vibe-progress-bars"></div>
     <!-- Header -->
-    <div style="position:absolute;top:60px;left:0;right:0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <div style="position:absolute;top:max(60px, calc(env(safe-area-inset-top) + 22px));left:0;right:0;padding:0 16px;display:flex;align-items:center;gap:12px">
       <div id="viewer-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;border:2px solid #fff"></div>
       <div>
         <div id="viewer-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff"></div>
@@ -1883,7 +1887,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
 <!-- GLOBAL SEARCH OVERLAY -->
 <div id="global-search-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:500;flex-direction:column">
-  <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+  <div style="padding:calc(16px + env(safe-area-inset-top)) 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
     <div style="flex:1;display:flex;align-items:center;gap:10px;background:#111;border:1.5px solid var(--gold);border-radius:50px;padding:10px 16px">
       <span style="color:var(--gold);font-size:16px">🔍</span>
       <input id="global-search-input" placeholder="Search Hive..." autofocus oninput="globalSearch(this.value)" style="flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none">
