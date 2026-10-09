@@ -2544,6 +2544,18 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           <div style="color:#F6C21A;font-size:18px;flex-shrink:0">›</div>
         </div>
 
+        <!-- Hive Video -->
+        <div style="margin-bottom:20px">
+          <button onclick="openHiveVideo()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1.5px solid var(--gold);background:rgba(245,197,24,0.06);cursor:pointer;text-align:left;color:var(--text)">
+            <span style="font-size:26px">🎬</span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-family:'Syne',sans-serif;font-weight:800;font-size:16px">Hive Video</span>
+              <span style="display:block;font-size:12px;color:var(--muted)">Watch short videos, full screen</span>
+            </span>
+            <span style="color:var(--gold);font-size:20px">›</span>
+          </button>
+        </div>
+
         <!-- Hive Pulse section -->
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -7885,6 +7897,309 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>
       </div>`;
     }).join('');
+  }
+
+  // ── HIVE VIDEO: full-screen vertical viewer inside Explore ──
+  // Reuses existing posts (video_url / video_thumbnail_url), likes, reposts, quotes, bookmarks, follows.
+  let hv = null;
+  let hvMuted = true; // starts muted (autoplay-safe); stays unmuted once the user unmutes
+  const HV_PAGE = 8;
+
+  function hvSrc(post) { return (post.video_url || '').split('|thumb:')[0]; }
+  function hvValid(post) { return /^https?:\/\//.test(hvSrc(post)); }
+
+  function ensureHvStyles() {
+    if (document.getElementById('hv-style')) return;
+    const st = document.createElement('style');
+    st.id = 'hv-style';
+    st.textContent = `
+      @keyframes hvSpin { to { transform: rotate(360deg); } }
+      .hv-tab { background: rgba(0,0,0,0.45); border: none; color: #ccc; padding: 8px 14px; border-radius: 50px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; }
+      .hv-tab.on { background: #F6C21A; color: #000; }
+      .hv-actions .hv-act { color: #fff; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 4px; }
+      .hv-actions .hv-act svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
+      .hv-actions .hv-act > span:last-child { font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+      .hv-actions .hv-act.liked svg, .hv-actions .hv-act.bookmarked svg { color: #F6C21A; }
+      .hv-actions .hv-act.liked .act-svg { fill: #ff4d6d; stroke: #ff4d6d; }
+      .hv-actions .hv-act.repost-on .act-svg { stroke: #4ECDC4; }
+      .hv-follow { background: transparent; border: 1.5px solid #fff; color: #fff; border-radius: 50px; padding: 4px 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; }
+      .hv-follow.following { background: #fff; color: #000; }
+      .hv-spin { position: absolute; left: 50%; top: 50%; margin: -20px 0 0 -20px; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #F6C21A; border-radius: 50%; animation: hvSpin 0.8s linear infinite; pointer-events: none; display: none; }
+      .hv-center-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.55); border: 1.5px solid #fff; color: #fff; border-radius: 50px; padding: 10px 20px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; display: none; }
+      @media (prefers-reduced-motion: reduce) { .hv-spin { animation: none; } #hv-scroll { scroll-behavior: auto !important; } }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function openHiveVideo() {
+    if (hv) return;
+    if (!currentUser) { showToast('Sign in to watch Hive Video'); return; }
+    ensureHvStyles();
+    const root = document.createElement('div');
+    root.id = 'hive-video';
+    root.style.cssText = 'position:fixed;inset:0;z-index:550;background:#000;display:flex;flex-direction:column';
+    root.innerHTML = `
+      <div style="position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;pointer-events:none">
+        <button id="hv-close" aria-label="Close" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
+        <div style="pointer-events:auto;display:flex;gap:8px">
+          <button class="hv-tab on" data-tab="foryou">For You</button>
+          <button class="hv-tab" data-tab="following">Following</button>
+        </div>
+        <button id="hv-mute" aria-label="Sound" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">${hvMuted ? '🔇' : '🔊'}</button>
+      </div>
+      <div id="hv-scroll" style="flex:1;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch"></div>`;
+    document.body.appendChild(root);
+
+    hv = { root, container: root.querySelector('#hv-scroll'), posts: [], seen: new Set(), page: 0, loading: false, done: false, tab: 'foryou', active: -1, io: null };
+    hv.io = new IntersectionObserver(entries => {
+      entries.forEach(en => { if (en.isIntersecting && en.intersectionRatio >= 0.6) hvActivate(Number(en.target.dataset.idx)); });
+    }, { root: hv.container, threshold: [0.6] });
+
+    root.querySelector('#hv-close').onclick = closeHiveVideo;
+    root.querySelector('#hv-mute').onclick = hvToggleMute;
+    root.querySelectorAll('.hv-tab').forEach(btn => btn.onclick = () => hvSwitchTab(btn.dataset.tab, root));
+    document.addEventListener('visibilitychange', hvOnVisibility);
+    hvLoadPage();
+  }
+
+  function closeHiveVideo() {
+    if (!hv) return;
+    hv.container.querySelectorAll('video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
+    hv.io.disconnect();
+    document.removeEventListener('visibilitychange', hvOnVisibility);
+    hv.root.remove();
+    hv = null;
+  }
+
+  function hvOnVisibility() {
+    if (document.hidden && hv) hv.container.querySelectorAll('video').forEach(v => v.pause());
+  }
+
+  function hvSwitchTab(tab, root) {
+    if (!hv || hv.tab === tab) return;
+    hv.tab = tab;
+    root.querySelectorAll('.hv-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+    hv.container.querySelectorAll('video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
+    hv.container.innerHTML = '';
+    hv.io.disconnect();
+    hv.posts = []; hv.seen = new Set(); hv.page = 0; hv.loading = false; hv.done = false; hv.active = -1;
+    hvLoadPage();
+  }
+
+  function hvToggleMute() {
+    hvMuted = !hvMuted;
+    const btn = document.getElementById('hv-mute');
+    if (btn) btn.textContent = hvMuted ? '🔇' : '🔊';
+    if (hv) hv.container.querySelectorAll('video').forEach(v => { v.muted = hvMuted; });
+  }
+
+  async function hvLoadPage() {
+    if (!hv || hv.loading || hv.done) return;
+    hv.loading = true;
+    const tab = hv.tab;
+    const from = hv.page * HV_PAGE;
+    let q = sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)')
+      .not('video_url', 'is', null).is('reply_to', null)
+      .order('created_at', { ascending: false }).range(from, from + HV_PAGE - 1);
+    if (tab === 'following') {
+      const ids = [...(await getFollowedIds())];
+      if (!ids.length) { hv.loading = false; hv.done = true; hvShowEmpty('Follow people to see their videos here 🐝'); return; }
+      q = q.in('user_id', ids);
+    }
+    const { data, error } = await q;
+    if (!hv || hv.tab !== tab) return; // tab changed while loading
+    hv.loading = false;
+    if (error) { console.error('Hive Video load failed:', error); if (!hv.posts.length) hvShowEmpty("Couldn't load videos. Please try again."); return; }
+    if (!data || data.length < HV_PAGE) hv.done = true;
+    hv.page++;
+    data.filter(p => hvValid(p) && !hv.seen.has(p.id)).forEach(p => {
+      hv.seen.add(p.id);
+      hv.posts.push(p);
+      hvAppendSlide(p, hv.posts.length - 1);
+    });
+    if (!hv.posts.length) hvShowEmpty(tab === 'following' ? 'No videos from people you follow yet 🎬' : 'No videos yet 🎬');
+  }
+
+  function hvShowEmpty(msg) {
+    if (!hv) return;
+    hv.container.innerHTML = `<div style="height:100%;height:100dvh;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:15px;text-align:center;padding:24px">${hiveEsc(msg)}</div>`;
+  }
+
+  function hvAppendSlide(post, idx) {
+    const p = post.profiles || {};
+    const name = p.full_name || p.username || 'Unknown';
+    const isOwn = currentUser && post.user_id === currentUser.id;
+    const tags = ((post.body || '').match(/#\w+/g) || []).slice(0, 5);
+    const slide = document.createElement('section');
+    slide.className = 'hv-slide';
+    slide.dataset.idx = idx;
+    slide.dataset.postId = post.id;
+    slide.style.cssText = 'height:100%;height:100dvh;flex-shrink:0;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;overflow:hidden';
+
+    const v = document.createElement('video');
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+    v.preload = 'none';
+    v.muted = hvMuted;
+    if (/^https?:\/\//.test(post.video_thumbnail_url || '')) v.poster = post.video_thumbnail_url;
+    v.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block';
+    slide.appendChild(v);
+
+    slide.insertAdjacentHTML('beforeend', `
+      <div class="hv-spin"></div>
+      <div class="hv-err" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(0,0,0,0.7);color:#fff;text-align:center;padding:24px">
+        <div style="font-size:15px">This video couldn't load.</div>
+        <button class="hv-retry" style="background:#F6C21A;border:none;color:#000;border-radius:50px;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer">Try again</button>
+      </div>
+      <button class="hv-center-btn hv-replay">↻ Replay</button>
+      <div class="hv-hud" style="position:absolute;left:0;right:0;bottom:0;padding:60px 76px calc(20px + env(safe-area-inset-bottom)) 16px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0.75));color:#fff;pointer-events:none">
+        <div style="display:flex;align-items:center;gap:10px;pointer-events:auto">
+          <div class="hv-avatar" style="width:40px;height:40px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer">${hiveEsc((name[0] || 'U').toUpperCase())}</div>
+          <div style="min-width:0;flex:1;cursor:pointer" class="hv-open-profile">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hiveEsc(name)}${p.verified ? ' <span style="color:#F6C21A">✔</span>' : ''}</div>
+            <div style="font-size:12px;color:#ccc">@${hiveEsc(p.username || 'unknown')}</div>
+          </div>
+          ${isOwn ? '' : `<button class="hv-follow" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>`}
+        </div>
+        <div style="margin-top:10px;font-size:14px;line-height:1.45;max-height:5.8em;overflow:hidden;white-space:pre-wrap;pointer-events:auto">${hiveEsc(post.body || '')}</div>
+        ${tags.length ? `<div style="margin-top:6px;font-size:13px;color:#F6C21A;pointer-events:auto">${tags.map(t => hiveEsc(t)).join(' ')}</div>` : ''}
+      </div>
+      <div class="hv-actions" style="position:absolute;right:10px;bottom:calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:auto">
+        <button class="hv-act action-btn like-btn" onclick="toggleLike(this,'${post.id}')" aria-label="Like">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
+          <span class="like-count">…</span>
+        </button>
+        <button class="hv-act" onclick="hvOpenComments('${post.id}')" aria-label="Comments">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+          <span class="comment-count">…</span>
+        </button>
+        <button class="hv-act repost-btn" onclick="toggleRepost(this,'${post.id}')" aria-label="Rebuzz">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></span>
+          <span class="repost-count">…</span>
+        </button>
+        <button class="hv-act" onclick="openQuoteComposer('${post.id}')" aria-label="Quote">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5H3v8h4c0 3-1 4-4 4zM14 21c3 0 7-1 7-8V5h-7v8h4c0 3-1 4-4 4z"/></svg></span>
+        </button>
+        <button class="hv-act bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" aria-label="Save">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></span>
+        </button>
+        <button class="hv-act" onclick="hvShare('${post.id}')" aria-label="Share">
+          <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg></span>
+        </button>
+      </div>`);
+
+    // Creator avatar image (URL set as a property, never as HTML)
+    if (p.avatar_url && /^https?:\/\//.test(p.avatar_url)) {
+      const img = document.createElement('img');
+      img.src = p.avatar_url;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      const av = slide.querySelector('.hv-avatar');
+      av.textContent = '';
+      av.appendChild(img);
+    }
+    slide.querySelector('.hv-open-profile').onclick = () => hvOpenProfile(post.user_id);
+    slide.querySelector('.hv-avatar').onclick = () => hvOpenProfile(post.user_id);
+
+    // Playback events
+    v.addEventListener('waiting', () => hvSpinner(slide, true));
+    v.addEventListener('stalled', () => hvSpinner(slide, true));
+    v.addEventListener('playing', () => { hvSpinner(slide, false); slide.querySelector('.hv-err').style.display = 'none'; });
+    v.addEventListener('canplay', () => hvSpinner(slide, false));
+    v.addEventListener('error', () => hvShowError(slide));
+    v.addEventListener('ended', () => { slide.querySelector('.hv-replay').style.display = 'block'; });
+    v.addEventListener('click', () => { if (v.ended) return; if (v.paused) hvPlay(v); else v.pause(); });
+    slide.querySelector('.hv-replay').onclick = (e) => { e.stopPropagation(); slide.querySelector('.hv-replay').style.display = 'none'; v.currentTime = 0; hvPlay(v); };
+    slide.querySelector('.hv-retry').onclick = (e) => { e.stopPropagation(); hvSetSrc(slide, v, post); hvPlay(v); };
+
+    hv.container.appendChild(slide);
+    hv.io.observe(slide);
+  }
+
+  function hvSpinner(slide, on) { const s = slide.querySelector('.hv-spin'); if (s) s.style.display = on ? 'block' : 'none'; }
+
+  function hvShowError(slide) {
+    hvSpinner(slide, false);
+    slide.querySelector('.hv-err').style.display = 'flex';
+  }
+
+  function hvSetSrc(slide, v, post) {
+    slide.querySelector('.hv-err').style.display = 'none';
+    v.src = hvSrc(post);
+    v.load();
+  }
+
+  function hvPlay(v) {
+    v.muted = hvMuted;
+    const pr = v.play();
+    if (pr && pr.catch) pr.catch(() => {
+      // Browser blocked sound: retry muted rather than failing silently
+      if (!v.muted) { v.muted = true; v.play().catch(() => {}); }
+    });
+  }
+
+  function hvActivate(idx) {
+    if (!hv || idx === hv.active) return;
+    hv.active = idx;
+    const slides = [...hv.container.querySelectorAll('.hv-slide')];
+    slides.forEach((s, i) => {
+      const v = s.querySelector('video');
+      const near = Math.abs(i - idx) <= 1;
+      if (i !== idx) v.pause();
+      if (near && !v.getAttribute('src') && hv.posts[i]) {
+        v.preload = i === idx ? 'auto' : 'metadata';
+        hvSetSrc(s, v, hv.posts[i]);
+      }
+      if (!near && v.getAttribute('src')) { v.removeAttribute('src'); v.load(); }
+      s.querySelector('.hv-replay').style.display = 'none';
+    });
+    const cur = slides[idx];
+    if (cur) {
+      hvPlay(cur.querySelector('video'));
+      hvLoadStats(cur, hv.posts[idx]);
+    }
+    if (idx >= hv.posts.length - 3) hvLoadPage();
+  }
+
+  // Counts and my own state, loaded once per video when it becomes active
+  async function hvLoadStats(slide, post) {
+    if (!post || slide.dataset.loaded) return;
+    slide.dataset.loaded = '1';
+    const me = currentUser.id;
+    const id = post.id;
+    const [likes, comments, reposts, myLike, myRepost, myBookmark, follow] = await Promise.all([
+      sb.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id),
+      sb.from('comments').select('*', { count: 'exact', head: true }).eq('post_id', id),
+      sb.from('reposts').select('*', { count: 'exact', head: true }).eq('post_id', id),
+      sb.from('likes').select('id').eq('post_id', id).eq('user_id', me).maybeSingle(),
+      sb.from('reposts').select('id').eq('post_id', id).eq('user_id', me).maybeSingle(),
+      sb.from('bookmarks').select('id').eq('post_id', id).eq('user_id', me).maybeSingle(),
+      post.user_id !== me ? sb.from('follows').select('id').eq('follower_id', me).eq('following_id', post.user_id).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+    if (!hv || !slide.isConnected) return;
+    const likeBtn = slide.querySelector('.like-btn');
+    const repostBtn = slide.querySelector('.repost-btn');
+    const bmBtn = slide.querySelector('.bookmark-btn');
+    slide.querySelector('.like-count').textContent = likes.error ? '–' : (likes.count || 0);
+    slide.querySelector('.comment-count').textContent = comments.error ? '–' : (comments.count || 0);
+    slide.querySelector('.repost-count').textContent = reposts.error ? '–' : (reposts.count || 0);
+    if (myLike.data) likeBtn.classList.add('liked');
+    if (myRepost.data) { repostBtn.style.color = '#4ECDC4'; }
+    if (myBookmark.data) bmBtn.classList.add('bookmarked');
+    const fb = slide.querySelector('.hv-follow');
+    if (fb && follow.data) { fb.classList.add('following'); fb.textContent = 'Following'; }
+  }
+
+  function hvOpenComments(postId) { closeHiveVideo(); jumpToPost(postId); }
+
+  function hvOpenProfile(userId) { closeHiveVideo(); openUserProfile(userId); }
+
+  function hvShare(postId) {
+    const post = hv && hv.posts.find(x => x.id === postId);
+    const text = ((post && post.body) || 'Watch this on Hive 🐝').slice(0, 140);
+    const url = window.location.href.split('#')[0];
+    if (navigator.share) { navigator.share({ title: 'Hive Video', text, url }).catch(() => {}); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast('Link copied 🐝')).catch(() => showToast("Couldn't copy the link"));
+    else showToast('Sharing is not supported here');
   }
 
   // DISCOVER HIVES (inside Explore). Uses existing hive_groups + group_members only.
