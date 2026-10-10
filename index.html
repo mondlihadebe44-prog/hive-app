@@ -1284,12 +1284,14 @@ body.light .hivemind-btn:hover { border-color: var(--gold); background: rgba(245
 .vibe-color-opt.selected { border-color: #fff; transform: scale(1.15); }
 .story-avatar.has-vibe { border-width: 3px; border-style: solid; }
 @keyframes vibeProgress { from{width:0%} to{width:100%} }
-.shared-video-card { position:relative; width:100%; aspect-ratio:16/9; margin:0 0 12px; border-radius:16px; overflow:hidden; background:#0b0b0b; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; box-sizing:border-box; }
+.shared-video-card { position:relative; width:100%; aspect-ratio:16/9; margin:0 0 12px; border-radius:16px; overflow:hidden; background:radial-gradient(circle at 50% 45%, rgba(246,194,26,0.18), rgba(0,0,0,0) 62%), linear-gradient(160deg,#1c1807,#0a0a0a); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; box-sizing:border-box; }
 .shared-video-card .svc-thumb { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .shared-video-card .svc-play { position:relative; width:56px; height:56px; border-radius:50%; background:rgba(0,0,0,0.6); border:2px solid #F6C21A; color:#F6C21A; display:flex; align-items:center; justify-content:center; font-size:20px; padding-left:4px; box-sizing:border-box; }
 .shared-video-card:focus-visible { outline:2px solid #F6C21A; outline-offset:2px; }
 .shared-video-card.svc-unavailable { cursor:default; }
 .shared-video-card .svc-note { color:var(--muted); font-size:13px; }
+.shared-video-card .svc-hint { display:none; position:absolute; left:0; right:0; bottom:12px; text-align:center; color:#F6C21A; font-family:'Syne',sans-serif; font-weight:700; font-size:12px; letter-spacing:.04em; }
+.shared-video-card.svc-nothumb .svc-hint { display:block; }
 
 .toast {
   position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%;
@@ -8753,18 +8755,159 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   // HELPERS
-  // Video card: the video's own thumbnail (never a stand-in image) with a play button.
+  // Video card: the stored thumbnail when it loads, otherwise a real frame from the video, otherwise a polished fallback.
   // Tapping opens the existing Hive Video player starting at this video.
   function renderVideoCard(post) {
-    if (!hvValid(post)) return `<div class="shared-video-card svc-unavailable"><span class="svc-note">Video unavailable</span></div>`;
-    const thumb = /^https?:\/\//.test(post.video_thumbnail_url || '') ? post.video_thumbnail_url : '';
-    return `<div class="shared-video-card" role="button" tabindex="0" aria-label="Play video"
+    if (!hvValid(post)) return `<div class="shared-video-card svc-unavailable svc-nothumb"><span class="svc-note">Video unavailable</span></div>`;
+    const thumb = /^https?:\/\//.test(post.video_thumbnail_url || '') ? post.video_thumbnail_url.replace(/"/g, '&quot;') : '';
+    const src = hvSrc(post).replace(/"/g, '&quot;');
+    return `<div class="shared-video-card${thumb ? '' : ' svc-nothumb'}" role="button" tabindex="0" aria-label="Play video"
+      data-vc-id="${post.id}" data-vc-src="${src}" data-needs-thumb="${thumb ? 0 : 1}"
       onclick="event.stopPropagation();openHiveVideo('${post.id}')"
       onkeydown="if(event.key==='Enter'){event.stopPropagation();openHiveVideo('${post.id}')}">
-      ${thumb ? `<img class="svc-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      ${thumb ? `<img class="svc-thumb" src="${thumb}" crossorigin="anonymous" alt="" loading="lazy" onerror="vcImgError(this)" onload="vcStoredLoaded(this)">` : ''}
       <div class="svc-play">▶</div>
+      <span class="svc-hint">Tap to play</span>
     </div>`;
   }
+
+  // Frame capture for cards with no working thumbnail. Runs one video at a time, only when the card is near the screen.
+  const vcThumbCache = new Map(); // card id -> JPEG data URL, or null when no frame could be made
+  let vcThumbQueue = Promise.resolve();
+  const vcInView = (typeof IntersectionObserver !== 'undefined') ? new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) { vcInView.unobserve(en.target); vcEnqueue(en.target); } });
+  }, { rootMargin: '200px' }) : null;
+
+  function vcThumbFailed(img) {
+    const card = img.parentNode;
+    img.remove();
+    if (!card) return;
+    card.dataset.needsThumb = '1';
+    card.dataset.vcWatch = '';
+    vcWatch(card);
+  }
+
+  // A failed stored image: retry once without CORS (keeps valid images from hosts without CORS), then find a frame
+  function vcImgError(img) {
+    if (img.hasAttribute('crossorigin') && !img.dataset.retry) {
+      img.dataset.retry = '1';
+      const url = img.src;
+      img.removeAttribute('crossorigin');
+      img.src = url + '#retry';
+      return;
+    }
+    vcThumbFailed(img);
+  }
+
+  // A stored thumbnail that is solid black is replaced by a real frame (only checkable when the host allows canvas reads)
+  function vcStoredLoaded(img) {
+    try {
+      const c = document.createElement('canvas');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, 16, 16);
+      const px = ctx.getImageData(0, 0, 16, 16).data;
+      let sum = 0, n = 0;
+      for (let i = 0; i < px.length; i += 4) { sum += px[i] + px[i + 1] + px[i + 2]; n += 3; }
+      if (sum / n < 12) vcThumbFailed(img);
+    } catch (e) { /* no CORS on this host: keep the stored image */ }
+  }
+
+  function vcWatch(el) {
+    if (!el || !el.dataset || el.dataset.needsThumb !== '1' || el.dataset.vcWatch === '1') return;
+    el.dataset.vcWatch = '1';
+    if (vcInView) vcInView.observe(el); else vcEnqueue(el);
+  }
+
+  function vcEnqueue(el) { vcThumbQueue = vcThumbQueue.then(() => vcMakeThumb(el)).catch(() => {}); }
+
+  async function vcMakeThumb(el) {
+    if (!el.isConnected) { el.dataset.vcWatch = ''; return; }
+    const key = el.dataset.vcId;
+    if (!vcThumbCache.has(key)) vcThumbCache.set(key, await vcCaptureFrame(el.dataset.vcSrc).catch(() => null));
+    vcApplyThumb(el, vcThumbCache.get(key));
+  }
+
+  function vcApplyThumb(el, dataUrl) {
+    if (!el.isConnected) return;
+    el.dataset.needsThumb = '0';
+    if (!dataUrl) { el.classList.add('svc-nothumb'); return; }
+    if (el.querySelector('img.svc-thumb')) return;
+    const img = document.createElement('img');
+    img.className = 'svc-thumb';
+    img.alt = '';
+    img.src = dataUrl;
+    el.prepend(img);
+    el.classList.remove('svc-nothumb');
+  }
+
+  // Resolves with a JPEG data URL of a non-black frame, or null. Never throws.
+  // Needs the video host to send CORS headers; without them the canvas is tainted and we fall back.
+  function vcCaptureFrame(src) {
+    return new Promise(resolve => {
+      if (!/^https?:\/\//.test(src || '')) return resolve(null);
+      const v = document.createElement('video');
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.preload = 'auto';
+      v.crossOrigin = 'anonymous';
+      let tries = 0, settled = false, timer = null;
+      const done = out => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        v.removeAttribute('src');
+        v.load();
+        resolve(out);
+      };
+      timer = setTimeout(() => done(null), 10000);
+      const draw = () => {
+        try {
+          const w = v.videoWidth, h = v.videoHeight;
+          if (!w || !h) return done(null);
+          const scale = Math.min(1, 480 / w);
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * scale));
+          c.height = Math.max(1, Math.round(h * scale));
+          const ctx = c.getContext('2d');
+          ctx.drawImage(v, 0, 0, c.width, c.height);
+          const px = ctx.getImageData(0, 0, c.width, c.height).data; // throws if tainted
+          let sum = 0, n = 0;
+          for (let i = 0; i < px.length; i += 64) { sum += px[i] + px[i + 1] + px[i + 2]; n += 3; }
+          const dur = isFinite(v.duration) ? v.duration : 1;
+          if (n && sum / n < 12) { // black frame: try later in the video, then give up (fallback, never a black preview)
+            if (tries >= 2) return done(null);
+            tries++;
+            v.currentTime = Math.max(0.1, Math.min(dur * (tries === 1 ? 0.3 : 0.6), dur - 0.1));
+            return;
+          }
+          done(c.toDataURL('image/jpeg', 0.8));
+        } catch (e) { done(null); }
+      };
+      v.addEventListener('seeked', draw);
+      v.addEventListener('error', () => done(null));
+      v.addEventListener('loadedmetadata', () => {
+        const d = v.duration;
+        v.currentTime = (isFinite(d) && d > 0.5) ? Math.min(0.5, d * 0.1) : 0;
+      }, { once: true });
+      v.src = src;
+      v.load();
+    });
+  }
+
+  function vcScan(root) {
+    if (!root || root.nodeType !== 1) return;
+    if (root.matches && root.matches('.shared-video-card[data-needs-thumb="1"]')) vcWatch(root);
+    if (root.querySelectorAll) root.querySelectorAll('.shared-video-card[data-needs-thumb="1"]').forEach(vcWatch);
+  }
+  const vcStart = () => {
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(vcScan))).observe(document.body, { childList: true, subtree: true });
+    vcScan(document.body);
+  };
+  if (document.body) vcStart(); else document.addEventListener('DOMContentLoaded', vcStart);
 
   function renderPostMedia(post) {
     // Video takes priority: shown as a video card (real thumbnail + play button)
