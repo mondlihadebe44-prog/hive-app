@@ -1284,6 +1284,12 @@ body.light .hivemind-btn:hover { border-color: var(--gold); background: rgba(245
 .vibe-color-opt.selected { border-color: #fff; transform: scale(1.15); }
 .story-avatar.has-vibe { border-width: 3px; border-style: solid; }
 @keyframes vibeProgress { from{width:0%} to{width:100%} }
+.shared-video-card { position:relative; width:100%; aspect-ratio:16/9; margin:0 0 12px; border-radius:16px; overflow:hidden; background:#0b0b0b; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; box-sizing:border-box; }
+.shared-video-card .svc-thumb { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.shared-video-card .svc-play { position:relative; width:56px; height:56px; border-radius:50%; background:rgba(0,0,0,0.6); border:2px solid #F6C21A; color:#F6C21A; display:flex; align-items:center; justify-content:center; font-size:20px; padding-left:4px; box-sizing:border-box; }
+.shared-video-card:focus-visible { outline:2px solid #F6C21A; outline-offset:2px; }
+.shared-video-card.svc-unavailable { cursor:default; }
+.shared-video-card .svc-note { color:var(--muted); font-size:13px; }
 
 .toast {
   position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%;
@@ -3524,11 +3530,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           </div>
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
+        <div class="rebuzz-attr" style="display:none;font-size:12px;color:#4ECDC4;margin:0 0 6px"></div>
         <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
         ${renderPostMedia(post)}
         <div class="poll-container" id="poll-container-${post.id}"></div>
-        <div class="rebuzz-attr" style="display:none;font-size:12px;color:#4ECDC4;margin:2px 0 6px"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
             <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
@@ -5483,7 +5489,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const friend = (rows || []).find(r => followed.has(r.user_id));
       if (friend) {
         const { data: prof } = await sb.from('profiles').select('username,full_name').eq('id', friend.user_id).maybeSingle();
-        attr.textContent = '🔁 Rebuzzed by ' + (prof?.full_name || prof?.username || 'someone you follow');
+        attr.textContent = '🔁 ' + (prof?.full_name || prof?.username || 'Someone you follow') + ' Rebuzzed';
         attr.style.display = 'block';
       }
     }
@@ -5708,7 +5714,9 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       : (quoted.image_url ? [quoted.image_url] : []);
 
     let mediaHTML = '';
-    if (urls.length === 1) {
+    if (quoted.video_url) {
+      mediaHTML = renderVideoCard(quoted);
+    } else if (urls.length === 1) {
       mediaHTML = `<img src="${urls[0]}" style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">`;
     } else if (urls.length > 1) {
       const shown = urls.slice(0, 4);
@@ -7956,7 +7964,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.head.appendChild(st);
   }
 
-  function openHiveVideo() {
+  async function openHiveVideo(startPostId) {
     if (hv) return;
     if (!currentUser) { showToast('Sign in to watch Hive Video'); return; }
     ensureHvStyles();
@@ -7984,6 +7992,11 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     root.querySelector('#hv-mute').onclick = hvToggleMute;
     root.querySelectorAll('.hv-tab').forEach(btn => btn.onclick = () => hvSwitchTab(btn.dataset.tab, root));
     document.addEventListener('visibilitychange', hvOnVisibility);
+    // Start at the tapped video: show it first, then load the normal feed (deduplicated)
+    if (startPostId) {
+      const { data: first } = await sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)').eq('id', startPostId).maybeSingle();
+      if (hv && first && hvValid(first) && !hv.seen.has(first.id)) { hv.seen.add(first.id); hv.posts.push(first); hvAppendSlide(first, hv.posts.length - 1); }
+    }
     hvLoadPage();
   }
 
@@ -8740,17 +8753,22 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   // HELPERS
+  // Video card: the video's own thumbnail (never a stand-in image) with a play button.
+  // Tapping opens the existing Hive Video player starting at this video.
+  function renderVideoCard(post) {
+    if (!hvValid(post)) return `<div class="shared-video-card svc-unavailable"><span class="svc-note">Video unavailable</span></div>`;
+    const thumb = /^https?:\/\//.test(post.video_thumbnail_url || '') ? post.video_thumbnail_url : '';
+    return `<div class="shared-video-card" role="button" tabindex="0" aria-label="Play video"
+      onclick="event.stopPropagation();openHiveVideo('${post.id}')"
+      onkeydown="if(event.key==='Enter'){event.stopPropagation();openHiveVideo('${post.id}')}">
+      ${thumb ? `<img class="svc-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      <div class="svc-play">▶</div>
+    </div>`;
+  }
+
   function renderPostMedia(post) {
-    // Video takes priority
-    if (post.video_url) {
-      return `<div style="position:relative;margin-bottom:12px;border-radius:16px;overflow:hidden;background:#000;max-height:400px">
-        <div style="position:relative;border-radius:14px;overflow:hidden;background:#111;margin-bottom:4px">${(() => {
-          const vSrc = (post.video_url || '').split('|thumb:')[0];
-          const poster = post.video_thumbnail_url || '';
-          return `<video src="${vSrc}" ${poster ? `poster="${poster}"` : 'preload="metadata"'} style="width:100%;max-height:400px;object-fit:contain;display:block" controls playsinline></video>`;
-        })()}</div>
-      </div>`;
-    }
+    // Video takes priority: shown as a video card (real thumbnail + play button)
+    if (post.video_url) return renderVideoCard(post);
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
     if (urls.length === 0) return '';
     if (urls.length === 1) {
