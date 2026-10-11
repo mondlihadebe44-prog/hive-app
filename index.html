@@ -1476,6 +1476,11 @@ body.light .auth-inner { background: transparent; }
 body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
 body.light .icon-btn { color: #444; }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
+/* Post timestamps: tappable, with a subtle hint and a visible focus ring */
+time.rel-time { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: rgba(128,128,128,0.55); -webkit-tap-highlight-color: transparent; border-radius: 4px; }
+time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
+#exact-time-tip { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); transform: translateX(-50%); background: #111; color: #F6C21A; border: 1px solid rgba(246,194,26,0.4); border-radius: 50px; padding: 10px 16px; font-size: 13px; font-weight: 600; white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 9998; }
+#exact-time-tip.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -3461,7 +3466,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       const comments = commentsRes.count || 0;
       const reposts = repostsRes.count || 0;
       // Recency bonus: newer posts get a small boost (max 10 points for a brand new post)
-      const ageHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
+      const ageHours = (Date.now() - (parseDbDate(post.created_at) || new Date()).getTime()) / (1000 * 60 * 60);
       const recencyBonus = Math.max(0, 10 - ageHours);
       const score = likes * 3 + comments * 2 + reposts * 2 + recencyBonus;
       return { post, score, likes, comments, reposts };
@@ -3551,7 +3556,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             ${verified}
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
-            <span class="post-handle">${timeAgo(post.created_at)}</span>
+            <span class="post-handle">${timeTag(post.created_at)}</span>
             ${post.edited ? '<span class="edited-badge">· Edited</span>' : ''}
           </div>
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
@@ -3873,7 +3878,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
           <div class="comment-header">
             ${c.pinned ? '<span style="font-size:10px;background:#F6C21A;color:#000;border-radius:50px;padding:1px 8px;font-family:\'Syne\',sans-serif;font-weight:700">📌 Pinned</span>' : ''}
             <span class="comment-name">${name}${badge}</span>
-            <span class="comment-time">${timeAgo(c.created_at)}</span>
+            <span class="comment-time">${timeTag(c.created_at)}</span>
           </div>
           <div class="comment-text">${formatBody(c.body || '')}</div>
           <div class="comment-actions">
@@ -5760,7 +5765,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="width:24px;height:24px;border-radius:50%;background:${getColor(name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;flex-shrink:0">${avatarHTML}</div>
         <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">${name}${verified}</div>
-        <div style="font-size:11px;color:var(--muted)">${timeAgo(quoted.created_at)}</div>
+        <div style="font-size:11px;color:var(--muted)">${timeTag(quoted.created_at)}</div>
       </div>
       <div style="font-size:13px;color:#ccc;line-height:1.5">${formatBody(quoted.body || '')}</div>
       ${mediaHTML}`;
@@ -6241,7 +6246,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     // Calculate days since last post
     const lastPost = recentPosts?.[0];
     const daysSinceLastPost = lastPost
-      ? Math.floor((Date.now() - new Date(lastPost.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.floor((Date.now() - (parseDbDate(lastPost.created_at) || new Date()).getTime()) / (1000 * 60 * 60 * 24))
       : 999;
 
     try {
@@ -6883,7 +6888,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
             <span class="post-name">${name}${verified}</span>
             <span class="post-handle">@${username}</span>
             <span class="post-dot">·</span>
-            <span class="post-handle">${timeAgo(post.created_at)}</span>
+            <span class="post-handle">${timeTag(post.created_at)}</span>
           </div>
           ${isOwn ? `<button class="post-more" onclick="deleteGroupPost('${post.id}',this)">🗑️</button>` : ''}
         </div>
@@ -7422,7 +7427,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     const p = vibe.profiles || {};
     const name = p.full_name || p.username || 'User';
     document.getElementById('viewer-name').textContent = name;
-    document.getElementById('viewer-time').textContent = timeAgo(vibe.created_at);
+    document.getElementById('viewer-time').innerHTML = timeTag(vibe.created_at);
     document.getElementById('viewer-emoji').textContent = vibe.emoji;
     document.getElementById('viewer-text').textContent = vibe.content || '';
 
@@ -7500,7 +7505,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       document.getElementById('thread-original-post').innerHTML = `
         <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px">${name}</div>
         <div style="font-size:14px;color:#aaa;line-height:1.5">${post.body || ''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">${timeAgo(post.created_at)}</div>`;
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${timeTag(post.created_at)}</div>`;
     }
 
     // Set avatar
@@ -9228,7 +9233,98 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       closeGifPicker();
     }
   }
-  function timeAgo(date) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<1) return 'just now'; if(m<60) return m+'m'; const h = Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d'; }
+  // ---- Post timestamps: one parser, one formatter, one shared refresh timer ----
+  // Supabase timestamps may arrive with an offset ("+00:00") or as a zone-less UTC
+  // string ("2026-10-11T08:24:00"). A zone-less string must be read as UTC; the
+  // plain Date constructor would read it as device-local time, which shifts every
+  // post by the user's UTC offset (e.g. a fresh post showing "2h" in UTC+2).
+  function parseDbDate(v) {
+    if (v == null || v === '') return null;
+    if (v instanceof Date) return isNaN(v) ? null : v;
+    const s = String(v).trim();
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)(\.\d+)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?$/i);
+    if (!m) { const d0 = new Date(s); return isNaN(d0) ? null : d0; }
+    const time = m[2].length === 5 ? m[2] + ':00' : m[2];
+    const frac = m[3] ? '.' + m[3].slice(1, 4).padEnd(3, '0') : '';
+    let zone = m[4] || 'Z';
+    if (/^[+-]\d{2}$/.test(zone)) zone += ':00';
+    else if (/^[+-]\d{4}$/.test(zone)) zone = zone.slice(0, 3) + ':' + zone.slice(3);
+    if (zone.toUpperCase() === 'Z') zone = 'Z';
+    const d = new Date(m[1] + 'T' + time + frac + zone);
+    return isNaN(d) ? null : d;
+  }
+  // Compact relative label: "Just now", "1m" … "59m", "1h" … "23h", "1d" … "6d", then "4 Oct" / "4 Oct 25".
+  function timeAgo(v) {
+    const d = parseDbDate(v);
+    if (!d) return '';
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return days + 'd';
+    const sameYear = d.getFullYear() === new Date().getFullYear();
+    return d.toLocaleDateString('en-GB', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: '2-digit' });
+  }
+  // Exact local date and time, e.g. "11 October 2026 at 10:24" (device time zone).
+  function exactTimeText(v) {
+    const d = parseDbDate(v);
+    if (!d) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const month = d.toLocaleDateString('en-GB', { month: 'long' });
+    return d.getDate() + ' ' + month + ' ' + d.getFullYear() + ' at ' + hh + ':' + mm;
+  }
+  // Markup for a timestamp: a focusable <time> that shows the exact time when tapped.
+  function timeTag(v) {
+    const d = parseDbDate(v);
+    if (!d) return '';
+    ensureRelTimer();
+    const iso = d.toISOString();
+    const exact = exactTimeText(v);
+    return '<time class="rel-time" datetime="' + iso + '" data-ts="' + iso + '" role="button" tabindex="0" aria-label="Posted ' + exact + '. Activate for exact time">' + timeAgo(v) + '</time>';
+  }
+  // One shared timer for all visible timestamps (not one per post). It stops itself
+  // when no timestamps remain on screen and restarts when a new one is rendered.
+  let relTimer = null;
+  function refreshRelTimes() {
+    const els = document.querySelectorAll('time.rel-time');
+    if (!els.length) { clearInterval(relTimer); relTimer = null; return; }
+    els.forEach(el => { const t = timeAgo(el.dataset.ts); if (el.textContent !== t) el.textContent = t; });
+  }
+  function ensureRelTimer() { if (!relTimer) relTimer = setInterval(refreshRelTimes, 30000); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshRelTimes(); });
+  let exactTipTimer = null;
+  function showExactTime(el) {
+    let tip = document.getElementById('exact-time-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'exact-time-tip';
+      tip.setAttribute('role', 'status');
+      tip.setAttribute('aria-live', 'polite');
+      document.body.appendChild(tip);
+    }
+    const txt = exactTimeText(el.dataset.ts);
+    tip.textContent = txt ? 'Posted ' + txt : 'Time unavailable';
+    tip.classList.add('show');
+    clearTimeout(exactTipTimer);
+    exactTipTimer = setTimeout(() => tip.classList.remove('show'), 3000);
+  }
+  // Capture phase: tapping a timestamp shows the exact time and does not open the card behind it.
+  document.addEventListener('click', function (e) {
+    const el = e.target instanceof Element ? e.target.closest('time.rel-time') : null;
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    showExactTime(el);
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target instanceof Element ? e.target.closest('time.rel-time') : null;
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    showExactTime(el);
+  }, true);
   function getColor(n) { const c=['#F5C518','#FF6B35','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD']; let h=0; for(let x of n) h=x.charCodeAt(0)+h*31; return c[Math.abs(h)%c.length]; }
   function burstParticles(container) {
     ['🐝','✨','💛','⭐','🍯'].forEach((e,i) => {
