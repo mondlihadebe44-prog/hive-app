@@ -548,6 +548,10 @@ body {
 
 /* Feed tabs */
 .feed-tabs { display: flex; gap: 0; }
+.home-title-actions { display:flex; align-items:center; gap:8px; }
+.home-view-switch { display:inline-flex; align-items:center; gap:2px; background:#111; border:1px solid var(--border); border-radius:50px; padding:3px; }
+.hvs-btn { background:none; border:none; color:var(--muted); font-family:'Syne',sans-serif; font-weight:700; font-size:12px; line-height:1; padding:9px 11px; min-height:34px; border-radius:50px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+.hvs-btn.active { background:#F6C21A; color:#000; }
 .feed-tab {
   flex: 1; padding: 14px 0; text-align: center;
   font-size: 13px; font-weight: 600; color: #666;
@@ -2382,10 +2386,16 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div class="feed-header">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 4px">
           <div class="feed-title">Your Hive 🍯</div>
+          <div class="home-title-actions">
+          <div class="home-view-switch" role="tablist" aria-label="Home view">
+            <button type="button" class="hvs-btn active" id="hvs-posts" role="tab" aria-selected="true" onclick="setHomeView('posts')">Posts</button>
+            <button type="button" class="hvs-btn" id="hvs-video" role="tab" aria-selected="false" onclick="setHomeView('video')">🎬 Hive Video</button>
+          </div>
           <button onclick="setNav(document.getElementById('nav-notifs'),'notifs')" style="position:relative;background:none;border:none;cursor:pointer;padding:6px;color:var(--text);transition:color 0.2s" onmouseover="this.style.color='#F6C21A'" onmouseout="this.style.color='var(--text)'">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span id="feed-notif-dot" style="display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;background:#F6C21A;border-radius:50%;border:2px solid #000"></span>
           </button>
+          </div>
         </div>
         <div class="stories-bar" id="vibe-check-bar">
           <!-- Add Vibe Check button -->
@@ -7967,7 +7977,12 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   async function openHiveVideo(startPostId) {
-    if (hv) return;
+    if (hv && !startPostId) { hvShow(); return; }
+    if (hv) { // already open (hidden or visible): jump to the tapped video if it is in this viewer
+      const idx = hv.posts.findIndex(p => p.id === startPostId);
+      if (idx >= 0) { hvShow(); hv.container.scrollTo({ top: idx * hv.container.clientHeight, behavior: 'instant' }); return; }
+      closeHiveVideo(); // not in this viewer: start a fresh one at that video
+    }
     if (!currentUser) { showToast('Sign in to watch Hive Video'); return; }
     ensureHvStyles();
     const root = document.createElement('div');
@@ -7975,7 +7990,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     root.style.cssText = 'position:fixed;inset:0;z-index:550;background:#000;display:flex;flex-direction:column';
     root.innerHTML = `
       <div style="position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;pointer-events:none">
-        <button id="hv-close" aria-label="Close" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
+        <button id="hv-close" aria-label="Back to Posts" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
         <div style="pointer-events:auto;display:flex;gap:8px">
           <button class="hv-tab on" data-tab="foryou">For You</button>
           <button class="hv-tab" data-tab="following">Following</button>
@@ -7985,15 +8000,16 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
       <div id="hv-scroll" style="flex:1;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch"></div>`;
     document.body.appendChild(root);
 
-    hv = { root, container: root.querySelector('#hv-scroll'), posts: [], seen: new Set(), page: 0, loading: false, done: false, tab: 'foryou', active: -1, io: null };
+    hv = { root, container: root.querySelector('#hv-scroll'), posts: [], seen: new Set(), page: 0, loading: false, done: false, tab: 'foryou', active: -1, io: null, hidden: true, wasPlaying: false };
     hv.io = new IntersectionObserver(entries => {
       entries.forEach(en => { if (en.isIntersecting && en.intersectionRatio >= 0.6) hvActivate(Number(en.target.dataset.idx)); });
     }, { root: hv.container, threshold: [0.6] });
 
-    root.querySelector('#hv-close').onclick = closeHiveVideo;
+    root.querySelector('#hv-close').onclick = () => setHomeView('posts');
     root.querySelector('#hv-mute').onclick = hvToggleMute;
     root.querySelectorAll('.hv-tab').forEach(btn => btn.onclick = () => hvSwitchTab(btn.dataset.tab, root));
     document.addEventListener('visibilitychange', hvOnVisibility);
+    hvShow();
     // Start at the tapped video: show it first, then load the normal feed (deduplicated)
     if (startPostId) {
       const { data: first } = await sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)').eq('id', startPostId).maybeSingle();
@@ -8010,6 +8026,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.removeEventListener('visibilitychange', hvOnVisibility);
     hv.root.remove();
     hv = null;
+    syncHomeSwitch('posts');
   }
 
   function hvOnVisibility() {
@@ -8331,6 +8348,45 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
   }
 
   function hvOpenProfile(userId) { closeHiveVideo(); openUserProfile(userId); }
+
+  // HOME SWITCH (Posts | Hive Video). Hiding keeps the viewer's state, so its place is kept.
+  function syncHomeSwitch(view) {
+    const p = document.getElementById('hvs-posts'), v = document.getElementById('hvs-video');
+    if (!p || !v) return;
+    const isVideo = view === 'video';
+    p.classList.toggle('active', !isVideo); v.classList.toggle('active', isVideo);
+    p.setAttribute('aria-selected', String(!isVideo)); v.setAttribute('aria-selected', String(isVideo));
+  }
+
+  function setHomeView(view) {
+    if (view === 'video') { openHiveVideo(); return; }
+    hideHiveVideo();
+  }
+
+  function hvShow() {
+    if (!hv || !hv.hidden) { if (hv) syncHomeSwitch('video'); return; }
+    hv.hidden = false;
+    hv.root.style.display = 'flex';
+    // One history entry, so the phone's Back button returns to Posts instead of leaving the app
+    if (!(history.state && history.state.hiveVideo)) history.pushState({ hiveVideo: true }, '');
+    syncHomeSwitch('video');
+    if (hv.wasPlaying) { const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`); if (cur) hvPlay(cur); }
+  }
+
+  function hideHiveVideo(fromBack) {
+    if (!hv || hv.hidden) { syncHomeSwitch('posts'); return; }
+    hv.hidden = true;
+    const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`);
+    hv.wasPlaying = !!(cur && !cur.paused);
+    hv.container.querySelectorAll('video').forEach(v => v.pause());
+    hv.root.style.display = 'none';
+    syncHomeSwitch('posts');
+    if (!fromBack && history.state && history.state.hiveVideo) history.back();
+  }
+
+  window.addEventListener('popstate', e => {
+    if (hv && !hv.hidden && !(e.state && e.state.hiveVideo)) hideHiveVideo(true);
+  });
 
   function hvShare(postId) {
     const post = hv && hv.posts.find(x => x.id === postId);
