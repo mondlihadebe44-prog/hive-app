@@ -1476,6 +1476,13 @@ body.light .auth-inner { background: transparent; }
 body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
 body.light .icon-btn { color: #444; }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
+/* Voice typing (composer) */
+#composer-mic-btn { background: none; border: none; color: #F6C21A; cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: 50%; transition: background 0.2s, color 0.2s; -webkit-tap-highlight-color: transparent; }
+#composer-mic-btn:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
+#composer-mic-btn.on { background: #F6C21A; color: #000; animation: voicePulse 1.4s ease-in-out infinite; }
+.voice-dot { width: 8px; height: 8px; border-radius: 50%; background: #F6C21A; flex-shrink: 0; animation: voicePulse 1.4s ease-in-out infinite; }
+@keyframes voicePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(246,194,26,0.55); } 50% { box-shadow: 0 0 0 7px rgba(246,194,26,0); } }
+@media (prefers-reduced-motion: reduce) { #composer-mic-btn.on, .voice-dot { animation: none; } }
 /* Post timestamps: tappable, with a subtle hint and a visible focus ring */
 time.rel-time { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: rgba(128,128,128,0.55); -webkit-tap-highlight-color: transparent; border-radius: 4px; }
 time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
@@ -2148,6 +2155,13 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     </div>
   </div>
 
+  <!-- Voice typing status (shown only while listening) -->
+  <div id="voice-status" role="status" aria-live="polite" style="display:none;align-items:center;gap:10px;margin:0 20px 8px;padding:8px 14px;border:1px solid rgba(246,194,26,0.35);border-radius:50px;background:rgba(246,194,26,0.08);font-family:'DM Sans',sans-serif;font-size:13px;color:#F6C21A">
+    <span class="voice-dot" aria-hidden="true"></span>
+    <span style="flex:1">Listening… speak now</span>
+    <button type="button" onclick="stopVoiceTyping()" style="background:none;border:1.5px solid #F6C21A;color:#F6C21A;border-radius:50px;padding:4px 12px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer">Stop</button>
+  </div>
+
   <!-- Character counter -->
   <div style="padding:0 20px 8px;text-align:right">
     <span id="composer-char-count" class="composer-char-count">0 / 500</span>
@@ -2171,6 +2185,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
     </button>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <button type="button" id="composer-mic-btn" onclick="toggleVoiceTyping()" aria-pressed="false" aria-label="Start voice typing" title="Voice typing">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+      </button>
       <div id="composer-char-ring" style="width:28px;height:28px;position:relative">
         <svg width="28" height="28" style="transform:rotate(-90deg)">
           <circle cx="14" cy="14" r="11" fill="none" stroke="#222" stroke-width="2.5"/>
@@ -4153,12 +4170,118 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function closeComposer() {
+    stopVoiceTyping();
     const textarea = document.getElementById('composer-textarea');
     if (composerMode === 'new' && textarea.value.trim()) composerDraft = textarea.value;
     else if (composerMode === 'new') composerDraft = '';
     document.getElementById('fullscreen-composer').classList.remove('active');
     hideMentionDropdown();
   }
+
+  // ---- Voice typing: speech-to-text into the composer. No audio is recorded or stored. ----
+  // Microphone permission is requested by the browser when recognition starts.
+  const VOICE_LANG = 'en-ZA';          // South African English first
+  const VOICE_FALLBACK_LANG = 'en-US'; // used only if the browser rejects en-ZA
+  const VOICE_UNSUPPORTED = "Voice typing isn't available in this browser. Tap the microphone on your keyboard to dictate instead.";
+  const VOICE_ERRORS = {
+    'not-allowed': 'Microphone access is blocked. Allow it in your browser settings to use voice typing.',
+    'service-not-allowed': VOICE_UNSUPPORTED,
+    'audio-capture': 'No microphone was found. Check that your device has one, then try again.',
+    'network': 'Voice typing needs an internet connection. Check your connection and try again.',
+    'no-speech': "Didn't hear anything. Tap the microphone to try again.",
+    'aborted': null
+  };
+  let voiceSession = null; // { rec, base, lang, stopping, retryLang, fallbackTimer }
+
+  function setVoiceUI(on) {
+    const btn = document.getElementById('composer-mic-btn');
+    const bar = document.getElementById('voice-status');
+    if (btn) {
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+      btn.setAttribute('aria-label', on ? 'Stop voice typing' : 'Start voice typing');
+    }
+    if (bar) bar.style.display = on ? 'flex' : 'none';
+  }
+
+  function startVoiceTyping(lang) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showToast(VOICE_UNSUPPORTED); return; }
+    const ta = document.getElementById('composer-textarea');
+    let rec;
+    try { rec = new SR(); } catch (e) { showToast(VOICE_UNSUPPORTED); return; }
+    rec.lang = lang || VOICE_LANG;
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    // Text already in the composer is kept; spoken text is rebuilt after it on every
+    // result, so a phrase is never added twice.
+    const session = { rec, base: ta.value, lang: rec.lang, stopping: false, retryLang: null, fallbackTimer: null };
+    voiceSession = session;
+    ta.readOnly = true;
+    setVoiceUI(true);
+
+    rec.onresult = (e) => {
+      if (voiceSession !== session) return;
+      let spoken = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const t = (e.results[i][0].transcript || '').trim();
+        if (t) spoken += (spoken ? ' ' : '') + t;
+      }
+      const sep = session.base && !/\s$/.test(session.base) && spoken ? ' ' : '';
+      ta.value = session.base + sep + spoken;
+      onComposerInput(ta);
+    };
+    rec.onerror = (e) => {
+      if (voiceSession !== session) return;
+      if (e.error === 'language-not-supported' && session.lang !== VOICE_FALLBACK_LANG) {
+        session.retryLang = VOICE_FALLBACK_LANG;
+        return;
+      }
+      const msg = Object.prototype.hasOwnProperty.call(VOICE_ERRORS, e.error) ? VOICE_ERRORS[e.error] : 'Voice typing stopped. Tap the microphone to try again.';
+      if (msg) showToast(msg);
+    };
+    rec.onend = () => {
+      if (session.retryLang && voiceSession === session && !session.stopping) {
+        voiceSession = null;
+        startVoiceTyping(session.retryLang);
+        return;
+      }
+      finishVoiceTyping(session);
+    };
+    try {
+      rec.start();
+    } catch (e) {
+      finishVoiceTyping(session);
+      showToast(VOICE_UNSUPPORTED);
+    }
+  }
+
+  function stopVoiceTyping() {
+    const s = voiceSession;
+    if (!s || s.stopping) return;
+    s.stopping = true;
+    setVoiceUI(false); // the mic stops looking active immediately
+    try { s.rec.stop(); } catch (e) {}
+    // Recognition normally fires onend shortly after stop(); this guarantees the UI
+    // is released even if it does not.
+    s.fallbackTimer = setTimeout(() => finishVoiceTyping(s), 2000);
+  }
+
+  function finishVoiceTyping(session) {
+    if (session.fallbackTimer) clearTimeout(session.fallbackTimer);
+    if (voiceSession === session) voiceSession = null;
+    setVoiceUI(false);
+    document.getElementById('composer-textarea').readOnly = false;
+  }
+
+  function toggleVoiceTyping() {
+    if (voiceSession) stopVoiceTyping();
+    else startVoiceTyping();
+  }
+
+  // Leaving the app or switching away stops listening rather than leaving the mic on.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoiceTyping(); });
 
   function onComposerInput(el) {
     el.style.height = 'auto';
@@ -4187,6 +4310,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   async function submitComposer() {
     if (!currentUser) { showToast('Sign in first!'); return; }
+    // Never publish while the mic is still listening: stop first, let the user check the text, then tap Post.
+    if (voiceSession) { stopVoiceTyping(); showToast('Stopped listening. Check your text, then tap Post.'); return; }
     const textarea = document.getElementById('composer-textarea');
     const text = textarea.value.trim();
     const postBtn = document.getElementById('composer-post-btn');
