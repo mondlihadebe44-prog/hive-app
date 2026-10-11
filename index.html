@@ -549,9 +549,26 @@ body {
 /* Feed tabs */
 .feed-tabs { display: flex; gap: 0; }
 .home-title-actions { display:flex; align-items:center; gap:8px; }
-.home-view-switch { display:inline-flex; align-items:center; gap:2px; background:#111; border:1px solid var(--border); border-radius:50px; padding:3px; }
-.hvs-btn { background:none; border:none; color:var(--muted); font-family:'Syne',sans-serif; font-weight:700; font-size:12px; line-height:1; padding:9px 11px; min-height:34px; border-radius:50px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
-.hvs-btn.active { background:#F6C21A; color:#000; }
+.hv-cam-btn { position:relative; width:38px; height:38px; min-width:38px; border-radius:50%; border:1.5px solid rgba(246,194,26,0.6); background:radial-gradient(circle, rgba(246,194,26,0.22), rgba(0,0,0,0.7)); color:#F6C21A; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; padding:0; box-shadow:0 0 10px rgba(246,194,26,0.35); animation:hvCamGlow 3.6s ease-in-out infinite; -webkit-tap-highlight-color:transparent; }
+.hv-cam-btn::after { content:''; position:absolute; top:-10%; bottom:-10%; width:40%; left:-60%; background:linear-gradient(100deg, transparent, rgba(255,240,180,0.45), transparent); transform:skewX(-20deg); animation:hvCamShine 4.6s ease-in-out infinite; pointer-events:none; }
+.hv-cam-btn svg { width:19px; height:19px; position:relative; z-index:1; }
+.hv-cam-btn:active { transform:scale(0.94); }
+.hv-cam-btn:focus-visible { outline:2px solid #F6C21A; outline-offset:2px; }
+@keyframes hvCamGlow { 0%,100% { box-shadow:0 0 8px rgba(246,194,26,0.25); } 50% { box-shadow:0 0 16px rgba(246,194,26,0.55); } }
+@keyframes hvCamShine { 0%,65% { left:-60%; } 100% { left:130%; } }
+.hv-intro { position:absolute; inset:0; z-index:20; background:radial-gradient(circle at 50% 28%, rgba(246,194,26,0.16), rgba(0,0,0,0) 62%), #000; display:flex; align-items:center; justify-content:center; padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom)); box-sizing:border-box; overflow-y:auto; color:#fff; font-family:'DM Sans',sans-serif; animation:hvIntroIn 0.35s ease-out both; }
+.hv-intro-card { width:100%; max-width:360px; text-align:center; }
+.hv-intro-title { font-family:'Syne',sans-serif; font-weight:800; font-size:30px; margin:14px 0 4px; }
+.hv-intro-tag { color:#F6C21A; font-size:15px; margin:0 0 22px; }
+.hv-intro-list { list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:10px; text-align:left; }
+.hv-intro-list li { display:flex; gap:12px; align-items:center; background:#0c0b08; border:1px solid rgba(246,194,26,0.18); border-radius:16px; padding:12px 14px; }
+.hv-intro-ico { font-size:20px; width:30px; text-align:center; flex-shrink:0; }
+.hv-intro-list b { display:block; font-family:'Syne',sans-serif; font-size:14px; }
+.hv-intro-list small { color:#aaa; font-size:12px; line-height:1.4; }
+.hv-intro-go { width:100%; background:#F6C21A; color:#000; border:none; border-radius:50px; padding:15px; font-family:'Syne',sans-serif; font-weight:800; font-size:16px; cursor:pointer; box-shadow:0 0 24px rgba(246,194,26,0.35); }
+.hv-intro-later { background:none; border:none; color:#bbb; font-size:14px; margin-top:8px; padding:10px; min-height:44px; cursor:pointer; }
+@keyframes hvIntroIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .hv-cam-btn, .hv-cam-btn::after, .hv-intro { animation:none; } }
 .feed-tab {
   flex: 1; padding: 14px 0; text-align: center;
   font-size: 13px; font-weight: 600; color: #666;
@@ -2387,10 +2404,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 4px">
           <div class="feed-title">Your Hive 🍯</div>
           <div class="home-title-actions">
-          <div class="home-view-switch" role="tablist" aria-label="Home view">
-            <button type="button" class="hvs-btn active" id="hvs-posts" role="tab" aria-selected="true" onclick="setHomeView('posts')">Posts</button>
-            <button type="button" class="hvs-btn" id="hvs-video" role="tab" aria-selected="false" onclick="setHomeView('video')">🎬 Hive Video</button>
-          </div>
+          <button type="button" class="hv-cam-btn" onclick="openHiveVideo()" aria-label="Open Hive Video" title="Hive Video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3z"/></svg></button>
           <button onclick="setNav(document.getElementById('nav-notifs'),'notifs')" style="position:relative;background:none;border:none;cursor:pointer;padding:6px;color:var(--text);transition:color 0.2s" onmouseover="this.style.color='#F6C21A'" onmouseout="this.style.color='var(--text)'">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span id="feed-notif-dot" style="display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;background:#F6C21A;border-radius:50%;border:2px solid #000"></span>
@@ -7990,25 +8004,30 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     root.style.cssText = 'position:fixed;inset:0;z-index:550;background:#000;display:flex;flex-direction:column';
     root.innerHTML = `
       <div style="position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;pointer-events:none">
-        <button id="hv-close" aria-label="Back to Posts" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
+        <button id="hv-close" aria-label="Back to Home" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
         <div style="pointer-events:auto;display:flex;gap:8px">
           <button class="hv-tab on" data-tab="foryou">For You</button>
           <button class="hv-tab" data-tab="following">Following</button>
         </div>
-        <button id="hv-mute" aria-label="Sound" style="pointer-events:auto;background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">${hvMuted ? '🔇' : '🔊'}</button>
+        <div style="pointer-events:auto;display:flex;gap:8px">
+          <button id="hv-info" aria-label="About Hive Video" style="background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:17px;font-weight:700;cursor:pointer">ⓘ</button>
+          <button id="hv-mute" aria-label="Sound" style="background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">${hvMuted ? '🔇' : '🔊'}</button>
+        </div>
       </div>
       <div id="hv-scroll" style="flex:1;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch"></div>`;
     document.body.appendChild(root);
 
-    hv = { root, container: root.querySelector('#hv-scroll'), posts: [], seen: new Set(), page: 0, loading: false, done: false, tab: 'foryou', active: -1, io: null, hidden: true, wasPlaying: false };
+    hv = { root, container: root.querySelector('#hv-scroll'), posts: [], seen: new Set(), page: 0, loading: false, done: false, tab: 'foryou', active: -1, io: null, hidden: true, wasPlaying: false, introOpen: false };
     hv.io = new IntersectionObserver(entries => {
       entries.forEach(en => { if (en.isIntersecting && en.intersectionRatio >= 0.6) hvActivate(Number(en.target.dataset.idx)); });
     }, { root: hv.container, threshold: [0.6] });
 
-    root.querySelector('#hv-close').onclick = () => setHomeView('posts');
+    root.querySelector('#hv-close').onclick = () => hideHiveVideo();
+    root.querySelector('#hv-info').onclick = hvShowIntro;
     root.querySelector('#hv-mute').onclick = hvToggleMute;
     root.querySelectorAll('.hv-tab').forEach(btn => btn.onclick = () => hvSwitchTab(btn.dataset.tab, root));
     document.addEventListener('visibilitychange', hvOnVisibility);
+    if (!hvIntroSeen()) hvShowIntro();
     hvShow();
     // Start at the tapped video: show it first, then load the normal feed (deduplicated)
     if (startPostId) {
@@ -8026,7 +8045,6 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     document.removeEventListener('visibilitychange', hvOnVisibility);
     hv.root.remove();
     hv = null;
-    syncHomeSwitch('posts');
   }
 
   function hvOnVisibility() {
@@ -8213,7 +8231,7 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
     });
     const cur = slides[idx];
     if (cur) {
-      hvPlay(cur.querySelector('video'));
+      if (!hv.introOpen) hvPlay(cur.querySelector('video'));
       hvLoadStats(cur, hv.posts[idx]);
       hvLoadAttribution(cur, hv.posts[idx]);
     }
@@ -8349,44 +8367,79 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 
   function hvOpenProfile(userId) { closeHiveVideo(); openUserProfile(userId); }
 
-  // HOME SWITCH (Posts | Hive Video). Hiding keeps the viewer's state, so its place is kept.
-  function syncHomeSwitch(view) {
-    const p = document.getElementById('hvs-posts'), v = document.getElementById('hvs-video');
-    if (!p || !v) return;
-    const isVideo = view === 'video';
-    p.classList.toggle('active', !isVideo); v.classList.toggle('active', isVideo);
-    p.setAttribute('aria-selected', String(!isVideo)); v.setAttribute('aria-selected', String(isVideo));
-  }
-
-  function setHomeView(view) {
-    if (view === 'video') { openHiveVideo(); return; }
-    hideHiveVideo();
-  }
-
+  // HIVE VIDEO FROM HOME (camera icon). Hiding (✕, Back, Maybe later) keeps the viewer's place.
   function hvShow() {
-    if (!hv || !hv.hidden) { if (hv) syncHomeSwitch('video'); return; }
+    if (!hv || !hv.hidden) return;
     hv.hidden = false;
     hv.root.style.display = 'flex';
-    // One history entry, so the phone's Back button returns to Posts instead of leaving the app
+    // One history entry, so the phone's Back button returns to Home instead of leaving the app
     if (!(history.state && history.state.hiveVideo)) history.pushState({ hiveVideo: true }, '');
-    syncHomeSwitch('video');
-    if (hv.wasPlaying) { const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`); if (cur) hvPlay(cur); }
+    if (hv.wasPlaying && !hv.introOpen) { const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`); if (cur) hvPlay(cur); }
   }
 
   function hideHiveVideo(fromBack) {
-    if (!hv || hv.hidden) { syncHomeSwitch('posts'); return; }
+    if (!hv || hv.hidden) return;
     hv.hidden = true;
     const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`);
     hv.wasPlaying = !!(cur && !cur.paused);
     hv.container.querySelectorAll('video').forEach(v => v.pause());
     hv.root.style.display = 'none';
-    syncHomeSwitch('posts');
     if (!fromBack && history.state && history.state.hiveVideo) history.back();
   }
 
   window.addEventListener('popstate', e => {
     if (hv && !hv.hidden && !(e.state && e.state.hiveVideo)) hideHiveVideo(true);
   });
+
+  // WELCOME SCREEN: first visit only (localStorage flag, no database). Reopen with the ⓘ button.
+  const HV_INTRO_KEY = 'hive_video_intro_seen';
+  function hvIntroSeen() { try { return localStorage.getItem(HV_INTRO_KEY) === '1'; } catch (e) { return false; } }
+  function hvMarkIntroSeen() { try { localStorage.setItem(HV_INTRO_KEY, '1'); } catch (e) {} }
+
+  function hvShowIntro() {
+    if (!hv || document.getElementById('hv-intro')) return;
+    hv.introOpen = true;
+    hv.container.querySelectorAll('video').forEach(v => v.pause());
+    hvMarkIntroSeen();
+    const o = document.createElement('div');
+    o.id = 'hv-intro';
+    o.className = 'hv-intro';
+    o.setAttribute('role', 'dialog');
+    o.setAttribute('aria-label', 'Welcome to Hive Video');
+    o.innerHTML = `
+      <div class="hv-intro-card">
+        <svg viewBox="0 0 96 96" width="88" height="88" aria-hidden="true">
+          <defs><linearGradient id="hvEmblemGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE27A"/><stop offset="1" stop-color="#F6C21A"/></linearGradient></defs>
+          <circle cx="48" cy="48" r="44" fill="#0d0c08" stroke="url(#hvEmblemGold)" stroke-width="2.5"/>
+          <ellipse cx="29" cy="28" rx="8" ry="4.5" fill="#F6C21A" opacity="0.55" transform="rotate(-25 29 28)"/>
+          <ellipse cx="67" cy="28" rx="8" ry="4.5" fill="#F6C21A" opacity="0.55" transform="rotate(25 67 28)"/>
+          <rect x="22" y="38" width="38" height="26" rx="6" fill="url(#hvEmblemGold)"/>
+          <path d="M60 46 L73 39 V63 L60 56 Z" fill="url(#hvEmblemGold)"/>
+          <circle cx="38" cy="51" r="5" fill="#0d0c08"/>
+        </svg>
+        <h2 class="hv-intro-title">Hive Video</h2>
+        <p class="hv-intro-tag">Short videos. Big vibes.</p>
+        <ul class="hv-intro-list">
+          <li><span class="hv-intro-ico">▶️</span><div><b>Watch videos</b><small>Swipe up for the next clip</small></div></li>
+          <li><span class="hv-intro-ico">🎬</span><div><b>Post your own videos</b><small>Share clips from the composer</small></div></li>
+          <li><span class="hv-intro-ico">💬</span><div><b>Comment and engage</b><small>Like, comment and save as you watch</small></div></li>
+          <li><span class="hv-intro-ico">🔁</span><div><b>Quote and Rebuzz</b><small>Share a clip with your followers</small></div></li>
+        </ul>
+        <button type="button" class="hv-intro-go" id="hv-intro-start">Get Started</button>
+        <button type="button" class="hv-intro-later" id="hv-intro-later">Maybe later</button>
+      </div>`;
+    hv.root.appendChild(o);
+    o.querySelector('#hv-intro-start').onclick = hvCloseIntro;
+    o.querySelector('#hv-intro-later').onclick = () => { hvCloseIntro(); hideHiveVideo(); };
+  }
+
+  function hvCloseIntro() {
+    const o = document.getElementById('hv-intro');
+    if (o) o.remove();
+    if (!hv) return;
+    hv.introOpen = false;
+    if (!hv.hidden) { const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`); if (cur) hvPlay(cur); }
+  }
 
   function hvShare(postId) {
     const post = hv && hv.posts.find(x => x.id === postId);
