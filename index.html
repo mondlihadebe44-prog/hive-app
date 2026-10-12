@@ -1476,6 +1476,28 @@ body.light .auth-inner { background: transparent; }
 body.light .sidebar-bottom { border-top: 1px solid #e0e0e0; }
 body.light .icon-btn { color: #444; }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
+/* HiveMind: honeycomb orb, voice, spoken replies, quick actions, history */
+.hm-orb { position: relative; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: radial-gradient(circle at 35% 30%, #FFF0A8 0%, #F6C21A 38%, #C98A0B 72%, #5a3f06 100%); box-shadow: 0 0 14px rgba(246,194,26,0.4), inset 0 0 10px rgba(255,255,255,0.25); animation: hmIdle 4s ease-in-out infinite; }
+.hm-orb::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1px dashed rgba(246,194,26,0.4); animation: hmSpin 14s linear infinite; }
+.hm-orb::after { content: ''; position: absolute; inset: 0; border-radius: 50%; opacity: 0.22; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='42' viewBox='0 0 24 42'%3E%3Cpath d='M12 0 L24 7 L24 21 L12 28 L0 21 L0 7 Z M12 28 L24 35 L24 42 M0 35 L12 42' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E"); background-size: 24px 42px; pointer-events: none; }
+.hm-orb.listening { animation: hmListen 1.1s ease-in-out infinite; }
+.hm-orb.thinking { animation: hmThink 1.6s ease-in-out infinite; }
+.hm-orb.speaking { animation: hmSpeak 0.7s ease-in-out infinite alternate; }
+@keyframes hmIdle { 0%, 100% { box-shadow: 0 0 10px rgba(246,194,26,0.3); } 50% { box-shadow: 0 0 20px rgba(246,194,26,0.55); } }
+@keyframes hmListen { 0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(246,194,26,0.5); } 50% { transform: scale(1.1); box-shadow: 0 0 32px rgba(246,194,26,0.95); } }
+@keyframes hmThink { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes hmSpeak { from { box-shadow: 0 0 14px rgba(246,194,26,0.45); transform: scale(1); } to { box-shadow: 0 0 28px rgba(246,194,26,0.9); transform: scale(1.06); } }
+@keyframes hmSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hm-orb, .hm-orb::before { animation: none !important; } }
+.hm-mic-btn { background: none; border: none; color: #F6C21A; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 40px; height: 40px; min-width: 40px; transition: background 0.2s, color 0.2s; }
+.hm-mic-btn.on { background: #F6C21A; color: #000; animation: voicePulse 1.4s ease-in-out infinite; }
+.hm-mic-btn:focus-visible, .hm-tts-btn:focus-visible, .hm-quick-chip:focus-visible, .hm-hist-item:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
+.hm-tts-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.hm-tts-btn { background: rgba(246,194,26,0.1); border: 1px solid rgba(246,194,26,0.35); color: #F6C21A; border-radius: 50px; padding: 6px 14px; min-height: 34px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.hm-quick-chip { padding: 8px 14px; background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.3); border-radius: 50px; color: #F6C21A; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; min-height: 36px; }
+.hm-hist-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; text-align: left; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 12px 14px; color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; }
+.hm-hist-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-hist-time { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 /* Voice typing (composer) */
 #composer-mic-btn { background: none; border: none; color: #F6C21A; cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: 50%; transition: background 0.2s, color 0.2s; -webkit-tap-highlight-color: transparent; }
 #composer-mic-btn:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
@@ -2085,22 +2107,38 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px"></div>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#FF6B35);display:flex;align-items:center;justify-content:center;font-size:20px;animation:beeFloat 2s ease-in-out infinite">🐝</div>
+          <div id="hm-orb" class="hm-orb idle" data-state="idle" aria-hidden="true">🐝</div>
           <div>
             <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--gold)">HiveMind</div>
             <div style="font-size:11px;color:#00CC66">● Online</div>
           </div>
         </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button type="button" onclick="openHiveMindHistory()" class="hm-tts-btn" aria-label="Past conversations">History</button>
+          <button type="button" onclick="openHiveMind()" class="hm-tts-btn" aria-label="New chat">New</button>
+        </div>
         <button onclick="closeHiveMind()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
       </div>
     </div>
+
+    <!-- Past conversations (shown instead of the chat when open) -->
+    <div id="hm-history" style="display:none;flex:1;overflow-y:auto;padding:12px 20px;flex-direction:column;gap:8px"></div>
 
     <!-- Chat messages -->
     <div id="hivemind-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none"></div>
 
     <!-- Input area -->
     <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:#111;border-radius:0 0 0 0">
+      <div id="hm-voice-status" role="status" aria-live="polite" style="display:none;align-items:center;gap:10px;margin:0 0 10px;padding:8px 12px;border:1px solid rgba(246,194,26,0.35);border-radius:50px;background:rgba(246,194,26,0.08);font-family:'DM Sans',sans-serif;font-size:13px;color:#F6C21A">
+        <span class="voice-dot" aria-hidden="true"></span>
+        <span style="flex:1">Listening… speak now</span>
+        <button type="button" class="hm-tts-btn" onclick="stopVoiceTyping()">Stop</button>
+        <button type="button" class="hm-tts-btn" onclick="cancelVoiceTyping()">Cancel</button>
+      </div>
       <div style="display:flex;gap:8px;align-items:flex-end">
+        <button type="button" id="hm-mic-btn" class="hm-mic-btn" onclick="toggleHiveMindVoice()" aria-pressed="false" aria-label="Start voice input" title="Voice input">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+        </button>
         <div style="flex:1;background:#1a1a1a;border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
           <textarea id="hivemind-input" placeholder="Ask HiveMind anything..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHiveMind()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" style="width:100%;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none;line-height:1.5"></textarea>
         </div>
@@ -4178,8 +4216,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     hideMentionDropdown();
   }
 
-  // ---- Voice typing: speech-to-text into the composer. No audio is recorded or stored. ----
-  // Microphone permission is requested by the browser when recognition starts.
+  // ---- Voice typing: speech-to-text into a text box. Hive does not record or store audio. ----
+  // Shared by the post composer and HiveMind. The browser asks for microphone permission when recognition starts.
   const VOICE_LANG = 'en-ZA';          // South African English first
   const VOICE_FALLBACK_LANG = 'en-US'; // used only if the browser rejects en-ZA
   const VOICE_UNSUPPORTED = "Voice typing isn't available in this browser. Tap the microphone on your keyboard to dictate instead.";
@@ -4191,38 +4229,33 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     'no-speech': "Didn't hear anything. Tap the microphone to try again.",
     'aborted': null
   };
-  let voiceSession = null; // { rec, base, lang, stopping, retryLang, fallbackTimer }
+  // { rec, ta, base, onChange, setUI, lang, stopping, cancelled, retryLang, fallbackTimer }
+  let voiceSession = null;
 
-  function setVoiceUI(on) {
-    const btn = document.getElementById('composer-mic-btn');
-    const bar = document.getElementById('voice-status');
-    if (btn) {
-      btn.classList.toggle('on', on);
-      btn.setAttribute('aria-pressed', String(on));
-      btn.setAttribute('aria-label', on ? 'Stop voice typing' : 'Start voice typing');
-    }
-    if (bar) bar.style.display = on ? 'flex' : 'none';
-  }
-
-  function startVoiceTyping(lang) {
+  function startVoiceTyping(opts) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { showToast(VOICE_UNSUPPORTED); return; }
-    const ta = document.getElementById('composer-textarea');
     let rec;
     try { rec = new SR(); } catch (e) { showToast(VOICE_UNSUPPORTED); return; }
-    rec.lang = lang || VOICE_LANG;
+    rec.lang = opts.lang || VOICE_LANG;
     rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
-    // Text already in the composer is kept; spoken text is rebuilt after it on every
-    // result, so a phrase is never added twice.
-    const session = { rec, base: ta.value, lang: rec.lang, stopping: false, retryLang: null, fallbackTimer: null };
+    const ta = opts.ta;
+    // Text already in the box is kept. Spoken text is rebuilt after it on every result,
+    // so a phrase is never added twice.
+    const session = {
+      rec, ta, base: ta.value,
+      onChange: opts.onChange || (() => {}),
+      setUI: opts.setUI || (() => {}),
+      lang: rec.lang, stopping: false, cancelled: false, retryLang: null, fallbackTimer: null
+    };
     voiceSession = session;
     ta.readOnly = true;
-    setVoiceUI(true);
+    session.setUI(true);
 
     rec.onresult = (e) => {
-      if (voiceSession !== session) return;
+      if (voiceSession !== session || session.cancelled) return;
       let spoken = '';
       for (let i = 0; i < e.results.length; i++) {
         const t = (e.results[i][0].transcript || '').trim();
@@ -4230,7 +4263,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       }
       const sep = session.base && !/\s$/.test(session.base) && spoken ? ' ' : '';
       ta.value = session.base + sep + spoken;
-      onComposerInput(ta);
+      session.onChange();
     };
     rec.onerror = (e) => {
       if (voiceSession !== session) return;
@@ -4244,44 +4277,301 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     rec.onend = () => {
       if (session.retryLang && voiceSession === session && !session.stopping) {
         voiceSession = null;
-        startVoiceTyping(session.retryLang);
+        startVoiceTyping({ ta, onChange: session.onChange, setUI: session.setUI, lang: session.retryLang });
         return;
       }
       finishVoiceTyping(session);
     };
-    try {
-      rec.start();
-    } catch (e) {
-      finishVoiceTyping(session);
-      showToast(VOICE_UNSUPPORTED);
-    }
+    try { rec.start(); } catch (e) { finishVoiceTyping(session); showToast(VOICE_UNSUPPORTED); }
   }
 
   function stopVoiceTyping() {
     const s = voiceSession;
     if (!s || s.stopping) return;
     s.stopping = true;
-    setVoiceUI(false); // the mic stops looking active immediately
+    s.setUI(false); // the mic stops looking active immediately
     try { s.rec.stop(); } catch (e) {}
-    // Recognition normally fires onend shortly after stop(); this guarantees the UI
-    // is released even if it does not.
+    // onend normally follows stop(); this guarantees the UI is released even if it does not.
     s.fallbackTimer = setTimeout(() => finishVoiceTyping(s), 2000);
+  }
+
+  function cancelVoiceTyping() {
+    const s = voiceSession;
+    if (!s) return;
+    s.cancelled = true;
+    s.ta.value = s.base; // discard what was heard in this session
+    s.onChange();
+    stopVoiceTyping();
   }
 
   function finishVoiceTyping(session) {
     if (session.fallbackTimer) clearTimeout(session.fallbackTimer);
     if (voiceSession === session) voiceSession = null;
-    setVoiceUI(false);
-    document.getElementById('composer-textarea').readOnly = false;
+    session.setUI(false);
+    session.ta.readOnly = false;
   }
 
+  // ---- Post composer voice button ----
+  function composerVoiceOpts() {
+    const ta = document.getElementById('composer-textarea');
+    return { ta, onChange: () => onComposerInput(ta), setUI: setComposerMicUI };
+  }
+  function setComposerMicUI(on) {
+    const btn = document.getElementById('composer-mic-btn');
+    const bar = document.getElementById('voice-status');
+    if (btn) {
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+      btn.setAttribute('aria-label', on ? 'Stop voice typing' : 'Start voice typing');
+    }
+    if (bar) bar.style.display = on ? 'flex' : 'none';
+  }
   function toggleVoiceTyping() {
     if (voiceSession) stopVoiceTyping();
-    else startVoiceTyping();
+    else startVoiceTyping(composerVoiceOpts());
   }
 
-  // Leaving the app or switching away stops listening rather than leaving the mic on.
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoiceTyping(); });
+  // ---- HiveMind: orb state ----
+  function hmOrbRefresh() {
+    const orb = document.getElementById('hm-orb');
+    if (!orb) return;
+    const state = (hmSpeech && !hmSpeech.paused) ? 'speaking'
+      : (voiceSession && !voiceSession.stopping) ? 'listening'
+      : hiveMindTyping ? 'thinking' : 'idle';
+    orb.className = 'hm-orb ' + state;
+    orb.setAttribute('data-state', state);
+  }
+
+  // ---- HiveMind: voice input (same engine, HiveMind input box) ----
+  function hmMicUI(on) {
+    const btn = document.getElementById('hm-mic-btn');
+    const bar = document.getElementById('hm-voice-status');
+    if (btn) {
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+      btn.setAttribute('aria-label', on ? 'Stop voice input' : 'Start voice input');
+    }
+    if (bar) bar.style.display = on ? 'flex' : 'none';
+    hmOrbRefresh();
+  }
+  function hmAutosize() {
+    const t = document.getElementById('hivemind-input');
+    if (!t) return;
+    t.style.height = 'auto';
+    t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+  }
+  function toggleHiveMindVoice() {
+    if (voiceSession) { stopVoiceTyping(); return; }
+    hmStopSpeech();
+    startVoiceTyping({ ta: document.getElementById('hivemind-input'), onChange: hmAutosize, setUI: hmMicUI, lang: VOICE_LANG });
+  }
+
+  // ---- HiveMind: spoken replies (built-in text-to-speech; the written reply always stays visible) ----
+  const HM_TTS_OK = typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined';
+  let hmSpeech = null; // { utter, row, paused }
+  function hmPickVoice() {
+    const vs = (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
+    return vs.find(v => /^en[-_]ZA/i.test(v.lang)) || vs.find(v => /^en[-_]/i.test(v.lang)) || null;
+  }
+  function hmSpeechText(text) {
+    return String(text || '').replace(/[*_#`~>]/g, '').replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim();
+  }
+  function hmSetTts(row, state) {
+    if (!row || !row._play) return;
+    row._play.textContent = state === 'playing' ? '⏸ Pause' : state === 'paused' ? '▶ Resume' : '🔊 Listen';
+    row._play.setAttribute('aria-label', state === 'playing' ? 'Pause spoken reply' : state === 'paused' ? 'Resume spoken reply' : 'Listen to this reply');
+    row._stop.style.display = state === 'idle' ? 'none' : 'inline-flex';
+  }
+  function hmTtsRow(text) {
+    const row = document.createElement('div');
+    row.className = 'hm-tts-row';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'hm-tts-btn';
+    const stop = document.createElement('button');
+    stop.type = 'button';
+    stop.className = 'hm-tts-btn';
+    stop.textContent = '⏹ Stop';
+    stop.setAttribute('aria-label', 'Stop spoken reply');
+    stop.style.display = 'none';
+    play.onclick = () => hmSpeak(text, row);
+    stop.onclick = () => hmStopSpeech();
+    row._play = play;
+    row._stop = stop;
+    row.append(play, stop);
+    hmSetTts(row, 'idle');
+    return row;
+  }
+  function hmSpeak(text, row) {
+    if (!HM_TTS_OK) { showToast("Spoken replies aren't supported in this browser. The text is still above."); return; }
+    if (hmSpeech && hmSpeech.row === row) {
+      if (hmSpeech.paused) { speechSynthesis.resume(); hmSpeech.paused = false; hmSetTts(row, 'playing'); }
+      else { speechSynthesis.pause(); hmSpeech.paused = true; hmSetTts(row, 'paused'); }
+      hmOrbRefresh();
+      return;
+    }
+    stopVoiceTyping();
+    hmStopSpeech(); // never overlap two replies
+    const u = new SpeechSynthesisUtterance(hmSpeechText(text));
+    const v = hmPickVoice();
+    u.lang = v ? v.lang : 'en-ZA';
+    if (v) u.voice = v;
+    const cur = { utter: u, row, paused: false };
+    hmSpeech = cur;
+    hmSetTts(row, 'playing');
+    hmOrbRefresh();
+    u.onend = () => {
+      if (hmSpeech !== cur) return;
+      hmSpeech = null;
+      hmSetTts(row, 'idle');
+      hmOrbRefresh();
+    };
+    u.onerror = (e) => {
+      if (hmSpeech !== cur) return;
+      hmSpeech = null;
+      hmSetTts(row, 'idle');
+      hmOrbRefresh();
+      if (e.error !== 'interrupted' && e.error !== 'canceled') showToast("Couldn't play the reply aloud. The text is still above.");
+    };
+    try { speechSynthesis.speak(u); }
+    catch (e) { hmSpeech = null; hmSetTts(row, 'idle'); hmOrbRefresh(); showToast("Couldn't play the reply aloud. The text is still above."); }
+  }
+  function hmStopSpeech() {
+    const cur = hmSpeech;
+    hmSpeech = null;
+    if (HM_TTS_OK && cur) { try { speechSynthesis.cancel(); } catch (e) {} }
+    if (cur) hmSetTts(cur.row, 'idle');
+    hmOrbRefresh();
+  }
+
+  // ---- HiveMind: quick actions (populate the input; the user still presses send) ----
+  const HM_QUICK = [
+    { label: '🛠️ Help Me Create', prompt: 'Help me create something for Hive. Ask me what I would like to create first.' },
+    { label: '💡 Explain Something', prompt: 'Explain this to me in simple terms: ' },
+    { label: '🧭 Plan My Next Move', prompt: 'Help me plan my next move on Hive. Ask me a few questions about my goals first.' },
+    { label: '✍️ Help Me Write a Post', prompt: 'Help me write a Hive post. Ask me what it is about first, then draft it for me to review.' }
+  ];
+  function hmQuickActions() {
+    const messages = document.getElementById('hivemind-messages');
+    const wrap = document.createElement('div');
+    wrap.id = 'hm-quick';
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;padding-left:36px';
+    HM_QUICK.forEach(q => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'hm-quick-chip';
+      chip.textContent = q.label;
+      chip.onclick = () => {
+        const input = document.getElementById('hivemind-input');
+        input.value = q.prompt;
+        hmAutosize();
+        input.focus();
+      };
+      wrap.appendChild(chip);
+    });
+    messages.appendChild(wrap);
+  }
+
+  // ---- HiveMind: saved conversations (Supabase table hivemind_conversations, see the SQL in the report) ----
+  let hmConvId = null; // id of the saved row for the open chat; null until the first reply is saved
+  function hmSaveConversation() {
+    if (!currentUser || !hiveMindHistory.length) return;
+    const msgs = hiveMindHistory.slice(-60);
+    const first = hiveMindHistory.find(m => m.role === 'user');
+    const title = (first ? first.content : 'Conversation').slice(0, 60);
+    const save = async () => {
+      if (!hmConvId) {
+        const { data, error } = await sb.from('hivemind_conversations')
+          .insert({ user_id: currentUser.id, title, messages: msgs })
+          .select('id').single();
+        if (error) throw error;
+        hmConvId = data.id;
+      } else {
+        const { error } = await sb.from('hivemind_conversations')
+          .update({ messages: msgs, updated_at: new Date().toISOString() })
+          .eq('id', hmConvId).eq('user_id', currentUser.id);
+        if (error) throw error;
+      }
+    };
+    save().catch(err => console.warn('HiveMind conversation not saved:', err?.message || err));
+  }
+  function hmHistoryBack() {
+    document.getElementById('hm-history').style.display = 'none';
+    document.getElementById('hivemind-messages').style.display = 'flex';
+  }
+  async function openHiveMindHistory() {
+    hmStopSpeech();
+    stopVoiceTyping();
+    const panel = document.getElementById('hm-history');
+    document.getElementById('hivemind-messages').style.display = 'none';
+    panel.style.display = 'flex';
+    const note = (text) => {
+      const p = document.createElement('div');
+      p.style.cssText = 'color:var(--muted);font-size:13px;padding:8px 4px';
+      p.textContent = text;
+      return p;
+    };
+    panel.textContent = '';
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'hm-tts-btn';
+    back.textContent = '← Back to chat';
+    back.onclick = hmHistoryBack;
+    panel.appendChild(back);
+    panel.appendChild(note('Loading your past conversations…'));
+    try {
+      if (!currentUser) throw new Error('not signed in');
+      const { data, error } = await sb.from('hivemind_conversations')
+        .select('id,title,updated_at').eq('user_id', currentUser.id)
+        .order('updated_at', { ascending: false }).limit(30);
+      if (error) throw error;
+      panel.textContent = '';
+      panel.appendChild(back);
+      if (!data || !data.length) { panel.appendChild(note('No saved conversations yet. Start chatting and they will appear here.')); return; }
+      data.forEach(row => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'hm-hist-item';
+        const t = document.createElement('span');
+        t.className = 'hm-hist-title';
+        t.textContent = row.title || 'Conversation';
+        const d = document.createElement('span');
+        d.className = 'hm-hist-time';
+        d.textContent = timeAgo(row.updated_at);
+        item.append(t, d);
+        item.onclick = () => hmLoadConversation(row.id);
+        panel.appendChild(item);
+      });
+    } catch (err) {
+      console.warn('HiveMind history unavailable:', err?.message || err);
+      panel.textContent = '';
+      panel.appendChild(back);
+      panel.appendChild(note("Past conversations aren't available right now."));
+    }
+  }
+  async function hmLoadConversation(id) {
+    try {
+      const { data, error } = await sb.from('hivemind_conversations')
+        .select('id,messages').eq('id', id).eq('user_id', currentUser.id).single();
+      if (error || !data) throw error || new Error('not found');
+      hiveMindHistory = (Array.isArray(data.messages) ? data.messages : [])
+        .filter(m => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'));
+      hmConvId = data.id;
+      const messages = document.getElementById('hivemind-messages');
+      messages.textContent = '';
+      hiveMindHistory.forEach(m => appendHiveMindMessage(m.role === 'assistant' ? 'assistant' : 'user', m.content));
+      hmHistoryBack();
+      messages.scrollTop = messages.scrollHeight;
+    } catch (err) {
+      console.warn('HiveMind conversation not opened:', err?.message || err);
+      showToast("Couldn't open that conversation.");
+    }
+  }
+
+  // Leaving the app or switching away stops listening and speaking rather than leaving them on.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stopVoiceTyping(); hmStopSpeech(); }
+  });
 
   function onComposerInput(el) {
     el.style.height = 'auto';
@@ -6138,7 +6428,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
     // Reset chat on each open
     hiveMindHistory = [];
+    hmConvId = null;
+    hmStopSpeech();
+    stopVoiceTyping();
+    document.getElementById('hm-history').style.display = 'none';
     const messages = document.getElementById('hivemind-messages');
+    messages.style.display = 'flex';
     messages.innerHTML = '';
 
     // Personalized greeting
@@ -6153,9 +6448,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
     appendHiveMindMessage('assistant', greeting);
 
-    // If they have a draft, show quick action chips
+    // If they have a draft, show quick action chips; otherwise show the starter shortcuts
     if (postText) {
       appendQuickChips(postText);
+    } else {
+      hmQuickActions();
     }
 
     // Animate in
@@ -6165,6 +6462,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function closeHiveMind() {
+    hmStopSpeech();
+    stopVoiceTyping();
     const sheet = document.getElementById('hivemind-sheet');
     sheet.style.transform = 'translateY(100%)';
     setTimeout(() => { document.getElementById('hivemind-modal').style.display = 'none'; }, 350);
@@ -6190,6 +6489,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       useBtn.onclick = () => postToHiveFromMind(text);
       bubble.appendChild(useBtn);
     }
+
+    if (isAI && HM_TTS_OK) bubble.appendChild(hmTtsRow(text));
 
     if (isAI) {
       const avatar = document.createElement('div');
@@ -6251,8 +6552,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   async function sendHiveMind() {
     if (hiveMindTyping) return;
     const input = document.getElementById('hivemind-input');
+    // Never send while the mic is still listening: stop first, check the text, then send.
+    if (voiceSession && voiceSession.ta === input) { stopVoiceTyping(); showToast('Stopped listening. Check your text, then tap send.'); return; }
     const text = input.value.trim();
     if (!text) return;
+    hmStopSpeech();
+    document.getElementById('hm-quick')?.remove();
 
     // Show user message
     appendHiveMindMessage('user', text);
@@ -6265,6 +6570,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Show typing indicator
     hiveMindTyping = true;
     showHiveMindTyping();
+    hmOrbRefresh();
 
     // Detect if this looks like a post generation request
     const isPostRequest = /write|create|post|generate|draft|make|compose/i.test(text);
@@ -6286,6 +6592,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       const data = await res.json();
       removeHiveMindTyping();
       hiveMindTyping = false;
+      hmOrbRefresh();
 
       if (!res.ok || data.error) throw new Error(data.error || 'HiveMind unavailable');
 
@@ -6294,10 +6601,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
       hiveMindHistory.push({ role: 'assistant', content: reply });
       appendHiveMindMessage('assistant', reply, isPostRequest);
+      hmSaveConversation();
 
     } catch(e) {
       removeHiveMindTyping();
       hiveMindTyping = false;
+      hmOrbRefresh();
       appendHiveMindMessage('assistant', '🐝 Sorry, I\'m having trouble connecting right now. Please try again in a moment!');
     }
   }
