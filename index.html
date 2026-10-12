@@ -3592,14 +3592,19 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   function measureAndDrawThreadLines() {
     document.querySelectorAll('.hive-thread-line').forEach(el => el.remove());
     document.querySelectorAll('[data-thread-start]').forEach(startCard => {
+      // Hidden feed (display:none) gives zero-size rects; skip, the ResizeObserver redraws when shown
+      if (!startCard.offsetParent) return;
       const threadId = startCard.dataset.threadStart;
-      // Walk forward through siblings from startCard until we hit the thread-end marker
-      let current = startCard;
+      // Walk forward only through replies that belong to THIS thread. Stop at the end
+      // marker, or at anything else (another thread, an unrelated post, a separator),
+      // so a line can never run past its own thread onto unrelated posts.
       const chain = [startCard];
-      while (current && current.dataset.threadEnd !== threadId) {
-        current = current.nextElementSibling;
-        if (current && current.dataset.postId) chain.push(current);
-        if (!current) break;
+      let current = startCard;
+      while (current.dataset.threadEnd !== threadId) {
+        const next = current.nextElementSibling;
+        if (!next || !next.dataset.postId || !next.classList.contains('thread-card') || next.dataset.threadStart) break;
+        chain.push(next);
+        current = next;
       }
       for (let i = 0; i < chain.length - 1; i++) {
         const fromAvatar = chain[i].querySelector('.post-card-avatar');
@@ -3627,6 +3632,21 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     clearTimeout(threadLineResizeTimeout);
     threadLineResizeTimeout = setTimeout(measureAndDrawThreadLines, 150);
   });
+
+  // Redraw thread lines whenever the feed's size changes: avatars or images finishing
+  // loading, the feed being shown again after another tab, or posts being added.
+  // Replaces relying on a single measurement taken before layout had settled.
+  function initThreadLineObserver() {
+    const feedEl = document.getElementById('posts-container');
+    if (!feedEl || !window.ResizeObserver) return;
+    let observerTimer = null;
+    new ResizeObserver(() => {
+      clearTimeout(observerTimer);
+      observerTimer = setTimeout(() => requestAnimationFrame(measureAndDrawThreadLines), 60);
+    }).observe(feedEl);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initThreadLineObserver);
+  else initThreadLineObserver();
 
   function createPostCard(post, isThreadReply = false) {
     const p = post.profiles || {};
@@ -7945,6 +7965,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         card.remove();
         // Also remove thread replies container if it follows
         if (nextEl && nextEl.style.marginLeft === '52px') nextEl.remove();
+        // Redraw so no line is left pointing at the deleted card
+        requestAnimationFrame(measureAndDrawThreadLines);
       }, 300);
     }
     showToast('Post deleted! 🗑️');
@@ -8337,30 +8359,51 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
     if (error) { showToast('Error posting!'); return; }
+    // Capture the parent id BEFORE closing the modal: closeThreadModal() clears
+    // currentThreadPostId, so reading it afterwards found no card and the reply
+    // never appeared until a refresh.
+    const parentPostId = currentThreadPostId;
     closeThreadModal();
     showToast('Added to thread! 🧵🐝');
 
     // Add reply as a flat sibling right after the original post (or after the last
     // existing reply in this thread, if there already is one) - then re-measure lines
-    const originalCard = document.querySelector(`[data-post-id="${currentThreadPostId}"]`);
+    const originalCard = document.querySelector(`[data-post-id="${parentPostId}"]`);
     if (originalCard && newReply) {
-      // Find where this thread currently ends: either the original post itself,
-      // or the last reply card before the gold separator
-      let insertAfter = originalCard;
-      let walker = originalCard.nextElementSibling;
-      while (walker && walker.dataset.postId) {
+      // Find the thread's start card. If the post we replied to is itself a reply,
+      // walk back to the card that starts the thread.
+      let startCard = originalCard;
+      if (!startCard.dataset.threadStart && startCard.classList.contains('thread-card')) {
+        let prev = startCard.previousElementSibling;
+        while (prev && prev.dataset.postId && !prev.dataset.threadStart) prev = prev.previousElementSibling;
+        if (prev && prev.dataset.threadStart) startCard = prev;
+      }
+      const threadId = startCard.dataset.threadStart || startCard.dataset.postId;
+      startCard.dataset.threadStart = threadId;
+      startCard.classList.add('thread-card');
+
+      // Walk only through replies that belong to THIS thread, so the new reply is never
+      // placed after an unrelated post (the old walk did not stop at thread boundaries).
+      let insertAfter = startCard;
+      let walker = startCard.nextElementSibling;
+      while (walker && walker.dataset.postId && walker.classList.contains('thread-card') && !walker.dataset.threadStart) {
         insertAfter = walker;
         walker = walker.nextElementSibling;
       }
 
       const replyCard = createPostCard(newReply, true);
       insertAfter.insertAdjacentElement('afterend', replyCard);
-
-      // Mark the thread boundaries fresh
-      const threadStartId = originalCard.dataset.threadStart || currentThreadPostId;
-      originalCard.dataset.threadStart = threadStartId;
       delete insertAfter.dataset.threadEnd;
-      replyCard.dataset.threadEnd = threadStartId;
+      replyCard.dataset.threadEnd = threadId;
+
+      // Keep the gold thread-end separator directly after the thread, as the feed does
+      if (!replyCard.nextElementSibling || !replyCard.nextElementSibling.classList.contains('thread-end-separator')) {
+        const sep = document.createElement('div');
+        sep.className = 'thread-end-separator';
+        sep.dataset.threadFor = threadId;
+        sep.style.cssText = 'height:1.5px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:0 20px';
+        replyCard.insertAdjacentElement('afterend', sep);
+      }
 
       requestAnimationFrame(measureAndDrawThreadLines);
     }
