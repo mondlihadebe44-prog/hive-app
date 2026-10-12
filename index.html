@@ -2179,7 +2179,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   <!-- Body -->
   <div class="composer-body" style="position:relative">
     <!-- Avatar -->
-    <div id="composer-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="setNav(document.getElementById('nav-profile'),'profile');closeComposer()"></div>
+    <div id="composer-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#000;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="setNav(document.getElementById('nav-profile'),'profile');window.composerFromHiveVideo=false;closeComposer()"></div>
 
     <div style="flex:1;position:relative">
       <!-- Username -->
@@ -4276,6 +4276,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     else if (composerMode === 'new') composerDraft = '';
     document.getElementById('fullscreen-composer').classList.remove('active');
     hideMentionDropdown();
+    // Opened from Hive Video's Create menu: return to Hive Video
+    if (window.composerFromHiveVideo) {
+      window.composerFromHiveVideo = false;
+      if (hv) openHiveVideo();
+    }
   }
 
   // ---- Voice typing: speech-to-text into a text box. Hive does not record or store audio. ----
@@ -8825,6 +8830,16 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       .hv-cs-foot { display:flex; gap:8px; align-items:center; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid #1e1e1e; background:#121212; }
       .hv-cs-input { flex:1; min-width:0; background:#1c1c1c; border:1px solid #2a2a2a; border-radius:50px; padding:10px 14px; color:#fff; font-family:'DM Sans',sans-serif; font-size:16px; outline:none; }
       .hv-cs-send { background:#F6C21A; color:#000; border:none; border-radius:50px; padding:10px 16px; font-family:'Syne',sans-serif; font-weight:700; font-size:14px; cursor:pointer; flex-shrink:0; }
+      .hv-create-btn { width:40px; height:40px; border-radius:50%; border:none; background:#F6C21A; color:#000; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; box-shadow:0 0 14px rgba(246,194,26,0.45); -webkit-tap-highlight-color:transparent; }
+      .hv-create-btn svg { width:20px; height:20px; }
+      .hv-create-btn:active { transform:scale(0.94); }
+      .hv-create-btn:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+      #hv-create-sheet { z-index:30; }
+      .hv-create-opt { display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:12px 14px; border-radius:16px; border:1.5px solid rgba(246,194,26,0.35); background:#0c0b08; color:#fff; text-align:left; cursor:pointer; font-family:'DM Sans',sans-serif; }
+      .hv-create-opt:active { transform:scale(0.98); }
+      .hv-create-opt b { display:block; font-family:'Syne',sans-serif; font-size:15px; }
+      .hv-create-opt small { display:block; color:#aaa; font-size:12px; margin-top:2px; }
+      .hv-create-ico { font-size:22px; width:32px; text-align:center; flex-shrink:0; }
       @media (prefers-reduced-motion: reduce) { .hv-cs-panel { animation:none; transform:none; } .hv-spin { animation: none; } #hv-scroll { scroll-behavior: auto !important; } }
     `;
     document.head.appendChild(st);
@@ -8850,6 +8865,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <button class="hv-tab" data-tab="following">Following</button>
         </div>
         <div style="pointer-events:auto;display:flex;gap:8px">
+          <button id="hv-create" class="hv-create-btn" aria-label="Create" title="Create"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           <button id="hv-info" aria-label="About Hive Video" style="background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:17px;font-weight:700;cursor:pointer">ⓘ</button>
           <button id="hv-mute" aria-label="Sound" style="background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">${hvMuted ? '🔇' : '🔊'}</button>
         </div>
@@ -8865,6 +8881,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     root.querySelector('#hv-close').onclick = () => hideHiveVideo();
     root.querySelector('#hv-info').onclick = hvShowIntro;
     root.querySelector('#hv-mute').onclick = hvToggleMute;
+    root.querySelector('#hv-create').onclick = hvOpenCreateMenu;
     root.querySelectorAll('.hv-tab').forEach(btn => btn.onclick = () => hvSwitchTab(btn.dataset.tab, root));
     document.addEventListener('visibilitychange', hvOnVisibility);
     if (!hvIntroSeen()) hvShowIntro();
@@ -9230,6 +9247,81 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   window.addEventListener('popstate', e => {
     if (hv && !hv.hidden && !(e.state && e.state.hiveVideo)) hideHiveVideo(true);
   });
+
+  // ---- Create (+) menu in Hive Video. Every option reuses the existing composer and its
+  // publishing flow (photos/videos via Supabase Storage, voice notes, text posts). No new
+  // storage, table or upload path is added.
+  const HV_CREATE_OPTIONS = [
+    { id: 'record', icon: '🎥', title: 'Record a video', desc: 'Use your camera, then preview before you post' },
+    { id: 'upload', icon: '🖼️', title: 'Upload photos or videos', desc: 'Pick from your photos and videos' },
+    { id: 'voice',  icon: '🎙️', title: 'Record a voice note', desc: 'Record, listen back, then publish' },
+    { id: 'text',   icon: '✍️', title: 'Write a post', desc: 'Share a text post' }
+  ];
+
+  function hvOpenCreateMenu() {
+    if (!hv || hv.hidden || document.getElementById('hv-create-sheet')) return;
+    hiveHaptic('light');
+    const sheet = document.createElement('div');
+    sheet.id = 'hv-create-sheet';
+    sheet.className = 'hv-cs';
+    sheet.innerHTML = `
+      <div class="hv-cs-panel" role="dialog" aria-label="Create" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
+        <div class="hv-cs-head"><span>Create</span><button type="button" class="hv-cs-close" aria-label="Close">✕</button></div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:14px 14px 4px">
+          ${HV_CREATE_OPTIONS.map(o => `<button type="button" class="hv-create-opt" data-opt="${o.id}"><span class="hv-create-ico" aria-hidden="true">${o.icon}</span><span><b>${o.title}</b><small>${o.desc}</small></span></button>`).join('')}
+        </div>
+      </div>`;
+    hv.root.appendChild(sheet);
+    sheet.addEventListener('click', e => { if (e.target === sheet) hvCloseCreateMenu(); });
+    sheet.querySelector('.hv-cs-close').onclick = hvCloseCreateMenu;
+    sheet.querySelectorAll('.hv-create-opt').forEach(btn => btn.onclick = () => hvCreateChoose(btn.dataset.opt));
+  }
+
+  function hvCloseCreateMenu() {
+    const sheet = document.getElementById('hv-create-sheet');
+    if (sheet) sheet.remove();
+  }
+
+  // File inputs live in <body> (not inside Hive Video), so they still open while Hive Video is hidden.
+  function hvEnsureCreateInputs() {
+    if (document.getElementById('hv-upload-input')) return;
+    const up = document.createElement('input');
+    up.type = 'file'; up.id = 'hv-upload-input'; up.accept = 'image/*,video/*'; up.multiple = true;
+    up.style.display = 'none';
+    up.onchange = () => hvPickedMedia(up);
+    const rec = document.createElement('input');
+    rec.type = 'file'; rec.id = 'hv-record-input'; rec.accept = 'video/*'; rec.setAttribute('capture', 'environment');
+    rec.style.display = 'none';
+    rec.onchange = () => { if (rec.files && rec.files[0]) addComposerVideo({ files: [rec.files[0]] }); rec.value = ''; };
+    document.body.appendChild(up);
+    document.body.appendChild(rec);
+  }
+
+  // Photos go to the composer's image path; a video goes to its video path (one video per post).
+  function hvPickedMedia(input) {
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    const video = files.find(f => f.type.startsWith('video/'));
+    if (video) {
+      addComposerVideo({ files: [video] });
+      if (files.length > 1) showToast('Videos are posted one at a time, so the first one is used.');
+    } else {
+      addComposerImages({ files: files.filter(f => f.type.startsWith('image/')) });
+    }
+    input.value = '';
+  }
+
+  function hvCreateChoose(opt) {
+    hvCloseCreateMenu();
+    if (!hv) return;
+    hvEnsureCreateInputs();
+    hideHiveVideo(true); // the composer opens above Hive Video, so hide it while composing
+    window.composerFromHiveVideo = true; // closeComposer() brings Hive Video back
+    openComposer('new');
+    if (opt === 'upload') document.getElementById('hv-upload-input').click();
+    else if (opt === 'record') document.getElementById('hv-record-input').click();
+    else if (opt === 'voice') startVoiceNote();
+  }
 
   // WELCOME SCREEN: first visit only (localStorage flag, no database). Reopen with the ⓘ button.
   const HV_INTRO_KEY = 'hive_video_intro_seen';
