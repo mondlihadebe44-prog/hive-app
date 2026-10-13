@@ -1506,15 +1506,24 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.06); }
 .hm-glass-card:hover { border-color: rgba(246,194,26,0.45); }
 .hm-glass-card:active { transform: scale(0.97); }
 /* Voice notes (posts) */
-.vn-card { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px; border-radius: 16px; background: rgba(246,194,26,0.08); border: 1px solid rgba(246,194,26,0.25); }
-.vn-play { width: 44px; height: 44px; border-radius: 50%; border: none; background: #F6C21A; color: #000; font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.vn-play:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
-.vn-mid { flex: 1; min-width: 0; }
-.vn-bars { display: flex; align-items: center; gap: 2px; height: 24px; margin-bottom: 6px; }
-.vn-bar { display: inline-block; width: 3px; border-radius: 2px; background: rgba(246,194,26,0.55); }
-.vn-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden; }
-.vn-fill { height: 100%; width: 0; background: #F6C21A; transition: width 0.25s linear; }
-.vn-time { font-size: 12px; color: var(--muted); min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+.vn-card { position: relative; display: flex; flex-direction: column; gap: 12px; margin-top: 10px; padding: 20px 20px 20px; border-radius: 24px; background: linear-gradient(135deg, #1a1a1a, #0d0d0d); box-sizing: border-box; max-width: 100%; overflow: hidden; }
+.vn-badge { align-self: flex-start; display: inline-block; background: #FFD700; color: #000; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; line-height: 1; padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
+.vn-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.vn-play { width: 56px; height: 56px; min-width: 56px; border-radius: 50%; border: none; padding: 0; background: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.4); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #000; font-size: 16px; font-weight: 700; transition: transform 0.12s ease, box-shadow 0.2s ease; -webkit-tap-highlight-color: transparent; }
+.vn-play svg { width: 16px; height: 16px; display: block; }
+.vn-play:active { transform: scale(0.92); box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+.vn-play:focus-visible { outline: 2px solid #FFD700; outline-offset: 3px; }
+.vn-bars { flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; justify-content: center; gap: 3px; overflow: hidden; cursor: pointer; }
+.vn-bar { flex: 0 0 4px; width: 4px; height: 8px; border-radius: 2px; background: #FFD700; opacity: var(--o, 0.5); transition: opacity 0.2s ease; }
+.vn-bar.played { opacity: 1; }
+.vn-time { font-size: 14px; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+.vn-now { color: #fff; font-weight: 700; }
+.vn-total { color: #666666; font-weight: 400; }
+.vn-seek { position: relative; padding: 8px 0; margin: -8px 0; cursor: pointer; border-radius: 4px; }
+.vn-seek:focus-visible { outline: 2px solid #FFD700; outline-offset: 2px; }
+.vn-track { height: 4px; border-radius: 2px; background: #333333; overflow: hidden; }
+.vn-fill { height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, #FFD700, #FFA500); transition: width 0.25s linear; }
+@media (prefers-reduced-motion: reduce) { .vn-play, .vn-bar, .vn-fill { transition: none; } }
 /* Voice typing (composer) */
 #composer-mic-btn { background: none; border: none; color: #F6C21A; cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: 50%; transition: background 0.2s, color 0.2s; -webkit-tap-highlight-color: transparent; }
 #composer-mic-btn:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
@@ -4874,22 +4883,86 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   // ---- Voice-note posts in the feed: one player at a time, plays only when tapped ----
   let vnFeed = null;      // { audio, card, btn }
   let vnFeedTimer = null;
+  // Icons are inline SVG so they stay crisp and centred. The state is also kept in data-state for code and tests.
+  const VN_PLAY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="#000"/></svg>';
+  const VN_PAUSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h4v15H6zM14 4.5h4v15h-4z" fill="#000"/></svg>';
   function vnSetFeedBtn(btn, playing) {
-    btn.textContent = playing ? '❚❚' : '▶';
+    btn.innerHTML = playing ? VN_PAUSE_ICON : VN_PLAY_ICON;
+    btn.dataset.state = playing ? 'playing' : 'paused';
     btn.setAttribute('aria-label', playing ? 'Pause voice note' : 'Play voice note');
+  }
+  // Waveform heights and opacity are derived from the clip's own URL, so a note always looks the same
+  // (no new random heights on every render). They are decorative: they do not show the real loudness.
+  function vnBarPattern(seed) {
+    let s = 2166136261;
+    for (const ch of String(seed || '')) s = Math.imul(s ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    return Array.from({ length: 18 }, () => ({ h: Math.round(8 + rnd() * 24), o: (0.35 + rnd() * 0.4).toFixed(2) }));
   }
   function renderVoiceNotePost(post) {
     const secs = Math.max(0, Math.round(Number(post.audio_duration) || 0));
-    // Decorative bars only: they are not real audio analysis. The progress line below is real playback progress.
-    const bars = Array.from({ length: 28 }, (_, i) => `<span class="vn-bar" style="height:${6 + ((i * 7) % 14)}px"></span>`).join('');
+    const total = secs > 0 ? vnFmt(secs) : '--:--';
+    const bars = vnBarPattern(post.audio_url).map(b => `<span class="vn-bar" style="height:${b.h}px;--o:${b.o}"></span>`).join('');
     return `<div class="vn-card" data-vn-src="${vnAttr(post.audio_url)}" data-vn-secs="${secs}">
-      <button type="button" class="vn-play" aria-label="Play voice note" onclick="event.stopPropagation();vnFeedToggle(this)">▶</button>
-      <div class="vn-mid">
-        <div class="vn-bars" aria-hidden="true">${bars}</div>
+      <span class="vn-badge">🎤 VOICE NOTE</span>
+      <div class="vn-row">
+        <button type="button" class="vn-play" data-state="paused" aria-label="Play voice note" onclick="event.stopPropagation();vnFeedToggle(this)">${VN_PLAY_ICON}</button>
+        <div class="vn-bars" aria-hidden="true" onclick="vnSeekTap(event,this)">${bars}</div>
+      </div>
+      <div class="vn-time"><span class="vn-now">0:00</span><span class="vn-total"> / ${total}</span></div>
+      <div class="vn-seek" role="slider" tabindex="0" aria-label="Seek voice note" aria-valuemin="0" aria-valuemax="${secs}" aria-valuenow="0" aria-valuetext="0:00 of ${total}" onclick="vnSeekTap(event,this)" onkeydown="vnSeekKey(event,this)">
         <div class="vn-track"><div class="vn-fill"></div></div>
       </div>
-      <div class="vn-time">${vnFmt(0)} / ${vnFmt(secs)}</div>
     </div>`;
+  }
+  // Updates bar brightness, fill, time text and slider values from one place, so they always agree.
+  function vnRenderProgress(card, cur, dur) {
+    const d = Number(dur) > 0 ? Number(dur) : 0;
+    const c = Math.max(0, Number(cur) || 0);
+    const frac = d ? Math.min(1, c / d) : 0;
+    card.querySelector('.vn-fill').style.width = (frac * 100) + '%';
+    card.querySelector('.vn-now').textContent = vnFmt(c);
+    card.querySelector('.vn-total').textContent = ' / ' + (d ? vnFmt(d) : '--:--');
+    const bars = card.querySelectorAll('.vn-bar');
+    const lit = Math.round(frac * bars.length);
+    bars.forEach((b, i) => b.classList.toggle('played', i < lit));
+    const seek = card.querySelector('.vn-seek');
+    seek.setAttribute('aria-valuemax', Math.round(d));
+    seek.setAttribute('aria-valuenow', Math.round(c));
+    seek.setAttribute('aria-valuetext', `${vnFmt(c)} of ${d ? vnFmt(d) : 'unknown length'}`);
+  }
+  // Tap on the waveform or the progress bar: seek to that point
+  function vnSeekTap(e, el) {
+    e.stopPropagation();
+    const card = el.closest('.vn-card');
+    if (!card) return;
+    const r = el.getBoundingClientRect();
+    vnSeekTo(card, Math.min(1, Math.max(0, (e.clientX - r.left) / Math.max(1, r.width))));
+  }
+  // Keyboard on the progress bar: arrows move 5 seconds, Home/End jump to the start/end
+  function vnSeekKey(e, el) {
+    const card = el.closest('.vn-card');
+    if (!card) return;
+    const step = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 }[e.key];
+    if (step === undefined && e.key !== 'Home' && e.key !== 'End') return;
+    e.preventDefault();
+    const active = vnFeed && vnFeed.card === card;
+    const dur = (active && isFinite(vnFeed.audio.duration) && vnFeed.audio.duration > 0) ? vnFeed.audio.duration : (Number(card.dataset.vnSecs) || 0);
+    if (!dur) return;
+    const cur = active ? vnFeed.audio.currentTime : (Number(card.dataset.vnPos) || 0) * dur;
+    const target = e.key === 'Home' ? 0 : e.key === 'End' ? dur : Math.min(dur, Math.max(0, cur + step));
+    vnSeekTo(card, target / dur);
+  }
+  function vnSeekTo(card, frac) {
+    const total = Number(card.dataset.vnSecs) || 0;
+    if (vnFeed && vnFeed.card === card && !vnFeed.audio.error && isFinite(vnFeed.audio.duration) && vnFeed.audio.duration > 0) {
+      vnFeed.audio.currentTime = frac * vnFeed.audio.duration;
+      vnRenderProgress(card, vnFeed.audio.currentTime, vnFeed.audio.duration);
+      return;
+    }
+    // Not playing this note: remember the position, and start from it when Play is tapped
+    card.dataset.vnPos = String(frac);
+    vnRenderProgress(card, frac * total, total);
   }
   function vnFeedToggle(btn) {
     const card = btn.closest('.vn-card');
@@ -4899,20 +4972,26 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       else vnFeed.audio.pause();
       return;
     }
+    vnFeedStart(card, btn);
+  }
+  function vnFeedStart(card, btn) {
     vnFeedRelease(); // one voice note at a time
     const audio = new Audio(card.dataset.vnSrc);
     audio.preload = 'none';
     vnFeed = { audio, card, btn };
-    const fill = card.querySelector('.vn-fill');
-    const time = card.querySelector('.vn-time');
     const total = Number(card.dataset.vnSecs) || 0;
+    // Total length comes from the audio itself once known. Some recordings report no length until
+    // they have played, so fall back to the length saved with the post.
+    const dur = () => (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : total;
+    const pending = card.dataset.vnPos !== undefined ? Number(card.dataset.vnPos) : null;
+    delete card.dataset.vnPos;
     audio.onplay = () => vnSetFeedBtn(btn, true);
     audio.onpause = () => { if (!audio.ended) vnSetFeedBtn(btn, false); };
-    audio.onended = () => { vnSetFeedBtn(btn, false); fill.style.width = '0%'; time.textContent = vnFmt(0) + ' / ' + vnFmt(total); audio.currentTime = 0; };
-    audio.ontimeupdate = () => {
-      const d = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : total;
-      fill.style.width = d ? Math.min(100, (audio.currentTime / d) * 100) + '%' : '0%';
-      time.textContent = vnFmt(audio.currentTime) + ' / ' + vnFmt(d);
+    audio.onended = () => { vnSetFeedBtn(btn, false); audio.currentTime = 0; vnRenderProgress(card, 0, dur()); };
+    audio.ontimeupdate = () => vnRenderProgress(card, audio.currentTime, dur());
+    audio.onloadedmetadata = () => {
+      if (pending !== null && isFinite(audio.duration) && audio.duration > 0) audio.currentTime = pending * audio.duration;
+      vnRenderProgress(card, audio.currentTime, dur());
     };
     audio.onerror = () => vnFeedFail(card, btn);
     audio.play().catch(() => vnFeedFail(card, btn));
@@ -4922,6 +5001,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Pause first: pausing fires the pause handler, which would otherwise overwrite the retry icon.
     if (vnFeed && vnFeed.card === card) vnFeed.audio.pause();
     btn.textContent = '↻';
+    btn.dataset.state = 'retry';
     btn.setAttribute('aria-label', 'Retry playing this voice note');
     showToast("Couldn't play this voice note. Tap ↻ to try again.");
   }
@@ -4932,7 +5012,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     try { audio.pause(); } catch (e) {}
     audio.removeAttribute('src');
     if (btn && btn.isConnected) vnSetFeedBtn(btn, false);
-    if (card && card.isConnected) card.querySelector('.vn-fill').style.width = '0%';
+    if (card && card.isConnected) vnRenderProgress(card, 0, Number(card.dataset.vnSecs) || 0);
     clearInterval(vnFeedTimer);
     vnFeedTimer = null;
   }
