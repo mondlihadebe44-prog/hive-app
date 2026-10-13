@@ -8050,13 +8050,37 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   // USER PROFILE
   let viewingUserId = null;
 
+  function showUserProfileError(userId, err) {
+    const container = document.getElementById('user-posts-container');
+    if (!container) return;
+    const msg = String((err && (err.message || err)) || 'Unknown error').replace(/[<>&"]/g, '');
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'empty-wrap';
+    wrap.innerHTML = '<div class="empty-icon">⚠️</div><div class="empty-text">Couldn\'t load this profile.</div><div style="font-size:12px;color:var(--muted);margin:6px 0 12px;word-break:break-word"></div><button class="profile-retry-btn">Try again</button>';
+    wrap.querySelector('div[style]').textContent = msg;
+    wrap.querySelector('button').onclick = () => openUserProfile(userId);
+    container.appendChild(wrap);
+  }
+
   async function openUserProfile(userId) {
+    try {
+      await loadUserProfileContent(userId);
+    } catch (err) {
+      console.error('openUserProfile failed:', err);
+      showUserProfileError(userId, err);
+    }
+  }
+
+  async function loadUserProfileContent(userId) {
     viewingUserId = userId;
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('user-profile-panel').classList.add('active');
+    document.getElementById('user-posts-container').innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
 
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', userId).single();
-    if (!profile) return;
+    const { data: profile, error: profileErr } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (profileErr) { showUserProfileError(userId, profileErr); return; }
+    if (!profile) { showUserProfileError(userId, 'This profile could not be found.'); return; }
 
     const name = profile.full_name || profile.username || 'Unknown';
     const initial = name[0].toUpperCase();
@@ -8134,8 +8158,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Load user posts
     const container = document.getElementById('user-posts-container');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    const { data: userPosts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+    const { data: userPosts, error: postsErr } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
     container.innerHTML = '';
+    if (postsErr) { showUserProfileError(userId, postsErr); return; }
     if (!userPosts || userPosts.length === 0) {
       container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No posts yet!</div></div>';
       return;
