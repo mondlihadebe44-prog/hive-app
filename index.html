@@ -5969,6 +5969,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return;
     const compressed = await compressImage(file, 1600, 0.8);
+    if (compressed.type !== 'image/jpeg') { status.textContent = 'Please choose a JPEG or PNG photo.'; return; }
     status.textContent = 'Uploading cover...';
     const fileName = `cover-${session.user.id}.jpg`;
     const { error } = await sb.storage.from('covers').upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
@@ -5990,6 +5991,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return;
     const compressed = await compressImage(file, 500, 0.85);
+    if (compressed.type !== 'image/jpeg') { status.textContent = 'Please choose a JPEG or PNG photo.'; return; }
     status.textContent = 'Uploading...';
     const fileName = `avatar-${session.user.id}.jpg`;
     const { error } = await sb.storage.from('avatars').upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
@@ -8067,23 +8069,33 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
     // Avatar
     const avatarEl = document.getElementById('user-avatar-large');
+    const showAvatarFallback = () => {
+      avatarEl.innerHTML = '';
+      avatarEl.textContent = initial;
+      avatarEl.style.background = getColor(name);
+    };
     if (profile.avatar_url) {
       avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       avatarEl.style.background = 'transparent';
+      const avatarImg = avatarEl.querySelector('img');
+      if (avatarImg) avatarImg.onerror = showAvatarFallback; // broken or unsupported picture -> show initial
     } else {
-      avatarEl.textContent = initial;
-      avatarEl.style.background = getColor(name);
+      showAvatarFallback();
     }
 
     // Cover photo
     const coverEl = document.getElementById('user-cover');
     const coverImg = document.getElementById('user-cover-img');
+    const showCoverFallback = () => {
+      coverImg.style.display = 'none';
+      coverEl.style.background = `linear-gradient(135deg, ${getColor(name)}, #FF6B35)`;
+    };
     if (profile.cover_url) {
+      coverImg.onerror = showCoverFallback; // broken or unsupported picture -> gradient
       coverImg.src = profile.cover_url;
       coverImg.style.display = 'block';
     } else {
-      coverImg.style.display = 'none';
-      coverEl.style.background = `linear-gradient(135deg, ${getColor(name)}, #FF6B35)`;
+      showCoverFallback();
     }
 
     // Stats - load fresh from database
