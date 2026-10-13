@@ -903,7 +903,7 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 /* Profile panel */
 /* Profile */
 .profile-cover {
-  height: 162px; position: relative;
+  height: 120px; position: relative;
   background: linear-gradient(135deg, #1a1200, #0d0800);
   overflow: hidden;
 }
@@ -934,7 +934,7 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 .profile-avatar-large {
   width: 100px; height: 100px; border-radius: 50%;
   background: #1a1200;
-  border: 3px solid #F6C21A;
+  border: 4px solid #FFD700;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Syne', sans-serif; font-weight: 800;
   font-size: 34px; color: #F6C21A; overflow: hidden;
@@ -972,29 +972,53 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 .profile-stats {
   display: flex; margin-bottom: 20px;
   background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid #2a2a2a;
   border-radius: 20px; overflow: hidden;
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .profile-stats > div {
   flex: 1; padding: 16px 8px; text-align: center;
-  border-right: 1px solid rgba(255,255,255,0.06); cursor: pointer;
-  transition: background 0.2s;
+  border-right: 1px solid rgba(255,255,255,0.06); cursor: default;
 }
 .profile-stats > div:last-child { border-right: none; }
-.profile-stats > div:hover { background: rgba(246,194,26,0.06); }
 .stat-num {
   display: block; font-family: 'Syne', sans-serif;
-  font-weight: 800; font-size: 22px; color: #fff;
-  line-height: 1.1; margin-bottom: 4px;
+  font-weight: 800; font-size: 20px; color: #fff;
+  line-height: 1.1; margin-bottom: 4px; min-height: 22px;
 }
+.stat-num.stat-gold { color: #FFD700; }
 @keyframes statPop { 0%{transform:scale(1)} 50%{transform:scale(1.28)} 100%{transform:scale(1)} }
 .stat-num.pop { animation: statPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
 .stat-label {
-  font-size: 10px; color: #888; text-transform: uppercase;
+  font-size: 11px; color: #888; text-transform: uppercase;
   letter-spacing: 0.8px; font-family: 'DM Sans', sans-serif;
 }
+
+/* Profile page redesign: action row, stats, cover responsiveness */
+@media (min-width: 600px) { .profile-cover { height: 160px; } }
+.profile-action-row { display: flex; gap: 10px; align-items: stretch; }
+.profile-action-row > button { min-width: 0; padding: 12px 0; border-radius: 50px; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+.profile-action-row > button:active { transform: scale(0.97); }
+.profile-btn-edit { flex: 2; border: none; background: #FFD700; color: #000; font-weight: 800; font-size: 14px; box-shadow: 0 2px 16px rgba(255,215,0,0.35); }
+.profile-btn-share { flex: 1; border: none; box-shadow: inset 0 0 0 1px #2a2a2a; background: #111; color: #ccc; font-weight: 600; }
+.profile-btn-share:hover { border-color: #FFD700; color: #FFD700; }
+.profile-action-row > .profile-btn-pro { flex: 0 0 auto; padding: 12px 14px; border: none; background: linear-gradient(135deg, #FFD700, #F5A623); color: #000; font-weight: 800; box-shadow: 0 2px 14px rgba(255,215,0,0.3); }
+/* Profile feed: two-column square photo grid for multi-photo posts */
+#my-posts-feed .post-gallery { grid-template-columns: 1fr 1fr; grid-template-rows: auto; gap: 4px; }
+#my-posts-feed .post-gallery .gallery-item:first-child { grid-row: auto; }
+.profile-retry-btn { margin-top: 12px; padding: 8px 18px; border-radius: 50px; border: 1px solid #FFD700; background: transparent; color: #FFD700; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; }
+/* Compact voice-note player for profile feed cards */
+.vn-card.vn-compact { padding: 14px; gap: 10px; border-radius: 20px; }
+.vn-card.vn-compact .vn-row { gap: 12px; }
+.vn-card.vn-compact .vn-play { width: 44px; height: 44px; min-width: 44px; }
+.vn-card.vn-compact .vn-play svg { width: 14px; height: 14px; }
+.vn-card.vn-compact .vn-bars { height: 28px; }
+.vn-card.vn-compact .vn-time { font-size: 13px; }
+
+/* Pinned post on the profile */
+.pinned-section-label { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; color: #FFD700; padding: 12px 20px 0; letter-spacing: 0.3px; }
+.pinned-badge { display: inline-block; align-self: flex-start; background: #FFD700; color: #000; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-bottom: 6px; }
 
 /* Profile tabs */
 .profile-tabs-bar {
@@ -2920,7 +2944,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <!-- Cover photo -->
       <div class="profile-cover" id="cover-container" onclick="document.getElementById('cover-upload').click()">
         <img id="cover-photo" style="width:100%;height:100%;object-fit:cover;display:none">
-        <button class="cover-edit-btn" onclick="event.stopPropagation();document.getElementById('cover-upload').click()">📷 Edit cover</button>
+        <button class="cover-edit-btn" onclick="event.stopPropagation();document.getElementById('cover-upload').click()">✏️ Edit Cover</button>
         <input type="file" id="cover-upload" accept="image/*" style="display:none" onchange="uploadCover(this)">
       </div>
 
@@ -2955,17 +2979,16 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
         <!-- Stats -->
         <div class="profile-stats" style="margin-bottom:20px">
-          <div><span class="stat-num" id="my-posts-count">0</span><div class="stat-label">Posts</div></div>
-          <div><span class="stat-num" id="my-followers-count">0</span><div class="stat-label">Followers</div></div>
-          <div><span class="stat-num" id="my-following-count">0</span><div class="stat-label">Following</div></div>
+          <div><span class="stat-num stat-gold" id="my-posts-count">–</span><div class="stat-label">Posts</div></div>
+          <div><span class="stat-num" id="my-followers-count">–</span><div class="stat-label">Followers</div></div>
+          <div><span class="stat-num" id="my-following-count">–</span><div class="stat-label">Following</div></div>
         </div>
 
-        <!-- Action buttons -->
-        <button onclick="openEditProfile()" class="btn-press" style="width:100%;padding:12px;border-radius:50px;border:none;background:#F6C21A;color:#000;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 16px rgba(246,194,26,0.35);letter-spacing:0.2px" onmouseover="this.style.boxShadow='0 4px 24px rgba(246,194,26,0.55)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='0 2px 16px rgba(246,194,26,0.35)';this.style.transform='none'">✏️ Edit Profile</button>
-
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button onclick="shareProfile()" class="btn-press" style="flex:1;padding:11px;border-radius:50px;border:1.5px solid #2a2a2a;background:#111;color:#ccc;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='#F6C21A';this.style.color='#F6C21A'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#ccc'">↗ Share</button>
-          <button onclick="showProModal()" class="btn-press" style="flex:1;padding:11px;border-radius:50px;border:1.5px solid rgba(246,194,26,0.5);background:rgba(246,194,26,0.06);color:#F6C21A;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;letter-spacing:0.2px" onmouseover="this.style.background='rgba(246,194,26,0.14)'" onmouseout="this.style.background='rgba(246,194,26,0.06)'">👑 Hive Pro</button>
+        <!-- Action buttons: Edit Profile (flex 2), Share (flex 1), Hive Pro (flex 1) -->
+        <div class="profile-action-row">
+          <button onclick="openEditProfile()" class="btn-press profile-btn-edit">✏️ Edit Profile</button>
+          <button onclick="shareProfile()" class="btn-press profile-btn-share">↗ Share</button>
+          <button onclick="showProModal()" class="btn-press profile-btn-pro">👑 Hive Pro</button>
         </div>
 
         <!-- Sign Out -->
@@ -3658,7 +3681,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initThreadLineObserver);
   else initThreadLineObserver();
 
-  function createPostCard(post, isThreadReply = false) {
+  function createPostCard(post, isThreadReply = false, opts = {}) {
     const p = post.profiles || {};
     const name = p.full_name || 'Unknown';
     const username = p.username || 'unknown';
@@ -3689,7 +3712,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         <div class="rebuzz-attr" style="display:none;font-size:12px;color:#4ECDC4;margin:0 0 6px"></div>
         <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
-        ${renderPostMedia(post)}
+        ${renderPostMedia(post, opts)}
         <div class="poll-container" id="poll-container-${post.id}"></div>
         <div class="post-actions">
           <button class="action-btn like-btn" onclick="toggleLike(this,'${post.id}')" onmouseenter="showReactions(this)" onmouseleave="hideReactions(this)" ontouchstart="handleTouchStart(this,'${post.id}')" ontouchend="handleTouchEnd(this)">
@@ -4221,6 +4244,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
     container.insertBefore(createPostCard(data), container.firstChild);
+    refreshProfileIfVisible();
 
     if (startingThread) {
       startingThread = false;
@@ -4878,6 +4902,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
     container.insertBefore(createPostCard(data), container.firstChild);
+    refreshProfileIfVisible();
   }
 
   // ---- Voice-note posts in the feed: one player at a time, plays only when tapped ----
@@ -4893,17 +4918,17 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
   // Waveform heights and opacity are derived from the clip's own URL, so a note always looks the same
   // (no new random heights on every render). They are decorative: they do not show the real loudness.
-  function vnBarPattern(seed) {
+  function vnBarPattern(seed, count = 18) {
     let s = 2166136261;
     for (const ch of String(seed || '')) s = Math.imul(s ^ ch.charCodeAt(0), 16777619) >>> 0;
     const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-    return Array.from({ length: 18 }, () => ({ h: Math.round(8 + rnd() * 24), o: (0.35 + rnd() * 0.4).toFixed(2) }));
+    return Array.from({ length: count }, () => ({ h: Math.round(8 + rnd() * 24), o: (0.35 + rnd() * 0.4).toFixed(2) }));
   }
-  function renderVoiceNotePost(post) {
+  function renderVoiceNotePost(post, compact = false) {
     const secs = Math.max(0, Math.round(Number(post.audio_duration) || 0));
     const total = secs > 0 ? vnFmt(secs) : '--:--';
-    const bars = vnBarPattern(post.audio_url).map(b => `<span class="vn-bar" style="height:${b.h}px;--o:${b.o}"></span>`).join('');
-    return `<div class="vn-card" data-vn-src="${vnAttr(post.audio_url)}" data-vn-secs="${secs}">
+    const bars = vnBarPattern(post.audio_url, compact ? 12 : 18).map(b => `<span class="vn-bar" style="height:${b.h}px;--o:${b.o}"></span>`).join('');
+    return `<div class="vn-card${compact ? ' vn-compact' : ''}" data-vn-src="${vnAttr(post.audio_url)}" data-vn-secs="${secs}">
       <span class="vn-badge">🎤 VOICE NOTE</span>
       <div class="vn-row">
         <button type="button" class="vn-play" data-state="paused" aria-label="Play voice note" onclick="event.stopPropagation();vnFeedToggle(this)">${VN_PLAY_ICON}</button>
@@ -5162,6 +5187,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const empty = container.querySelector('.empty-wrap');
     if (empty) container.innerHTML = '';
     container.insertBefore(createPostCard(data), container.firstChild);
+    refreshProfileIfVisible();
   }
 
   // Composer image handling
@@ -5716,6 +5742,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   // PROFILE
+  // Keeps the profile counts and Posts list in step after publishing or deleting
+  function refreshProfileIfVisible() {
+    const panel = document.getElementById('profile-panel');
+    if (!panel || !panel.classList.contains('active')) return;
+    loadProfileStats();
+    loadMyProfilePosts();
+  }
+
   async function loadProfileStats() {
     if (!currentUser) return;
     const [postsRes, followersRes, followingRes] = await Promise.all([
@@ -5723,9 +5757,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', currentUser.id),
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', currentUser.id)
     ]);
-    document.getElementById('my-posts-count').textContent = postsRes.count || 0;
-    document.getElementById('my-followers-count').textContent = followersRes.count || 0;
-    document.getElementById('my-following-count').textContent = followingRes.count || 0;
+    // Show the real count, or a dash if that query failed (never a made-up number)
+    const show = (id, res) => { const el = document.getElementById(id); if (el) el.textContent = res.error ? '–' : (res.count || 0); };
+    show('my-posts-count', postsRes);
+    show('my-followers-count', followersRes);
+    show('my-following-count', followingRes);
     // Pop animation on stat numbers
     ['my-posts-count','my-followers-count','my-following-count'].forEach(id => {
       const el = document.getElementById(id);
@@ -5751,10 +5787,26 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   function shareProfile() {
     const url = `${window.location.origin}${window.location.pathname}?user=${currentUser?.id}`;
     if (navigator.share) {
-      navigator.share({ title: 'Check out my Hive profile!', url });
+      // Cancelling the share sheet is not an error, so it is ignored
+      navigator.share({ title: 'Check out my Hive profile!', url }).catch(() => {});
+      return;
+    }
+    const copied = () => showToast('Profile link copied! 🐝');
+    const fallback = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand && document.execCommand('copy');
+        ta.remove();
+        if (ok) { copied(); return; }
+      } catch (e) { /* fall through to the manual copy prompt */ }
+      window.prompt('Copy your profile link:', url);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(copied, fallback);
     } else {
-      navigator.clipboard.writeText(url);
-      showToast('Profile link copied! 🐝');
+      fallback();
     }
   }
 
@@ -5811,18 +5863,64 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
   }
 
+  // The post you have pinned to your profile (null if none). Stored as one id on your profile row.
+  let myPinnedPostId = null;
+
+  async function togglePinPost(postId) {
+    if (!currentUser) return;
+    const pin = myPinnedPostId !== postId;
+    const { error } = await sb.from('profiles').update({ pinned_post_id: pin ? postId : null }).eq('id', currentUser.id);
+    if (error) { showToast(pin ? "Couldn't pin this post. Try again." : "Couldn't unpin. Try again."); return; }
+    myPinnedPostId = pin ? postId : null;
+    showToast(pin ? 'Pinned to your profile 📌' : 'Unpinned from your profile');
+    refreshProfileIfVisible();
+  }
+
   async function loadMyProfilePosts() {
     if (!currentUser) return;
     const container = document.getElementById('my-posts-feed');
     if (!container) return;
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-    const { data: posts } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+    // If the pin lookup fails (for example before the database column exists), the feed still loads, just without a pin
+    const { data: prof, error: profErr } = await sb.from('profiles').select('pinned_post_id').eq('id', currentUser.id).maybeSingle();
+    myPinnedPostId = (!profErr && prof && prof.pinned_post_id) ? prof.pinned_post_id : null;
+    const { data: posts, error } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
     container.innerHTML = '';
-    if (!posts || posts.length === 0) {
+    if (error) {
+      container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">⚠️</div><div class="empty-text">Couldn\'t load your posts.<br>Check your connection and try again.</div><button type="button" class="profile-retry-btn" onclick="loadMyProfilePosts()">Try again</button></div>';
+      return;
+    }
+    // The pinned post is fetched on its own, only if it is still yours and still exists
+    let pinnedPost = null;
+    if (myPinnedPostId) {
+      const { data } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('id', myPinnedPostId).eq('user_id', currentUser.id).maybeSingle();
+      pinnedPost = data || null;
+      if (!pinnedPost) myPinnedPostId = null;
+    }
+    const rest = (posts || []).filter(p => p.id !== myPinnedPostId);
+    if (!pinnedPost && rest.length === 0) {
       container.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🐝</div><div class="empty-text">No posts yet!<br>Share your first vibe!</div></div>';
       return;
     }
-    posts.forEach(post => container.appendChild(createPostCard(post)));
+    if (pinnedPost) {
+      const label = document.createElement('div');
+      label.className = 'pinned-section-label';
+      label.textContent = '📌 Pinned Post';
+      container.appendChild(label);
+      const pinnedCard = createPostCard(pinnedPost, false, { compact: true });
+      const badge = document.createElement('span');
+      badge.className = 'pinned-badge';
+      badge.textContent = '📌 Pinned';
+      pinnedCard.querySelector('.post-card-right').prepend(badge);
+      container.appendChild(pinnedCard);
+    }
+    rest.forEach(post => container.appendChild(createPostCard(post, false, { compact: true })));
+    // Photos load as you scroll; a photo that fails hides itself and leaves its dark tile
+    if (!container.dataset.imgWatch) {
+      container.dataset.imgWatch = '1';
+      container.addEventListener('error', e => { if (e.target && e.target.tagName === 'IMG') e.target.style.display = 'none'; }, true);
+    }
+    container.querySelectorAll('img').forEach(img => { img.loading = 'lazy'; img.decoding = 'async'; });
   }
 
   async function loadMyMedia() {
@@ -8063,6 +8161,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
     if (isOwn) {
       menu.appendChild(mkBtn('✏️', 'Edit post', 'var(--text)', () => { menu.remove(); activeMenu = null; editPost(postId); }));
+      const isPinned = myPinnedPostId === postId;
+      menu.appendChild(mkBtn('📌', isPinned ? 'Unpin from profile' : 'Pin to profile', 'var(--text)', () => { menu.remove(); activeMenu = null; togglePinPost(postId); }));
       menu.appendChild(mkBtn('🗑️', 'Delete post', '#ff4444', () => deletePost(postId, menu)));
     }
     menu.appendChild(mkBtn('🔗', 'Copy link', 'var(--text)', () => { navigator.clipboard.writeText(window.location.href); showToast('Link copied! 🔗'); menu.remove(); activeMenu = null; }));
@@ -8099,6 +8199,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       }, 300);
     }
     showToast('Post deleted! 🗑️');
+    refreshProfileIfVisible();
   }
 
   function handleViewerTap(event) {
@@ -10125,9 +10226,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   };
   if (document.body) vcStart(); else document.addEventListener('DOMContentLoaded', vcStart);
 
-  function renderPostMedia(post) {
+  function renderPostMedia(post, opts = {}) {
     // Video takes priority: shown as a video card (real thumbnail + play button)
-    if (post.audio_url) return renderVoiceNotePost(post);
+    if (post.audio_url) return renderVoiceNotePost(post, !!opts.compact);
     if (post.video_url) return renderVideoCard(post);
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
     if (urls.length === 0) return '';
