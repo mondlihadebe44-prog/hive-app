@@ -8874,6 +8874,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       .hv-cs-foot { display:flex; gap:8px; align-items:center; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid #1e1e1e; background:#121212; }
       .hv-cs-input { flex:1; min-width:0; background:#1c1c1c; border:1px solid #2a2a2a; border-radius:50px; padding:10px 14px; color:#fff; font-family:'DM Sans',sans-serif; font-size:16px; outline:none; }
       .hv-cs-send { background:#F6C21A; color:#000; border:none; border-radius:50px; padding:10px 16px; font-family:'Syne',sans-serif; font-weight:700; font-size:14px; cursor:pointer; flex-shrink:0; }
+      .hv-photo { position:absolute; inset:0; background:#000; }
+      .hv-photo-track { position:absolute; inset:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+      .hv-photo-track::-webkit-scrollbar { display:none; }
+      .hv-photo-item { flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
+      .hv-photo-item img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; user-select:none; -webkit-user-drag:none; }
+      .hv-photo-count { position:absolute; top:calc(64px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:3; pointer-events:none; background:rgba(0,0,0,0.55); color:#F6C21A; border-radius:50px; padding:4px 12px; font-family:'Syne',sans-serif; font-weight:700; font-size:12px; white-space:nowrap; }
       .hv-create-btn { width:40px; height:40px; border-radius:50%; border:none; background:#F6C21A; color:#000; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; box-shadow:0 0 14px rgba(246,194,26,0.45); -webkit-tap-highlight-color:transparent; }
       .hv-create-btn svg { width:20px; height:20px; }
       .hv-create-btn:active { transform:scale(0.94); }
@@ -8933,7 +8939,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Start at the tapped video: show it first, then load the normal feed (deduplicated)
     if (startPostId) {
       const { data: first } = await sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)').eq('id', startPostId).maybeSingle();
-      if (hv && first && hvValid(first) && !hv.seen.has(first.id)) { hv.seen.add(first.id); hv.posts.push(first); hvAppendSlide(first, hv.posts.length - 1); }
+      if (hv && first && (hvValid(first) || hvIsPhotoDump(first)) && !hv.seen.has(first.id)) { hv.seen.add(first.id); hv.posts.push(first); hvAppendSlide(first, hv.posts.length - 1); }
     }
     hvLoadPage();
   }
@@ -8975,8 +8981,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     hv.loading = true;
     const tab = hv.tab;
     const from = hv.page * HV_PAGE;
+    // Videos, plus posts with images (photo dumps are kept client-side: two or more photos)
     let q = sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)')
-      .not('video_url', 'is', null).is('reply_to', null)
+      .or('video_url.not.is.null,image_urls.not.is.null').is('reply_to', null)
       .order('created_at', { ascending: false }).range(from, from + HV_PAGE - 1);
     if (tab === 'following') {
       const ids = [...(await getFollowedIds())];
@@ -8989,17 +8996,51 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (error) { console.error('Hive Video load failed:', error); if (!hv.posts.length) hvShowEmpty("Couldn't load videos. Please try again."); return; }
     if (!data || data.length < HV_PAGE) hv.done = true;
     hv.page++;
-    data.filter(p => hvValid(p) && !hv.seen.has(p.id)).forEach(p => {
+    data.filter(p => (hvValid(p) || hvIsPhotoDump(p)) && !hv.seen.has(p.id)).forEach(p => {
       hv.seen.add(p.id);
       hv.posts.push(p);
       hvAppendSlide(p, hv.posts.length - 1);
     });
+    // A page may hold only ordinary photos, which are not shown here: keep loading until something
+    // appears or the list ends, rather than showing an empty screen too early.
+    if (!hv.posts.length && !hv.done) { hvLoadPage(); return; }
     if (!hv.posts.length) hvShowEmpty(tab === 'following' ? 'No videos from people you follow yet 🎬' : 'No videos yet 🎬');
   }
 
   function hvShowEmpty(msg) {
     if (!hv) return;
     hv.container.innerHTML = `<div style="height:100%;height:100dvh;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:15px;text-align:center;padding:24px">${hiveEsc(msg)}</div>`;
+  }
+
+  // A photo dump is a post with two or more photos and no video. A single photo stays a normal feed post.
+  function hvIsPhotoDump(post) {
+    const urls = Array.isArray(post.image_urls) ? post.image_urls : [];
+    return !post.video_url && urls.length >= 2 && urls.every(u => /^https?:\/\//.test(u));
+  }
+
+  // Swipeable photo carousel. The browser handles the swipe natively (horizontal scroll with
+  // snap points), and images are fitted with object-fit: contain so nothing is stretched.
+  function hvBuildPhotoCarousel(urls) {
+    const wrap = document.createElement('div');
+    wrap.className = 'hv-photo';
+    const total = urls.length;
+    wrap.innerHTML = `
+      <div class="hv-photo-track" role="region" aria-label="Photo post with ${total} photos. Swipe left or right.">
+        ${urls.map((u, i) => `<div class="hv-photo-item"><img src="${u.replace(/"/g, '%22')}" alt="Photo ${i + 1} of ${total}" draggable="false" decoding="async" loading="${i < 2 ? 'eager' : 'lazy'}"></div>`).join('')}
+      </div>
+      <div class="hv-photo-count" aria-live="polite">1/${total} · swipe</div>`;
+    const track = wrap.querySelector('.hv-photo-track');
+    const count = wrap.querySelector('.hv-photo-count');
+    let frame = 0;
+    track.addEventListener('scroll', () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const i = Math.min(total - 1, Math.max(0, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+        count.textContent = `${i + 1}/${total}`;
+      });
+    }, { passive: true });
+    return wrap;
   }
 
   function hvAppendSlide(post, idx) {
@@ -9013,14 +9054,19 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     slide.dataset.postId = post.id;
     slide.style.cssText = 'height:100%;height:100dvh;flex-shrink:0;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;overflow:hidden';
 
-    const v = document.createElement('video');
-    v.setAttribute('playsinline', '');
-    v.setAttribute('webkit-playsinline', '');
-    v.preload = 'none';
-    v.muted = hvMuted;
-    if (/^https?:\/\//.test(post.video_thumbnail_url || '')) v.poster = post.video_thumbnail_url;
-    v.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block';
-    slide.appendChild(v);
+    let v = null;
+    if (hvIsPhotoDump(post)) {
+      slide.appendChild(hvBuildPhotoCarousel(post.image_urls));
+    } else {
+      v = document.createElement('video');
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.preload = 'none';
+      v.muted = hvMuted;
+      if (/^https?:\/\//.test(post.video_thumbnail_url || '')) v.poster = post.video_thumbnail_url;
+      v.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block';
+      slide.appendChild(v);
+    }
 
     slide.insertAdjacentHTML('beforeend', `
       <div class="hv-spin"></div>
@@ -9078,7 +9124,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     slide.querySelector('.hv-open-profile').onclick = () => hvOpenProfile(post.user_id);
     slide.querySelector('.hv-avatar').onclick = () => hvOpenProfile(post.user_id);
 
-    // Playback events
+    // Playback events (videos only; photo dumps have no video element)
+    if (v) {
     v.addEventListener('waiting', () => hvSpinner(slide, true));
     v.addEventListener('stalled', () => hvSpinner(slide, true));
     v.addEventListener('playing', () => { hvSpinner(slide, false); slide.querySelector('.hv-err').style.display = 'none'; });
@@ -9088,6 +9135,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     v.addEventListener('click', () => { if (v.ended) return; if (v.paused) hvPlay(v); else v.pause(); });
     slide.querySelector('.hv-replay').onclick = (e) => { e.stopPropagation(); slide.querySelector('.hv-replay').style.display = 'none'; v.currentTime = 0; hvPlay(v); };
     slide.querySelector('.hv-retry').onclick = (e) => { e.stopPropagation(); hvSetSrc(slide, v, post); hvPlay(v); };
+    }
 
     hv.container.appendChild(slide);
     hv.io.observe(slide);
@@ -9107,6 +9155,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function hvPlay(v) {
+    if (!v) return; // photo dumps have no video element
     v.muted = hvMuted;
     const pr = v.play();
     if (pr && pr.catch) pr.catch(() => {
@@ -9122,12 +9171,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     slides.forEach((s, i) => {
       const v = s.querySelector('video');
       const near = Math.abs(i - idx) <= 1;
-      if (i !== idx) v.pause();
-      if (near && !v.getAttribute('src') && hv.posts[i]) {
-        v.preload = i === idx ? 'auto' : 'metadata';
-        hvSetSrc(s, v, hv.posts[i]);
+      if (v) {
+        if (i !== idx) v.pause();
+        if (near && !v.getAttribute('src') && hv.posts[i]) {
+          v.preload = i === idx ? 'auto' : 'metadata';
+          hvSetSrc(s, v, hv.posts[i]);
+        }
+        if (!near && v.getAttribute('src')) { v.removeAttribute('src'); v.load(); }
       }
-      if (!near && v.getAttribute('src')) { v.removeAttribute('src'); v.load(); }
       s.querySelector('.hv-replay').style.display = 'none';
     });
     const cur = slides[idx];
