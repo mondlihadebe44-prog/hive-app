@@ -2193,7 +2193,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
       <!-- Media previews -->
       <div id="composer-image-previews" style="display:none;margin-top:12px">
-        <div id="composer-image-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;border-radius:16px;overflow:hidden"></div>
+        <div id="composer-image-count" style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--gold);margin-bottom:8px"></div>
+        <div id="composer-image-grid"style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;border-radius:16px;overflow:hidden"></div>
       </div>
       <div id="composer-video-preview" style="display:none;margin-top:12px;position:relative">
         <video id="composer-video-el" style="width:100%;border-radius:16px;max-height:280px;background:#000" controls playsinline></video>
@@ -5005,6 +5006,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
 
     let imageUrl = null, imageUrls = [], videoUrl = null, videoThumbnailUrl = null;
+    const uploadedImageNames = []; // storage file names uploaded for this post, for cleanup on failure
     if (composerVideoFile) {
       postBtn.textContent = '0%';
       try { 
@@ -5029,12 +5031,20 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     } else if (composerGifUrl) {
       imageUrl = composerGifUrl;
     } else if (composerImageFiles.length > 0) {
-      postBtn.textContent = 'Uploading...';
-      for (const file of composerImageFiles) {
-        const compressed = await compressImage(file);
+      // Upload in the order the user arranged them. If any photo fails, the photos already
+      // uploaded are removed and no post is created, so a partial carousel is never published.
+      const total = composerImageFiles.length;
+      for (let i = 0; i < total; i++) {
+        postBtn.textContent = total > 1 ? `Uploading ${i + 1} of ${total}…` : 'Uploading…';
+        const compressed = await compressImage(composerImageFiles[i]);
         const fileName = `${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
         const { error: upErr } = await sb.storage.from('posts').upload(fileName, compressed, { contentType: 'image/jpeg' });
-        if (upErr) { showToast('Upload failed!'); postBtn.textContent = 'Post'; postBtn.disabled = false; return; }
+        if (upErr) {
+          if (uploadedImageNames.length) { try { await sb.storage.from('posts').remove(uploadedImageNames); } catch (e) {} }
+          showToast(total > 1 ? `Photo ${i + 1} of ${total} didn't upload, so nothing was posted. Tap Post to try again.` : "Photo didn't upload, so nothing was posted. Tap Post to try again.");
+          postBtn.textContent = 'Post'; postBtn.disabled = false; return;
+        }
+        uploadedImageNames.push(fileName);
         const { data: u } = sb.storage.from('posts').getPublicUrl(fileName);
         imageUrls.push(u.publicUrl);
       }
@@ -5049,7 +5059,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
     postBtn.textContent = 'Post'; postBtn.disabled = false;
-    if (error) { showToast('Error: ' + error.message); return; }
+    if (error) {
+      // Nothing was saved, so remove any photos uploaded for it rather than leave them orphaned
+      if (uploadedImageNames.length) { try { await sb.storage.from('posts').remove(uploadedImageNames); } catch (e) {} }
+      showToast('Error: ' + error.message); return;
+    }
 
     // Send mention notifications
     const mentions = [...new Set((text.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
@@ -5071,33 +5085,63 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   // Composer image handling
+  const COMPOSER_MAX_PHOTOS = 10;
+
   function addComposerImages(input) {
-    const files = Array.from(input.files).slice(0, 4);
+    let files = Array.from(input.files || []);
     if (!files.length) return;
+    if (files.length > COMPOSER_MAX_PHOTOS) {
+      showToast(`Up to ${COMPOSER_MAX_PHOTOS} photos per post. The first ${COMPOSER_MAX_PHOTOS} were kept.`);
+      files = files.slice(0, COMPOSER_MAX_PHOTOS);
+    }
     composerImageFiles = files;
     composerVideoFile = null; composerGifUrl = null;
     document.getElementById('composer-video-preview').style.display = 'none';
     document.getElementById('composer-gif-preview').style.display = 'none';
-    const grid = document.getElementById('composer-image-grid');
-    grid.innerHTML = '';
-    files.forEach((file, i) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden';
-        wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"><button onclick="removeComposerImage(${i})" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:12px;cursor:pointer">✕</button>`;
-        grid.appendChild(wrap);
-      };
-      reader.readAsDataURL(file);
-    });
-    document.getElementById('composer-image-previews').style.display = 'block';
+    renderComposerImageGrid();
     updateComposerUI();
+  }
+
+  // Previews are rebuilt from the one ordered list each time, so remove and reorder
+  // always act on the photo the user sees (no stale positions).
+  function renderComposerImageGrid() {
+    const grid = document.getElementById('composer-image-grid');
+    const countEl = document.getElementById('composer-image-count');
+    const n = composerImageFiles.length;
+    document.getElementById('composer-image-previews').style.display = n ? 'block' : 'none';
+    countEl.textContent = n ? `${n} photo${n === 1 ? '' : 's'}${n > 1 ? ' · use the arrows to reorder' : ''}` : '';
+    grid.innerHTML = '';
+    composerImageFiles.forEach((file, i) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#111';
+      const img = document.createElement('img');
+      img.alt = `Photo ${i + 1}`;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      const url = URL.createObjectURL(file);
+      img.onload = () => URL.revokeObjectURL(url);
+      img.src = url;
+      const btn = 'position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+      wrap.appendChild(img);
+      wrap.insertAdjacentHTML('beforeend', `
+        <span style="position:absolute;top:4px;left:4px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:#F6C21A;color:#000;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center">${i + 1}</span>
+        <button type="button" aria-label="Remove photo ${i + 1}" onclick="removeComposerImage(${i})" style="${btn};top:4px;right:4px">✕</button>
+        ${i > 0 ? `<button type="button" aria-label="Move photo ${i + 1} earlier" onclick="moveComposerImage(${i},-1)" style="${btn};bottom:4px;left:4px;color:#F6C21A">‹</button>` : ''}
+        ${i < n - 1 ? `<button type="button" aria-label="Move photo ${i + 1} later" onclick="moveComposerImage(${i},1)" style="${btn};bottom:4px;right:4px;color:#F6C21A">›</button>` : ''}`);
+      grid.appendChild(wrap);
+    });
   }
 
   function removeComposerImage(i) {
     composerImageFiles.splice(i, 1);
-    if (!composerImageFiles.length) document.getElementById('composer-image-previews').style.display = 'none';
+    renderComposerImageGrid();
     updateComposerUI();
+  }
+
+  function moveComposerImage(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= composerImageFiles.length) return;
+    [composerImageFiles[i], composerImageFiles[j]] = [composerImageFiles[j], composerImageFiles[i]];
+    renderComposerImageGrid();
   }
 
   function addComposerVideo(input) {
