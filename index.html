@@ -10947,7 +10947,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       viewer.id = 'image-viewer-overlay';
       viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:800;display:flex;align-items:center;justify-content:center;flex-direction:column';
       viewer.innerHTML = `
-        <button onclick="closeImageViewer()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:2">✕</button>
+        <button onclick="closeImageViewer()" aria-label="Close photo viewer" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 16px);right:12px;width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,0,0,0.55);border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;z-index:3;pointer-events:auto">✕</button>
         <div id="image-viewer-counter" style="position:absolute;top:24px;left:20px;color:#fff;font-size:13px"></div>
         <img id="image-viewer-img" style="max-width:92%;max-height:80vh;object-fit:contain;border-radius:8px">
         <div style="display:flex;justify-content:space-between;width:100%;position:absolute;top:0;bottom:0">
@@ -10967,7 +10967,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   function viewerPrev() { if (viewerIndex > 0) { viewerIndex--; updateImageViewer(); } }
   function viewerNext() { if (viewerIndex < viewerImages.length - 1) { viewerIndex++; updateImageViewer(); } }
-  function closeImageViewer() { const v = document.getElementById('image-viewer-overlay'); if (v) v.style.display = 'none'; }
+  function closeImageViewer() {
+    const v = document.getElementById('image-viewer-overlay');
+    if (v) v.style.display = 'none';
+    pnPauseAll(); // narration from this post stops when the viewer closes
+  }
 
   // POLLS
   let pollOptionCount = 0;
