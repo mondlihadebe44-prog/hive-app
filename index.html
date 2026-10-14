@@ -941,7 +941,12 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 .pn-fill { height: 100%; width: 0; border-radius: 3px; background: var(--gold); }
 .pn-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .pn-mute { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; cursor: pointer; }
-.pn-error { font-size: 12px; color: #ff8a80; }
+.pn-error { font-size: 12px; color: #ff8a80; flex-basis: 100%; }
+/* Compact narration control in the post header (second line under the name) */
+.pn-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; padding: 0; border: none; background: none; border-radius: 0; }
+.pn-head .pn-label { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 13px; font-weight: 700; color: var(--gold); }
+.pn-head .pn-play-btn { width: 36px; height: 36px; min-width: 36px; }
+.pn-head .pn-total { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .iv-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 18px; cursor: pointer; z-index: 2; }
 .iv-change { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 50px; border: none; background: var(--gold); color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; z-index: 2; }
 
@@ -3731,6 +3736,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const isOwn = currentUser && post.user_id === currentUser.id;
     const verified = p.verified ? '<svg style="display:inline-block;vertical-align:middle;margin-left:2px;filter:drop-shadow(0 0 2px rgba(246,194,26,0.35))" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" fill="#1877F2"/><circle cx="10" cy="10" r="9" fill="none" stroke="#F6C21A" stroke-width="1.5"/><path d="M6.5 10L8.5 12L13.5 7.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
     const avatarHTML = p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial;
+    const narratedDump = isNarratedPhotoDump(post);
 
     const card = document.createElement('div');
     card.className = 'post-card';
@@ -3744,13 +3750,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div class="post-name-row">
             <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name}</span>
             ${verified}
-            <span class="post-handle">@${username}</span>
+            ${narratedDump ? '' : `<span class="post-handle">@${username}</span>`}
             <span class="post-dot">·</span>
             <span class="post-handle">${timeTag(post.created_at)}</span>
             ${post.edited ? '<span class="edited-badge">· Edited</span>' : ''}
           </div>
           <button class="post-more" onclick="event.stopPropagation();showPostMenu(this,'${post.id}',${isOwn})">···</button>
         </div>
+        ${narratedDump ? renderNarrationHeader(post) : ''}
         <div class="rebuzz-attr" style="display:none;font-size:12px;color:#4ECDC4;margin:0 0 6px"></div>
         <div class="post-body">${formatBody(post.body || '')}</div>
         <div class="quote-container" id="quote-container-${post.id}"></div>
@@ -5398,18 +5405,20 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   // ---- Narration playback on photo posts in the feed: one player per post, one playing at a time ----
   let pnCurrent = null; // { audio, bar }
-  function renderNarrationBar(post) {
+  // A photo dump counts as narrated when it has photos and a narration attached.
+  function isNarratedPhotoDump(post) {
+    return !!(post.narration_url && ((Array.isArray(post.image_urls) && post.image_urls.length > 0) || post.image_url));
+  }
+  // Compact narration control shown in the post header, on its own line under the name.
+  // It reuses the same audio logic as before (pnFeedToggle / pnFeedAudio), so there is still one player per post.
+  function renderNarrationHeader(post) {
     const secs = Math.max(0, Math.round(Number(post.narration_duration) || 0));
     const total = secs > 0 ? vnFmt(secs) : '--:--';
-    return `<div class="pn-bar" data-pn-src="${vnAttr(post.narration_url)}" data-pn-secs="${secs}" onclick="event.stopPropagation()">
+    return `<div class="pn-bar pn-head" data-pn-src="${vnAttr(post.narration_url)}" data-pn-secs="${secs}" onclick="event.stopPropagation()">
+      <span class="pn-label"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0014 0v-1M12 18v4"/></svg>Narration</span>
       <button type="button" class="pn-play-btn pn-feed-play" data-state="paused" aria-label="Play narration" onclick="event.stopPropagation();pnFeedToggle(this)">${VN_PLAY_ICON}</button>
-      <div class="pn-info">
-        <div class="pn-label">🎙 Narration by the author</div>
-        <div class="pn-track" role="slider" tabindex="0" aria-label="Narration progress" aria-valuemin="0" aria-valuemax="${secs}" aria-valuenow="0" onclick="event.stopPropagation();pnFeedSeek(event,this)"><div class="pn-fill"></div></div>
-        <div class="pn-time"><span class="pn-now">0:00</span> / ${total}</div>
-      </div>
-      <button type="button" class="pn-mute" aria-label="Mute narration" onclick="event.stopPropagation();pnFeedMute(this)">🔊</button>
-      <div class="pn-error" hidden></div>
+      <span class="pn-time pn-total">${total}</span>
+      <span class="pn-error" hidden></span>
     </div>`;
   }
   function pnFeedAudio(bar) {
@@ -5439,13 +5448,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     b.setAttribute('aria-label', playing ? 'Pause narration' : 'Play narration');
   }
   function pnFeedRender(bar) {
-    const a = bar._pnAudio;
-    if (!a) return;
-    const d = Number(bar.dataset.pnSecs) || a.duration || 0;
-    const c = a.currentTime || 0;
-    bar.querySelector('.pn-fill').style.width = (d ? Math.min(1, c / d) * 100 : 0) + '%';
-    bar.querySelector('.pn-now').textContent = vnFmt(c);
-    bar.querySelector('.pn-track').setAttribute('aria-valuenow', Math.round(c));
+    // The header control shows the total length only, so there is no progress text to update.
+    // Kept as a hook so a progress display can be added back without touching the audio code.
+    if (!bar._pnAudio) return;
   }
   function pnFeedToggle(btn) {
     const bar = btn.closest('.pn-bar');
@@ -5457,24 +5462,6 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (a.ended || (a.duration && a.currentTime >= a.duration - 0.1)) a.currentTime = 0;
     bar.querySelector('.pn-error').hidden = true;
     a.play().catch(() => pnFeedFail(bar));
-  }
-  function pnFeedSeek(ev, track) {
-    const bar = track.closest('.pn-bar');
-    if (!bar) return;
-    const a = pnFeedAudio(bar);
-    const d = a.duration || Number(bar.dataset.pnSecs) || 0;
-    if (!d) return;
-    const r = track.getBoundingClientRect();
-    a.currentTime = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)) * d;
-    pnFeedRender(bar);
-  }
-  function pnFeedMute(btn) {
-    const bar = btn.closest('.pn-bar');
-    if (!bar) return;
-    const a = pnFeedAudio(bar);
-    a.muted = !a.muted;
-    btn.textContent = a.muted ? '🔇' : '🔊';
-    btn.setAttribute('aria-label', a.muted ? 'Unmute narration' : 'Mute narration');
   }
   function pnPauseAll() {
     if (pnCurrent) { try { pnCurrent.audio.pause(); } catch (e) {} pnCurrent = null; }
@@ -10922,9 +10909,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (post.video_url) return renderVideoCard(post);
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
     if (urls.length === 0) return '';
-    const narrationHTML = post.narration_url ? renderNarrationBar(post) : '';
     if (urls.length === 1) {
-      return `<img class="post-image" src="${urls[0]}" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},0)">` + narrationHTML;
+      return `<img class="post-image" src="${urls[0]}" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},0)">`;
     }
     const shown = urls.slice(0, 4);
     const extra = urls.length - 4;
@@ -10932,7 +10918,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       const overlay = (i === 3 && extra > 0) ? `<div class="gallery-more-overlay">+${extra}</div>` : '';
       return `<div class="gallery-item" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},${i})"><img src="${url}">${overlay}</div>`;
     }).join('');
-    return `<div class="post-gallery count-${shown.length}">${itemsHTML}</div>` + narrationHTML;
+    return `<div class="post-gallery count-${shown.length}">${itemsHTML}</div>`;
   }
 
   let viewerImages = [];
