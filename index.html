@@ -922,6 +922,14 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
   font-weight: 500; transition: background 0.2s; letter-spacing: 0.2px;
 }
 .cover-edit-btn:hover { background: rgba(0,0,0,0.88); }
+/* Full-screen image viewer (profile avatars and covers) */
+.iv { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.94); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease; }
+.iv.open { display: flex; opacity: 1; }
+.iv-stage { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: calc(56px + env(safe-area-inset-top, 0px)) 12px calc(88px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+.iv-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 6px; }
+.iv-msg { color: #ddd; font-size: 14px; text-align: center; padding: 20px; }
+.iv-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 18px; cursor: pointer; z-index: 2; }
+.iv-change { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 50px; border: none; background: var(--gold); color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; z-index: 2; }
 
 .profile-info-section { padding: 0 20px 28px; background: var(--bg); }
 
@@ -2828,7 +2836,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   <!-- USER PROFILE PANEL -->
   <div id="user-profile-panel" class="panel">
     <div class="panel-header" style="display:flex;align-items:center;gap:12px">
-      <button onclick="document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('feed-panel').classList.add('active')" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
+      <button onclick="goBackFromUserProfile()" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer">←</button>
       <div class="panel-title" id="user-profile-title">Profile</div>
     </div>
     <!-- Cover photo - no overflow -->
@@ -2942,7 +2950,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     <!-- PROFILE -->
     <div id="profile-panel" class="panel">
       <!-- Cover photo -->
-      <div class="profile-cover" id="cover-container" onclick="document.getElementById('cover-upload').click()">
+      <div class="profile-cover" id="cover-container" onclick="openOwnCover()">
         <img id="cover-photo" style="width:100%;height:100%;object-fit:cover;display:none">
         <button class="cover-edit-btn" onclick="event.stopPropagation();document.getElementById('cover-upload').click()">✏️ Edit Cover</button>
         <input type="file" id="cover-upload" accept="image/*" style="display:none" onchange="uploadCover(this)">
@@ -2951,7 +2959,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <div class="profile-info-section">
         <!-- Avatar row -->
         <div class="profile-avatar-wrap">
-          <div class="profile-avatar-large" id="profile-avatar-big" onclick="document.getElementById('avatar-upload').click()">?
+          <div class="profile-avatar-large" id="profile-avatar-big" onclick="openOwnAvatar()">?
             <div style="position:absolute;bottom:2px;right:2px;width:26px;height:26px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--bg)">📷</div>
           </div>
           <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
@@ -5978,6 +5986,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     await sb.from('profiles').update({ cover_url: urlData.publicUrl }).eq('id', session.user.id);
     const cp = document.getElementById('cover-photo');
     cp.src = urlData.publicUrl; cp.style.display = 'block';
+    if (currentProfile) currentProfile.cover_url = urlData.publicUrl;
     status.textContent = 'Cover updated! ✅';
     showToast('Cover photo updated! 🎉');
     setTimeout(() => { status.textContent = ''; }, 3000);
@@ -8050,6 +8059,90 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   // USER PROFILE
   let viewingUserId = null;
 
+  // FULL-SCREEN IMAGE VIEWER (profile avatars and covers)
+  let imgViewerEl = null;
+  let imgViewerPrevOverflow = '';
+  let imgViewerTouchY = null;
+  function ensureImageViewer() {
+    if (imgViewerEl) return imgViewerEl;
+    const el = document.createElement('div');
+    el.id = 'img-viewer';
+    el.className = 'iv';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', 'Photo viewer');
+    el.innerHTML = '<button class="iv-close" aria-label="Close">✕</button><div class="iv-stage"><img class="iv-img" alt=""><div class="iv-msg" hidden></div></div><button class="iv-change" hidden></button>';
+    document.body.appendChild(el);
+    const img = el.querySelector('.iv-img');
+    const msg = el.querySelector('.iv-msg');
+    img.onload = () => { img.style.display = ''; msg.hidden = true; };
+    img.onerror = () => { img.style.display = 'none'; msg.textContent = "Couldn't load this picture."; msg.hidden = false; };
+    el.querySelector('.iv-close').onclick = (e) => { e.stopPropagation(); closeProfileViewer(); };
+    el.addEventListener('click', (e) => { if (e.target === el || e.target.classList.contains('iv-stage')) closeProfileViewer(); });
+    el.addEventListener('touchstart', (e) => { imgViewerTouchY = e.touches.length === 1 ? e.touches[0].clientY : null; }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if (imgViewerTouchY === null) return;
+      const dy = e.changedTouches[0].clientY - imgViewerTouchY;
+      imgViewerTouchY = null;
+      if (dy > 90) closeProfileViewer(); // swipe down to close
+    }, { passive: true });
+    imgViewerEl = el;
+    return el;
+  }
+  function imgViewerKey(e) { if (e.key === 'Escape') closeProfileViewer(); }
+  function openProfileViewer(url, opts = {}) {
+    if (!url) return;
+    const el = ensureImageViewer();
+    const img = el.querySelector('.iv-img');
+    const msg = el.querySelector('.iv-msg');
+    const changeBtn = el.querySelector('.iv-change');
+    img.style.display = '';
+    msg.hidden = true;
+    img.alt = opts.alt || 'Full size photo';
+    img.src = url;
+    if (opts.onChange) {
+      changeBtn.textContent = opts.changeLabel || '📷 Change photo';
+      changeBtn.hidden = false;
+      changeBtn.onclick = (e) => { e.stopPropagation(); closeProfileViewer(); opts.onChange(); };
+    } else {
+      changeBtn.hidden = true;
+      changeBtn.onclick = null;
+    }
+    if (!el.classList.contains('open')) {
+      imgViewerPrevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden'; // stop the page behind from scrolling
+      el.classList.add('open');
+      document.addEventListener('keydown', imgViewerKey);
+    }
+  }
+  function closeProfileViewer() {
+    if (!imgViewerEl || !imgViewerEl.classList.contains('open')) return;
+    imgViewerEl.classList.remove('open');
+    imgViewerEl.querySelector('.iv-img').removeAttribute('src');
+    document.body.style.overflow = imgViewerPrevOverflow;
+    document.removeEventListener('keydown', imgViewerKey);
+  }
+  // Owner taps: view the photo (with a Change button); if there is no photo yet, go straight to the picker
+  function openOwnAvatar() {
+    const url = currentProfile && currentProfile.avatar_url;
+    if (!url) { document.getElementById('avatar-upload').click(); return; }
+    openProfileViewer(url, { alt: 'Your profile picture', changeLabel: '📷 Change photo', onChange: () => document.getElementById('avatar-upload').click() });
+  }
+  function openOwnCover() {
+    const url = currentProfile && currentProfile.cover_url;
+    if (!url) { document.getElementById('cover-upload').click(); return; }
+    openProfileViewer(url, { alt: 'Your cover photo', changeLabel: '✏️ Change cover', onChange: () => document.getElementById('cover-upload').click() });
+  }
+
+  // Back button returns to the screen the profile was opened from
+  let userProfileReqId = 0;
+  let userProfileReturnPanel = 'feed-panel';
+  function goBackFromUserProfile() {
+    const target = document.getElementById(userProfileReturnPanel) ? userProfileReturnPanel : 'feed-panel';
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(target).classList.add('active');
+  }
+
   function showUserProfileError(userId, err) {
     const container = document.getElementById('user-posts-container');
     if (!container) return;
@@ -8073,12 +8166,27 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   async function loadUserProfileContent(userId) {
+    const reqId = ++userProfileReqId;
+    const activePanel = document.querySelector('.panel.active');
+    if (activePanel && activePanel.id !== 'user-profile-panel') userProfileReturnPanel = activePanel.id;
     viewingUserId = userId;
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('user-profile-panel').classList.add('active');
+
+    // Reset the screen so nothing from the previously viewed profile stays visible
+    document.getElementById('user-name-large').innerHTML = '';
+    document.getElementById('user-handle-large').textContent = 'Loading…';
+    document.getElementById('user-bio-large').textContent = '';
+    ['user-posts-count', 'user-followers-count', 'user-following-count'].forEach(id => { document.getElementById(id).textContent = '–'; });
+    const resetAvatar = document.getElementById('user-avatar-large');
+    resetAvatar.innerHTML = ''; resetAvatar.textContent = ''; resetAvatar.style.background = 'var(--gold)'; resetAvatar.onclick = null; resetAvatar.style.cursor = '';
+    const resetCover = document.getElementById('user-cover');
+    resetCover.onclick = null; resetCover.style.cursor = '';
+    document.getElementById('user-cover-img').style.display = 'none';
     document.getElementById('user-posts-container').innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
 
     const { data: profile, error: profileErr } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (reqId !== userProfileReqId) return; // a newer profile was requested meanwhile
     if (profileErr) { showUserProfileError(userId, profileErr); return; }
     if (!profile) { showUserProfileError(userId, 'This profile could not be found.'); return; }
 
@@ -8103,8 +8211,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       avatarEl.style.background = 'transparent';
       const avatarImg = avatarEl.querySelector('img');
       if (avatarImg) avatarImg.onerror = showAvatarFallback; // broken or unsupported picture -> show initial
+      avatarEl.onclick = () => openProfileViewer(profile.avatar_url, { alt: name + "'s profile picture" });
+      avatarEl.style.cursor = 'pointer';
     } else {
       showAvatarFallback();
+      avatarEl.onclick = null;
+      avatarEl.style.cursor = '';
     }
 
     // Cover photo
@@ -8118,8 +8230,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       coverImg.onerror = showCoverFallback; // broken or unsupported picture -> gradient
       coverImg.src = profile.cover_url;
       coverImg.style.display = 'block';
+      coverEl.onclick = () => openProfileViewer(profile.cover_url, { alt: name + "'s cover photo" });
+      coverEl.style.cursor = 'pointer';
     } else {
       showCoverFallback();
+      coverEl.onclick = null;
+      coverEl.style.cursor = '';
     }
 
     // Stats - load fresh from database
@@ -8128,6 +8244,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId)
     ]);
+    if (reqId !== userProfileReqId) return;
     document.getElementById('user-posts-count').textContent = postsRes.count || 0;
     document.getElementById('user-followers-count').textContent = followersRes.count || 0;
     document.getElementById('user-following-count').textContent = followingRes.count || 0;
@@ -8141,6 +8258,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       followBtn.style.display = 'block';
       if (currentUser) {
         const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
+        if (reqId !== userProfileReqId) return;
         if (data) {
           followBtn.textContent = 'Following ✓';
           followBtn.style.background = 'var(--gold)';
@@ -8159,6 +8277,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const container = document.getElementById('user-posts-container');
     container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
     const { data: userPosts, error: postsErr } = await sb.from('posts').select('*, profiles(username,full_name,avatar_url,verified)').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+    if (reqId !== userProfileReqId) return;
     container.innerHTML = '';
     if (postsErr) { showUserProfileError(userId, postsErr); return; }
     if (!userPosts || userPosts.length === 0) {
