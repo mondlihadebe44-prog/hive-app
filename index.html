@@ -928,6 +928,20 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 .iv-stage { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: calc(56px + env(safe-area-inset-top, 0px)) 12px calc(88px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
 .iv-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 6px; }
 .iv-msg { color: #ddd; font-size: 14px; text-align: center; padding: 20px; }
+/* Photo-post voice narration */
+.pn-add-btn { width: 100%; padding: 12px; border-radius: 50px; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; }
+.pn-small-btn { padding: 8px 14px; min-height: 36px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.25); background: transparent; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+.pn-small-btn.pn-gold { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+.pn-play-btn { width: 44px; height: 44px; min-width: 44px; border-radius: 50%; border: none; background: var(--gold); color: #000; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.pn-play-btn svg { width: 18px; height: 18px; }
+.pn-bar { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(246,194,26,0.35); background: rgba(246,194,26,0.06); font-family: 'DM Sans', sans-serif; }
+.pn-info { flex: 1; min-width: 0; }
+.pn-label { font-size: 12px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+.pn-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.15); cursor: pointer; position: relative; margin-bottom: 4px; }
+.pn-fill { height: 100%; width: 0; border-radius: 3px; background: var(--gold); }
+.pn-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pn-mute { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; cursor: pointer; }
+.pn-error { font-size: 12px; color: #ff8a80; }
 .iv-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 18px; cursor: pointer; z-index: 2; }
 .iv-change { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 50px; border: none; background: var(--gold); color: #000; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; z-index: 2; }
 
@@ -2236,6 +2250,26 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <div id="composer-image-previews" style="display:none;margin-top:12px">
         <div id="composer-image-count" style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--gold);margin-bottom:8px"></div>
         <div id="composer-image-grid"style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;border-radius:16px;overflow:hidden"></div>
+        <!-- Optional voice narration for this photo post. Nothing is uploaded until Post is tapped. -->
+        <div id="pn-panel" role="region" aria-label="Voice narration" style="display:none;margin-top:12px;padding:12px 14px;border:1px solid rgba(246,194,26,0.35);border-radius:18px;background:rgba(246,194,26,0.06);font-family:'DM Sans',sans-serif">
+          <div id="pn-idle" style="display:block"><button type="button" class="pn-add-btn" onclick="pnStart()">🎙 Add voice narration</button></div>
+          <div id="pn-recording" style="display:none;align-items:center;gap:10px">
+            <span class="voice-dot" aria-hidden="true" style="background:#ff4444"></span>
+            <span style="flex:1;font-size:13px;color:#ff8a80">Recording narration <span id="pn-rec-time" style="font-variant-numeric:tabular-nums">0:00 / 2:00</span></span>
+            <button type="button" class="pn-small-btn" onclick="pnCancel()">Cancel</button>
+            <button type="button" class="pn-small-btn pn-gold" onclick="pnStop()">Stop</button>
+          </div>
+          <div id="pn-preview" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+            <button type="button" id="pn-play" class="pn-play-btn" aria-label="Play narration preview" onclick="pnTogglePreview()">▶</button>
+            <div style="flex:1;min-width:120px">
+              <div style="font-size:12px;color:var(--gold);font-weight:700">🎙 Narration ready</div>
+              <div id="pn-time" style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums">0:00 / 0:00</div>
+            </div>
+            <button type="button" class="pn-small-btn" onclick="pnRerecord()">Re-record</button>
+            <button type="button" class="pn-small-btn" onclick="pnDelete()">Delete</button>
+          </div>
+          <div id="pn-msg" role="status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+        </div>
       </div>
       <div id="composer-video-preview" style="display:none;margin-top:12px;position:relative">
         <video id="composer-video-el" style="width:100%;border-radius:16px;max-height:280px;background:#000" controls playsinline></video>
@@ -4304,6 +4338,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     textarea.value = mode === 'edit' && existingPost ? (existingPost.body || '') : mode === 'voice-reply' ? '' : (composerDraft || '');
     document.getElementById('composer-image-previews').style.display = 'none';
     document.getElementById('composer-image-grid').innerHTML = '';
+    pnDiscard();
     document.getElementById('composer-video-preview').style.display = 'none';
     document.getElementById('composer-gif-preview').style.display = 'none';
 
@@ -4313,6 +4348,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   function closeComposer() {
     vnDiscard();
+    pnDiscard();
     vnReplyTo = null;
     stopVoiceTyping();
     const textarea = document.getElementById('composer-textarea');
@@ -5138,6 +5174,19 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
     let imageUrl = null, imageUrls = [], videoUrl = null, videoThumbnailUrl = null;
     const uploadedImageNames = []; // storage file names uploaded for this post, for cleanup on failure
+    // Optional narration for a photo post: uploaded first. Its file name joins the cleanup list,
+    // so it is removed if anything later fails. The recording is kept so the user can retry.
+    let narration = null;
+    if (pnState && pnState.mode === 'preview' && composerImageFiles.length > 0 && !composerVideoFile && !composerGifUrl) {
+      postBtn.textContent = 'Uploading narration…';
+      narration = await pnUpload();
+      if (narration && narration.error) {
+        postBtn.textContent = 'Post'; postBtn.disabled = false;
+        showToast("Narration didn't upload, so nothing was posted. Your photos and recording are still here. Tap Post to try again.");
+        return;
+      }
+      if (narration) uploadedImageNames.push(narration.fileName);
+    }
     if (composerVideoFile) {
       postBtn.textContent = '0%';
       try { 
@@ -5186,7 +5235,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       user_id: currentUser.id, body: text || '',
       image_url: imageUrl,
       image_urls: imageUrls.length > 0 ? imageUrls : null,
-      video_url: videoUrl
+      video_url: videoUrl,
+      ...(narration ? { narration_url: narration.url, narration_duration: narration.seconds } : {})
     }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
     postBtn.textContent = 'Post'; postBtn.disabled = false;
@@ -5216,6 +5266,226 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     refreshProfileIfVisible();
   }
 
+  // ---- Photo-post voice narration (optional, one recording per photo post) ----
+  // Its own state (pnState), separate from the voice-note recorder (vnState), so the two never mix.
+  let pnState = null; // { mode:'recording'|'preview', recorder, stream, chunks, mime, startedAt, tick, blob, url, seconds, audio }
+  function pnShow(view) {
+    document.getElementById('pn-idle').style.display = view === 'idle' ? 'block' : 'none';
+    document.getElementById('pn-recording').style.display = view === 'recording' ? 'flex' : 'none';
+    document.getElementById('pn-preview').style.display = view === 'preview' ? 'flex' : 'none';
+  }
+  function pnMsg(text, isError) {
+    const m = document.getElementById('pn-msg');
+    if (!m) return;
+    m.textContent = text || '';
+    m.style.color = isError ? '#ff8a80' : 'var(--muted)';
+  }
+  // Ends everything: stops recording, releases the microphone, frees the preview.
+  function pnDiscard() {
+    const st = pnState;
+    pnState = null;
+    if (st) {
+      clearInterval(st.tick);
+      if (st.recorder && st.recorder.state !== 'inactive') { try { st.recorder.stop(); } catch (e) {} }
+      vnReleaseStream(st);
+      if (st.audio) { try { st.audio.pause(); } catch (e) {} st.audio.removeAttribute('src'); }
+      if (st.url) URL.revokeObjectURL(st.url);
+    }
+    pnShow('idle');
+    pnMsg('');
+  }
+  async function pnStart() {
+    if (pnState) return;
+    if (!composerImageFiles.length) { showToast('Add photos first, then add a narration.'); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      showToast("Voice narration isn't supported in this browser. Try Chrome, Edge or Safari on a recent phone.");
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true }); // asked for only when the user taps Add
+    } catch (e) {
+      const name = e && e.name;
+      if (name === 'NotFoundError' || name === 'DevicesNotFoundError') pnMsg('No microphone was found on this device.', true);
+      else if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') pnMsg('Microphone access is blocked. Allow it in your browser settings to add narration.', true);
+      else pnMsg("Couldn't start the microphone. Please try again.", true);
+      return;
+    }
+    // The composer may have closed while the permission prompt was open: release the mic again.
+    if (pnState || !document.getElementById('fullscreen-composer').classList.contains('active')) {
+      stream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    const mime = vnPickMime();
+    let recorder;
+    try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (e) { stream.getTracks().forEach(t => t.stop()); pnMsg("This browser can't record narration.", true); return; }
+    const st = { mode: 'recording', recorder, stream, chunks: [], mime: recorder.mimeType || mime || 'audio/webm', startedAt: Date.now(), tick: null, blob: null, url: null, seconds: 0, audio: null };
+    pnState = st;
+    recorder.ondataavailable = e => { if (e.data && e.data.size) st.chunks.push(e.data); };
+    recorder.onerror = () => { if (pnState === st) { pnDiscard(); pnMsg('Recording stopped because of an error. Please try again.', true); } };
+    recorder.onstop = () => {
+      clearInterval(st.tick);
+      vnReleaseStream(st);
+      if (pnState !== st) return; // cancelled or closed
+      const seconds = Math.round((Date.now() - st.startedAt) / 1000);
+      const blob = new Blob(st.chunks, { type: (st.mime || 'audio/webm').split(';')[0] });
+      if (seconds < 1 || blob.size === 0) { pnDiscard(); pnMsg('That was too short. Hold the recording a little longer.', true); return; }
+      if (blob.size > VN_MAX_BYTES) { pnDiscard(); pnMsg('That narration is too large. Try a shorter one.', true); return; }
+      st.blob = blob;
+      st.url = URL.createObjectURL(blob);
+      st.seconds = Math.min(seconds, VN_MAX_SECONDS);
+      st.mode = 'preview';
+      st.audio = new Audio(st.url);
+      st.audio.ontimeupdate = () => { if (pnState === st) pnRenderTime(); };
+      st.audio.onplay = () => { if (pnState === st) pnSetPreviewPlay(true); };
+      st.audio.onpause = () => { if (pnState === st) pnSetPreviewPlay(false); };
+      st.audio.onended = () => { if (pnState === st) { pnSetPreviewPlay(false); pnRenderTime(); } };
+      st.audio.onerror = () => { if (pnState === st) { pnSetPreviewPlay(false); pnMsg("Couldn't play this narration on this device. Tap Re-record to try again.", true); } };
+      pnSetPreviewPlay(false);
+      pnRenderTime();
+      pnShow('preview');
+      pnMsg('Listen before you publish. It will play with your photos.');
+      updateComposerUI();
+    };
+    recorder.start(1000);
+    st.tick = setInterval(() => {
+      const elapsed = (Date.now() - st.startedAt) / 1000;
+      document.getElementById('pn-rec-time').textContent = vnFmt(elapsed) + ' / ' + vnFmt(VN_MAX_SECONDS);
+      if (elapsed >= VN_MAX_SECONDS) pnStop();
+    }, 250);
+    pnShow('recording');
+    pnMsg('Recording… tap Stop when you are done.');
+  }
+  function pnStop() {
+    const st = pnState;
+    if (!st || st.mode !== 'recording') return;
+    try { st.recorder.stop(); }
+    catch (e) { pnDiscard(); pnMsg('Recording stopped unexpectedly. Please try again.', true); }
+  }
+  function pnCancel() { if (!pnState) return; pnDiscard(); showToast('Narration cancelled'); }
+  function pnDelete() { if (!pnState) return; pnDiscard(); showToast('Narration deleted'); }
+  function pnRerecord() { pnDiscard(); pnStart(); }
+  function pnSetPreviewPlay(on) {
+    const b = document.getElementById('pn-play');
+    if (!b) return;
+    b.textContent = on ? '❚❚' : '▶';
+    b.setAttribute('aria-label', on ? 'Pause narration preview' : 'Play narration preview');
+  }
+  function pnRenderTime() {
+    const st = pnState;
+    if (!st || !st.audio) return;
+    document.getElementById('pn-time').textContent = vnFmt(st.audio.currentTime) + ' / ' + vnFmt(st.seconds);
+  }
+  function pnTogglePreview() {
+    const st = pnState;
+    if (!st || st.mode !== 'preview' || !st.audio) return;
+    if (!st.audio.paused) { st.audio.pause(); return; }
+    if (st.audio.ended || st.audio.currentTime >= st.seconds - 0.1) st.audio.currentTime = 0; // replay from the start
+    st.audio.play().catch(() => pnMsg("Couldn't play this narration on this device. Tap Re-record to try again.", true));
+  }
+  // Uploads the narration to the existing posts bucket. Returns null if there is none.
+  async function pnUpload() {
+    const st = pnState;
+    if (!st || st.mode !== 'preview' || !st.blob) return null;
+    const ext = st.mime.includes('mp4') ? 'mp4' : st.mime.includes('ogg') ? 'ogg' : 'webm';
+    const fileName = `narration-${currentUser.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await sb.storage.from('posts').upload(fileName, st.blob, { contentType: st.blob.type || 'audio/webm', upsert: false });
+    if (error) return { error: true };
+    const { data: u } = sb.storage.from('posts').getPublicUrl(fileName);
+    return { error: false, fileName, url: u.publicUrl, seconds: st.seconds };
+  }
+
+  // ---- Narration playback on photo posts in the feed: one player per post, one playing at a time ----
+  let pnCurrent = null; // { audio, bar }
+  function renderNarrationBar(post) {
+    const secs = Math.max(0, Math.round(Number(post.narration_duration) || 0));
+    const total = secs > 0 ? vnFmt(secs) : '--:--';
+    return `<div class="pn-bar" data-pn-src="${vnAttr(post.narration_url)}" data-pn-secs="${secs}" onclick="event.stopPropagation()">
+      <button type="button" class="pn-play-btn pn-feed-play" data-state="paused" aria-label="Play narration" onclick="event.stopPropagation();pnFeedToggle(this)">${VN_PLAY_ICON}</button>
+      <div class="pn-info">
+        <div class="pn-label">🎙 Narration by the author</div>
+        <div class="pn-track" role="slider" tabindex="0" aria-label="Narration progress" aria-valuemin="0" aria-valuemax="${secs}" aria-valuenow="0" onclick="event.stopPropagation();pnFeedSeek(event,this)"><div class="pn-fill"></div></div>
+        <div class="pn-time"><span class="pn-now">0:00</span> / ${total}</div>
+      </div>
+      <button type="button" class="pn-mute" aria-label="Mute narration" onclick="event.stopPropagation();pnFeedMute(this)">🔊</button>
+      <div class="pn-error" hidden></div>
+    </div>`;
+  }
+  function pnFeedAudio(bar) {
+    if (!bar._pnAudio) {
+      const a = new Audio(bar.dataset.pnSrc);
+      a.preload = 'none';
+      a.ontimeupdate = () => pnFeedRender(bar);
+      a.onplay = () => pnFeedSetBtn(bar, true);
+      a.onpause = () => pnFeedSetBtn(bar, false);
+      a.onended = () => { pnFeedSetBtn(bar, false); if (pnCurrent && pnCurrent.bar === bar) pnCurrent = null; pnFeedRender(bar); };
+      a.onerror = () => pnFeedFail(bar);
+      bar._pnAudio = a;
+    }
+    return bar._pnAudio;
+  }
+  function pnFeedFail(bar) {
+    pnFeedSetBtn(bar, false);
+    const e = bar.querySelector('.pn-error');
+    e.textContent = "Narration couldn't play on this device. The photos are still available.";
+    e.hidden = false;
+  }
+  function pnFeedSetBtn(bar, playing) {
+    const b = bar.querySelector('.pn-feed-play');
+    if (!b) return;
+    b.innerHTML = playing ? VN_PAUSE_ICON : VN_PLAY_ICON;
+    b.dataset.state = playing ? 'playing' : 'paused';
+    b.setAttribute('aria-label', playing ? 'Pause narration' : 'Play narration');
+  }
+  function pnFeedRender(bar) {
+    const a = bar._pnAudio;
+    if (!a) return;
+    const d = Number(bar.dataset.pnSecs) || a.duration || 0;
+    const c = a.currentTime || 0;
+    bar.querySelector('.pn-fill').style.width = (d ? Math.min(1, c / d) * 100 : 0) + '%';
+    bar.querySelector('.pn-now').textContent = vnFmt(c);
+    bar.querySelector('.pn-track').setAttribute('aria-valuenow', Math.round(c));
+  }
+  function pnFeedToggle(btn) {
+    const bar = btn.closest('.pn-bar');
+    if (!bar) return;
+    const a = pnFeedAudio(bar);
+    if (!a.paused) { a.pause(); return; }
+    if (pnCurrent && pnCurrent.audio !== a) pnCurrent.audio.pause(); // only one narration at a time
+    pnCurrent = { audio: a, bar };
+    if (a.ended || (a.duration && a.currentTime >= a.duration - 0.1)) a.currentTime = 0;
+    bar.querySelector('.pn-error').hidden = true;
+    a.play().catch(() => pnFeedFail(bar));
+  }
+  function pnFeedSeek(ev, track) {
+    const bar = track.closest('.pn-bar');
+    if (!bar) return;
+    const a = pnFeedAudio(bar);
+    const d = a.duration || Number(bar.dataset.pnSecs) || 0;
+    if (!d) return;
+    const r = track.getBoundingClientRect();
+    a.currentTime = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)) * d;
+    pnFeedRender(bar);
+  }
+  function pnFeedMute(btn) {
+    const bar = btn.closest('.pn-bar');
+    if (!bar) return;
+    const a = pnFeedAudio(bar);
+    a.muted = !a.muted;
+    btn.textContent = a.muted ? '🔇' : '🔊';
+    btn.setAttribute('aria-label', a.muted ? 'Unmute narration' : 'Mute narration');
+  }
+  function pnPauseAll() {
+    if (pnCurrent) { try { pnCurrent.audio.pause(); } catch (e) {} pnCurrent = null; }
+  }
+  // Stop narration when the user leaves the screen it is on, opens Hive Video, or the app goes to the background
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pnPauseAll(); });
+  (function pnWatchPanels() {
+    const check = () => { if (pnCurrent && !pnCurrent.bar.closest('.panel.active')) pnPauseAll(); };
+    document.querySelectorAll('.panel').forEach(p => new MutationObserver(check).observe(p, { attributes: true, attributeFilter: ['class'] }));
+  })();
+
   // Composer image handling
   const COMPOSER_MAX_PHOTOS = 10;
 
@@ -5241,7 +5511,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const countEl = document.getElementById('composer-image-count');
     const n = composerImageFiles.length;
     document.getElementById('composer-image-previews').style.display = n ? 'block' : 'none';
-    countEl.textContent = n ? `${n} photo${n === 1 ? '' : 's'}${n > 1 ? ' · use the arrows to reorder' : ''}` : '';
+    document.getElementById('pn-panel').style.display = n ? 'block' : 'none'; // narration is offered once there are photos
+    countEl.textContent = n ?`${n} photo${n === 1 ? '' : 's'}${n > 1 ? ' · use the arrows to reorder' : ''}` : '';
     grid.innerHTML = '';
     composerImageFiles.forEach((file, i) => {
       const wrap = document.createElement('div');
@@ -5265,6 +5536,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   function removeComposerImage(i) {
     composerImageFiles.splice(i, 1);
+    if (!composerImageFiles.length) pnDiscard(); // narration needs photos
     renderComposerImageGrid();
     updateComposerUI();
   }
@@ -9287,6 +9559,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   async function openHiveVideo(startPostId) {
+    pnPauseAll(); // narration from the feed must not play behind Hive Video
     if (hv && !startPostId) { hvShow(); return; }
     if (hv) { // already open (hidden or visible): jump to the tapped video if it is in this viewer
       const idx = hv.posts.findIndex(p => p.id === startPostId);
@@ -10649,8 +10922,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (post.video_url) return renderVideoCard(post);
     const urls = (post.image_urls && post.image_urls.length > 0) ? post.image_urls : (post.image_url ? [post.image_url] : []);
     if (urls.length === 0) return '';
+    const narrationHTML = post.narration_url ? renderNarrationBar(post) : '';
     if (urls.length === 1) {
-      return `<img class="post-image" src="${urls[0]}" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},0)">`;
+      return `<img class="post-image" src="${urls[0]}" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},0)">` + narrationHTML;
     }
     const shown = urls.slice(0, 4);
     const extra = urls.length - 4;
@@ -10658,7 +10932,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       const overlay = (i === 3 && extra > 0) ? `<div class="gallery-more-overlay">+${extra}</div>` : '';
       return `<div class="gallery-item" onclick="event.stopPropagation();openImageViewer(${JSON.stringify(urls).replace(/"/g,'&quot;')},${i})"><img src="${url}">${overlay}</div>`;
     }).join('');
-    return `<div class="post-gallery count-${shown.length}">${itemsHTML}</div>`;
+    return `<div class="post-gallery count-${shown.length}">${itemsHTML}</div>` + narrationHTML;
   }
 
   let viewerImages = [];
