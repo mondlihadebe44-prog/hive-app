@@ -157,7 +157,7 @@ body {
 .post-mention { color: #2D8CFF; cursor: pointer; font-weight: 500; }
 .post-mention:hover { text-decoration: underline; }
 /* Smooth panel transitions */
-.panel { animation: fadeUp 0.2s ease both; overflow-x: hidden; max-width: 100%; }
+.panel { animation: fadeUp 0.2s ease backwards; overflow-x: hidden; max-width: 100%; }
 @keyframes beeFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-14px) rotate(5deg)} }
 @keyframes splashPulse { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.05)} }
 @keyframes loadBar { from{width:0%} to{width:100%} }
@@ -6046,13 +6046,18 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function closeGifPicker() {
+    clearTimeout(gifSearchTimeout);
+    gifReqId++; // any answer still on its way is ignored
+    if (gifController) { gifController.abort(); gifController = null; }
     document.getElementById('gif-picker-modal').style.display = 'none';
+    document.getElementById('gif-results').innerHTML = ''; // frees the thumbnails while hidden
   }
 
   // Search results: a slow or stuck request gives up after 8 seconds, a late answer to an old search is ignored,
   // and the first trending list is kept so reopening the picker is instant.
   const GIF_TIMEOUT_MS = 8000;
   let gifReqId = 0;
+  let gifController = null;
   let gifTrendingCache = null;
   let gifLastQuery = 'trending';
 
@@ -6074,6 +6079,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       img.loading = 'lazy';
       img.decoding = 'async';
       img.alt = 'GIF';
+      img.onerror = () => { div.style.display = 'none'; };
       img.style.cssText = 'width:100%;height:100%;object-fit:cover';
       div.appendChild(img);
       div.onclick = () => selectGif(full);
@@ -6093,12 +6099,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       if (query === 'trending' && gifTrendingCache) { renderGifItems(gifTrendingCache); return; }
       renderGifMessage('Searching...');
       const controller = new AbortController();
+      gifController = controller;
       const timer = setTimeout(() => controller.abort(), GIF_TIMEOUT_MS);
       try {
         const endpoint = query === 'trending'
           ? `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/trending?customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`
           : `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search?q=${encodeURIComponent(query)}&customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`;
         const res = await fetch(endpoint, { signal: controller.signal });
+        if (!res.ok) { console.error('GIF search failed, status ' + res.status); throw new Error('status ' + res.status); }
         const data = await res.json();
         if (myReq !== gifReqId) return; // a newer search has started: drop this answer
         const items = (data.data?.data || data.data || []).filter(Boolean);
@@ -6108,11 +6116,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       } catch (e) {
         if (myReq !== gifReqId) return;
         const slow = e && e.name === 'AbortError';
-        renderGifMessage(slow
-          ? 'GIFs are taking too long. <button type="button" onclick="retryGifSearch()" style="margin-top:12px;background:#F6C21A;border:none;color:#000;border-radius:50px;padding:8px 16px;font-family:Syne,sans-serif;font-weight:700;cursor:pointer">Try again</button>'
-          : 'GIFs unavailable right now');
+        if (!slow && !(e && /^status /.test(e.message || ''))) console.error('GIF search error', e);
+        const retry = '<button type="button" onclick="retryGifSearch()" style="margin-top:12px;background:#F6C21A;border:none;color:#000;border-radius:50px;padding:8px 16px;font-family:Syne,sans-serif;font-weight:700;cursor:pointer">Try again</button>';
+        renderGifMessage(slow ? 'GIFs are taking too long. ' + retry : 'GIFs unavailable right now. ' + retry);
       } finally {
         clearTimeout(timer);
+        if (gifController === controller) gifController = null;
       }
     }, 400);
   }
