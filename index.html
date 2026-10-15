@@ -944,10 +944,11 @@ body.light .comments-sort-btn { border-color: #e0e0e0; color: #888; }
 .pn-error { font-size: 12px; color: #ff8a80; flex-basis: 100%; }
 /* Narrated photo dumps: name + badge on the left, mic and play/pause on the right, timestamp under the name */
 .pn-namecol { flex: 1; min-width: 0; }
+.pn-nameline { flex-wrap: nowrap; min-width: 0; align-items: center; }
+.pn-nameline .pn-time { flex-shrink: 0; white-space: nowrap; }
+.pn-right .pn-label { font-size: 13px; font-weight: 700; color: var(--gold); white-space: nowrap; }
 .pn-namecol .post-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
-.pn-timeline { margin-top: 2px; }
 .pn-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin: 0; padding: 0; border: none; background: none; border-radius: 0; }
-.pn-right .pn-mic { width: 16px; height: 16px; flex-shrink: 0; }
 .pn-right .pn-play-btn { width: 40px; height: 40px; min-width: 40px; }
 .pn-error { font-size: 12px; color: #ff8a80; margin: 4px 0 0 52px; }
 .iv-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 18px; cursor: pointer; z-index: 2; }
@@ -3743,12 +3744,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const headerRowHTML = narratedDump ? `
         <div class="post-header-row">
           <div class="pn-namecol">
-            <div class="post-name-row">
+            <div class="post-name-row pn-nameline">
               <span class="post-name" style="cursor:pointer" onclick="openUserProfile('${post.user_id}')">${name}</span>
               ${verified}
-            </div>
-            <div class="post-name-row pn-timeline">
-              <span class="post-handle">${timeTag(post.created_at)}</span>
+              <span class="post-dot">·</span>
+              <span class="post-handle pn-time">${timeTag(post.created_at)}</span>
               ${post.edited ? '<span class="edited-badge">· Edited</span>' : ''}
             </div>
           </div>
@@ -5430,10 +5430,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
   // Compact narration control shown in the post header, on its own line under the name.
   // It reuses the same audio logic as before (pnFeedToggle / pnFeedAudio), so there is still one player per post.
+  // Mic icon shown before the first play; after that the same button shows play / pause.
+  const PN_MIC_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0014 0v-1M12 18v4"/></svg>';
   function renderNarrationHeader(post) {
     return `<div class="pn-bar pn-head pn-right" role="group" aria-label="Narration" data-pn-src="${vnAttr(post.narration_url)}" data-pn-secs="${Math.max(0, Math.round(Number(post.narration_duration) || 0))}" onclick="event.stopPropagation()">
-      <svg class="pn-mic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0014 0v-1M12 18v4"/></svg>
-      <button type="button" class="pn-play-btn pn-feed-play" data-state="paused" aria-label="Play narration" onclick="event.stopPropagation();pnFeedToggle(this)">${VN_PLAY_ICON}</button>
+      <span class="pn-label">Narration</span>
+      <button type="button" class="pn-play-btn pn-feed-play" data-state="idle" aria-label="Play narration" onclick="event.stopPropagation();pnFeedToggle(this)">${PN_MIC_ICON}</button>
     </div>`;
   }
   function pnFeedAudio(bar) {
