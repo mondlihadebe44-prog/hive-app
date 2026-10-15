@@ -9554,6 +9554,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       .hv-create-btn svg { width:20px; height:20px; }
       .hv-create-btn:active { transform:scale(0.94); }
       .hv-create-btn:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+      .hv-vn { position:absolute; left:16px; right:76px; top:44%; transform:translateY(-50%); display:flex; flex-direction:column; align-items:center; gap:18px; z-index:1; pointer-events:auto; }
+      .hv-vn-play { width:84px; height:84px; border-radius:50%; border:none; background:#F6C21A; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; box-shadow:0 0 22px rgba(246,194,26,0.45); -webkit-tap-highlight-color:transparent; }
+      .hv-vn-play svg { width:34px; height:34px; }
+      .hv-vn-play:active { transform:scale(0.95); }
+      .hv-vn-play:focus-visible { outline:2px solid #fff; outline-offset:3px; }
+      .hv-vn-wave { display:flex; align-items:center; justify-content:center; gap:3px; width:100%; height:80px; }
+      .hv-vn-wave .vn-bar { flex:0 0 3px; width:3px; }
+      .hv-vn-time { font-family:'DM Sans',sans-serif; font-size:14px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.7); font-variant-numeric:tabular-nums; }
       #hv-create-sheet { z-index:30; }
       .hv-create-opt { display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:12px 14px; border-radius:16px; border:1.5px solid rgba(246,194,26,0.35); background:#0c0b08; color:#fff; text-align:left; cursor:pointer; font-family:'DM Sans',sans-serif; }
       .hv-create-opt:active { transform:scale(0.98); }
@@ -9610,7 +9618,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Start at the tapped video: show it first, then load the normal feed (deduplicated)
     if (startPostId) {
       const { data: first } = await sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)').eq('id', startPostId).maybeSingle();
-      if (hv && first && (hvValid(first) || hvIsPhotoDump(first)) && !hv.seen.has(first.id)) { hv.seen.add(first.id); hv.posts.push(first); hvAppendSlide(first, hv.posts.length - 1); }
+      if (hv && first && (hvValid(first) || hvIsPhotoDump(first) || hvIsVoicePost(first)) && !hv.seen.has(first.id)) { hv.seen.add(first.id); hv.posts.push(first); hvAppendSlide(first, hv.posts.length - 1); }
     }
     hvLoadPage();
   }
@@ -9618,6 +9626,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   function closeHiveVideo() {
     if (!hv) return;
     hvClearSlideTimers(hv.container);
+    hvStopVoice(hv.container, null);
     hvCloseComments();
     hv.container.querySelectorAll('video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
     hv.io.disconnect();
@@ -9627,12 +9636,13 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function hvOnVisibility() {
-    if (document.hidden && hv) hv.container.querySelectorAll('video').forEach(v => v.pause());
+    if (document.hidden && hv) { hv.container.querySelectorAll('video').forEach(v => v.pause()); hvStopVoice(hv.container, null); }
   }
 
   function hvSwitchTab(tab, root) {
     if (!hv || hv.tab === tab) return;
     hvClearSlideTimers(hv.container);
+    hvStopVoice(hv.container, null);
     hv.tab = tab;
     root.querySelectorAll('.hv-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     hv.container.querySelectorAll('video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
@@ -9656,7 +9666,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const from = hv.page * HV_PAGE;
     // Videos, plus posts with images (photo dumps are kept client-side: two or more photos)
     let q = sb.from('posts').select('*, profiles(id,username,full_name,avatar_url,verified)')
-      .or('video_url.not.is.null,image_urls.not.is.null').is('reply_to', null)
+      .or('video_url.not.is.null,image_urls.not.is.null,audio_url.not.is.null').is('reply_to', null)
       .order('created_at', { ascending: false }).range(from, from + HV_PAGE - 1);
     if (tab === 'following') {
       const ids = [...(await getFollowedIds())];
@@ -9669,7 +9679,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (error) { console.error('Hive Video load failed:', error); if (!hv.posts.length) hvShowEmpty("Couldn't load videos. Please try again."); return; }
     if (!data || data.length < HV_PAGE) hv.done = true;
     hv.page++;
-    data.filter(p => (hvValid(p) || hvIsPhotoDump(p)) && !hv.seen.has(p.id)).forEach(p => {
+    data.filter(p => (hvValid(p) || hvIsPhotoDump(p) || hvIsVoicePost(p)) && !hv.seen.has(p.id)).forEach(p => {
       hv.seen.add(p.id);
       hv.posts.push(p);
       hvAppendSlide(p, hv.posts.length - 1);
@@ -9716,6 +9726,81 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     return wrap;
   }
 
+  // ---- Hive Video voice notes: a post with a voice note and no video or photos. Tap to play, one at a time. ----
+  function hvIsVoicePost(post) {
+    const hasPhotos = Array.isArray(post.image_urls) && post.image_urls.length > 0;
+    return !post.video_url && !hasPhotos && /^https?:\/\//.test(post.audio_url || '');
+  }
+
+  function hvBuildVoicePlayer(post) {
+    const wrap = document.createElement('div');
+    wrap.className = 'hv-vn';
+    const secs = Math.max(0, Math.round(Number(post.audio_duration) || 0));
+    const bars = vnBarPattern(post.audio_url, 34).map(b => `<span class="vn-bar" data-o="${b.o}" style="height:${b.h * 2}px;--o:${b.o}"></span>`).join('');
+    wrap.innerHTML = `
+      <button type="button" class="hv-vn-play" data-state="paused" aria-label="Play voice note">${VN_PLAY_ICON}</button>
+      <div class="hv-vn-wave" aria-hidden="true">${bars}</div>
+      <div class="hv-vn-time">0:00 / ${vnFmt(secs)}</div>`;
+    wrap.querySelector('.hv-vn-play').onclick = (e) => { e.stopPropagation(); hvVnToggle(wrap.closest('.hv-slide'), post); };
+    return wrap;
+  }
+
+  function hvVnState(slide, playing) {
+    const btn = slide && slide.querySelector('.hv-vn-play');
+    if (!btn) return;
+    btn.innerHTML = playing ? VN_PAUSE_ICON : VN_PLAY_ICON;
+    btn.dataset.state = playing ? 'playing' : 'paused';
+    btn.setAttribute('aria-label', playing ? 'Pause voice note' : 'Play voice note');
+  }
+
+  function hvVnProgress(slide, post) {
+    const au = slide._vnAudio;
+    if (!au) return;
+    const total = Math.max(0, Math.round(Number(post.audio_duration) || 0));
+    const t = slide.querySelector('.hv-vn-time');
+    if (t) t.textContent = vnFmt(au.currentTime) + ' / ' + vnFmt(total);
+    const bars = slide.querySelectorAll('.hv-vn-wave .vn-bar');
+    const frac = total ? Math.min(1, au.currentTime / total) : 0;
+    bars.forEach((b, i) => b.style.setProperty('--o', (i / bars.length) < frac ? '1' : b.dataset.o));
+  }
+
+  function hvVnToggle(slide, post) {
+    if (!hv || !slide) return;
+    let au = slide._vnAudio;
+    if (!au) {
+      au = new Audio();
+      au.preload = 'none';
+      au.src = post.audio_url;
+      slide._vnAudio = au;
+      au.addEventListener('timeupdate', () => hvVnProgress(slide, post));
+      au.addEventListener('ended', () => { au.currentTime = 0; hvVnState(slide, false); hvVnProgress(slide, post); });
+      au.addEventListener('error', () => { hvVnState(slide, false); showToast("Couldn't play this voice note"); });
+    }
+    if (!au.paused) { au.pause(); hvVnState(slide, false); return; }
+    hvStopVoice(hv.container, slide);
+    // The person tapped play, so they want sound: unmute Hive Video as well
+    if (hvMuted) {
+      hvMuted = false;
+      const b = document.getElementById('hv-mute');
+      if (b) b.textContent = '🔊';
+      hv.container.querySelectorAll('video').forEach(x => { x.muted = false; });
+    }
+    au.muted = false;
+    const pr = au.play();
+    if (pr && pr.catch) pr.catch(() => { hvVnState(slide, false); showToast("Couldn't play this voice note"); });
+    hvVnState(slide, true);
+  }
+
+  // Pauses every voice note in the viewer except the one to keep (null pauses all)
+  function hvStopVoice(container, keep) {
+    if (!container) return;
+    container.querySelectorAll('.hv-slide').forEach(s => {
+      if (s === keep || !s._vnAudio) return;
+      if (!s._vnAudio.paused) s._vnAudio.pause();
+      hvVnState(s, false);
+    });
+  }
+
   function hvAppendSlide(post, idx) {
     const p = post.profiles || {};
     const name = p.full_name || p.username || 'Unknown';
@@ -9728,8 +9813,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     slide.style.cssText = 'height:100%;height:100dvh;flex-shrink:0;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;overflow:hidden';
 
     let v = null;
+    const isVoice = !hvIsPhotoDump(post) && hvIsVoicePost(post);
     if (hvIsPhotoDump(post)) {
       slide.appendChild(hvBuildPhotoCarousel(post.image_urls));
+    } else if (isVoice) {
+      slide.appendChild(hvBuildVoicePlayer(post));
     } else {
       v = document.createElement('video');
       v.setAttribute('playsinline', '');
@@ -9838,6 +9926,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     slide.querySelector('.hv-retry').onclick = (e) => { e.stopPropagation(); hvSetSrc(slide, v, post); hvPlay(v); };
     }
 
+    if (isVoice) { const row = slide.querySelector('.hv-audio'); if (row) row.style.display = 'none'; }
     hv.container.appendChild(slide);
     hv.io.observe(slide);
   }
@@ -10057,6 +10146,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       s.querySelector('.hv-replay').style.display = 'none';
     });
     const cur = slides[idx];
+    hvStopVoice(hv.container, cur);
     if (cur) {
       if (!hv.introOpen) hvPlay(cur.querySelector('video'));
       hvLoadStats(cur, hv.posts[idx]);
@@ -10213,6 +10303,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const cur = hv.container.querySelector(`.hv-slide[data-idx="${hv.active}"] video`);
     hv.wasPlaying = !!(cur && !cur.paused);
     hv.container.querySelectorAll('video').forEach(v => v.pause());
+    hvStopVoice(hv.container, null);
     hv.root.style.display = 'none';
     if (!fromBack && history.state && history.state.hiveVideo) history.back();
   }
