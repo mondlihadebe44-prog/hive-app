@@ -837,12 +837,27 @@ body {
 .comment-input::placeholder { color: #444; }
 .comment-input-row > * { flex-shrink: 0; }
 .comment-input-row > .comment-input { flex-shrink: 1; }
+@media (max-width: 359px) { .comment-input-row > .comment-avatar { display: none; } }
 .comment-gif-btn { background: none; border: 1.5px solid #F6C21A; color: #F6C21A; cursor: pointer; padding: 3px 7px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; flex-shrink: 0; }
 .comment-gif { display: block; max-width: 100%; max-height: 200px; border-radius: 12px; margin-top: 6px; }
 .cm-gif-chip { position: relative; width: 120px; margin: 0 0 8px; }
 .cm-gif-chip img { display: block; width: 100%; max-height: 90px; object-fit: cover; border-radius: 10px; }
 .cm-gif-chip button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: none; background: rgba(0,0,0,0.7); color: #fff; cursor: pointer; font-size: 12px; }
 .hv-cs-gif { background: none; border: 1.5px solid #F6C21A; color: #F6C21A; cursor: pointer; padding: 6px 9px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.comment-mic-btn, .hv-cs-mic { background: none; border: 1.5px solid #F6C21A; color: #F6C21A; cursor: pointer; width: 32px; height: 32px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.comment-mic-btn svg, .hv-cs-mic svg { width: 14px; height: 14px; }
+.cv-bar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: #0d0d0d; border-top: 1px solid #111; font-size: 12px; color: var(--muted); }
+.hv-cs-panel > .cv-bar { background: #121212; border-top: 1px solid #1e1e1e; padding: 8px 12px; }
+.cv-bar .cv-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff4d6d; animation: cvPulse 1s ease-in-out infinite; flex-shrink: 0; }
+@keyframes cvPulse { 50% { opacity: 0.3; } }
+.cv-bar .cv-clock { color: #ccc; font-variant-numeric: tabular-nums; flex: 1; }
+.cv-bar .cv-hint { color: var(--muted); }
+.cv-bar .cv-stop { background: none; border: 1.5px solid #ff4d6d; color: #ff4d6d; border-radius: 50px; padding: 4px 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; }
+.cv-bar .cv-x { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 6px 8px; }
+.cv-play { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; background: #F6C21A; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex-shrink: 0; }
+.cv-play svg { width: 12px; height: 12px; }
+.cv-player { display: flex; align-items: center; gap: 8px; margin: 6px 0 2px; }
+.cv-player .cv-time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .comment-send {
   width: 36px; height: 36px; background: #F6C21A; border: none;
   border-radius: 50%; color: #000; font-weight: 700; font-size: 16px;
@@ -3835,6 +3850,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div class="comment-input-row">
             <div class="comment-avatar" id="comment-avatar-${post.id}" style="width:32px;height:32px;flex-shrink:0;background:#F6C21A;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:12px">${(currentProfile?.full_name||'U')[0]?.toUpperCase()||'U'}</div>
             <input class="comment-input" placeholder="Add a comment…" id="comment-input-${post.id}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment('${post.id}')}">
+            <button type="button" class="comment-mic-btn" onclick="cvStart('${post.id}')" aria-label="Record a voice comment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
             <button type="button" class="comment-gif-btn" onclick="openCommentGif('${post.id}')" aria-label="Add a GIF to your comment">GIF</button>
             <button class="comment-send" onclick="submitComment('${post.id}')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -4030,6 +4046,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   async function loadComments(postId) {
+    cvStopPlayback(); // the list is about to be redrawn, so stop any voice comment that is playing
     const list = hvCommentList(postId) || document.getElementById('comments-list-' + postId) || document.getElementById('comments-' + postId)?.querySelector('.comments-list');
     if (!list) return;
     list.innerHTML = '<div style="color:#555;font-size:13px;padding:12px 16px">Loading…</div>';
@@ -4114,6 +4131,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           </div>
           ${c.body ? `<div class="comment-text">${formatBody(c.body)}</div>` : ''}
           ${/^https:\/\//.test(c.gif_url || '') ? `<img class="comment-gif" src="${vnAttr(c.gif_url)}" alt="GIF comment" loading="lazy">` : ''}
+          ${cvPlayerHTML(c)}
           <div class="comment-actions">
             <button class="comment-action-btn like-comment-btn${liked ? ' liked' : ''}" onclick="likeComment(this,'${c.id}')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="${liked ? '#ff4d6d' : 'none'}" stroke="${liked ? '#ff4d6d' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
@@ -4223,9 +4241,181 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   async function deleteComment(commentId, postId) {
     if (!currentUser) return;
-    await sb.from('comments').delete().eq('id', commentId).eq('user_id', currentUser.id);
+    // Read the voice file's address first, so the file can be removed once the comment is really gone
+    const { data: old } = await sb.from('comments').select('audio_url').eq('id', commentId).maybeSingle();
+    const { data: removed } = await sb.from('comments').delete().eq('id', commentId).eq('user_id', currentUser.id).select('id');
+    if (removed && removed.length && old && old.audio_url) cvRemoveAudio(old.audio_url);
     loadComments(postId);
     showToast('Comment deleted');
+  }
+
+  // ---- Voice comments: record, preview, send. Same recorder limits and storage bucket as voice posts. One recording at a time. ----
+  let cvState = null; // { postId, mode:'recording'|'stopping'|'preview', recorder, stream, chunks, mime, startedAt, tick, blob, url, seconds, audio, bar }
+  const cvBusy = new Set(); // post ids with a comment being sent: stops a double tap from posting twice
+  let cvPlaying = null;     // { audio, btn } for the voice comment playing in a list
+
+  function cvReadyFor(postId) { return !!(cvState && cvState.mode === 'preview' && cvState.postId === postId && cvState.blob); }
+  function cvHost(postId) { const input = commentInputFor(postId); return input ? commentGifHost(input) : null; }
+  function cvShowBar(st, host) {
+    const bar = document.createElement('div');
+    bar.className = 'cv-bar';
+    host.box.insertBefore(bar, host.row);
+    st.bar = bar;
+  }
+  function cvRenderRecording(st) {
+    st.bar.innerHTML = '<span class="cv-dot" aria-hidden="true"></span><span class="cv-clock">0:00 / ' + vnFmt(VN_MAX_SECONDS) + '</span><button type="button" class="cv-stop">Stop</button><button type="button" class="cv-x" aria-label="Cancel voice comment">✕</button>';
+    st.bar.querySelector('.cv-stop').onclick = cvStop;
+    st.bar.querySelector('.cv-x').onclick = () => { cvClear(); showToast('Recording cancelled'); };
+  }
+  function cvRenderPreview(st) {
+    st.bar.innerHTML = '<button type="button" class="cv-play" data-state="paused" aria-label="Play voice comment preview">' + VN_PLAY_ICON + '</button><span class="cv-clock">0:00 / ' + vnFmt(st.seconds) + '</span><span class="cv-hint">Tap send to post</span><button type="button" class="cv-x" aria-label="Delete voice comment">✕</button>';
+    const btn = st.bar.querySelector('.cv-play');
+    const clock = st.bar.querySelector('.cv-clock');
+    const a = st.audio;
+    const show = () => { clock.textContent = vnFmt(a.currentTime) + ' / ' + vnFmt(st.seconds); };
+    a.onplay = () => vnSetFeedBtn(btn, true);
+    a.onpause = () => { if (!a.ended) vnSetFeedBtn(btn, false); };
+    a.onended = () => { vnSetFeedBtn(btn, false); a.currentTime = 0; show(); };
+    a.ontimeupdate = show;
+    a.onerror = () => { vnSetFeedBtn(btn, false); showToast("Couldn't play this recording on this device."); };
+    btn.onclick = () => { if (a.paused) a.play().catch(() => showToast("Couldn't play this recording on this device.")); else a.pause(); };
+    st.bar.querySelector('.cv-x').onclick = () => { cvClear(); showToast('Voice comment deleted'); };
+  }
+  // Releases everything: stops recording, frees the microphone and the preview, removes the bar.
+  function cvClear() {
+    const st = cvState;
+    if (!st) return;
+    cvState = null;
+    clearInterval(st.tick);
+    if (st.recorder && st.recorder.state !== 'inactive') { try { st.recorder.stop(); } catch (e) {} }
+    vnReleaseStream(st);
+    if (st.audio) { try { st.audio.pause(); } catch (e) {} st.audio.removeAttribute('src'); }
+    if (st.url) URL.revokeObjectURL(st.url);
+    if (st.bar) st.bar.remove();
+  }
+  async function cvStart(postId) {
+    if (cvState && !(cvState.bar && cvState.bar.isConnected)) cvClear(); // the box was redrawn: drop the orphaned recording
+    if (cvState) {
+      if (cvState.postId === postId && cvState.mode === 'recording') cvStop();
+      else showToast('Send or delete your voice comment first.');
+      return;
+    }
+    if (!currentUser) { showToast('Sign in to comment!'); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      showToast("Voice comments aren't supported in this browser. Try Chrome, Edge or Safari on a recent phone.");
+      return;
+    }
+    const host = cvHost(postId);
+    if (!host) return;
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) {
+      const name = e && e.name;
+      if (name === 'NotFoundError' || name === 'DevicesNotFoundError') showToast('No microphone was found on this device.');
+      else if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') showToast('Microphone access is blocked. Allow it in your browser settings to record a voice comment.');
+      else showToast("Couldn't start the microphone. Please try again.");
+      return;
+    }
+    // The comment box may have closed, or another recording started, while the permission prompt was open
+    if (cvState || !host.row.isConnected) { stream.getTracks().forEach(t => t.stop()); return; }
+    const mime = vnPickMime();
+    let recorder;
+    try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (e) { stream.getTracks().forEach(t => t.stop()); showToast("This browser can't record voice comments."); return; }
+    const st = { postId, mode: 'recording', recorder, stream, chunks: [], mime: recorder.mimeType || mime || 'audio/webm', startedAt: Date.now(), tick: null, blob: null, url: null, seconds: 0, audio: null, bar: null };
+    cvState = st;
+    cvShowBar(st, host);
+    cvRenderRecording(st);
+    recorder.ondataavailable = e => { if (e.data && e.data.size) st.chunks.push(e.data); };
+    recorder.onerror = () => { if (cvState === st) { cvClear(); showToast('Recording stopped because of an error. Please try again.'); } };
+    recorder.onstop = () => cvFinish(st);
+    recorder.start(1000);
+    st.tick = setInterval(() => {
+      if (cvState !== st) return;
+      if (!st.bar.isConnected) { cvClear(); return; } // the comment box closed or was redrawn: release the microphone
+      const elapsed = (Date.now() - st.startedAt) / 1000;
+      const clock = st.bar.querySelector('.cv-clock');
+      if (clock) clock.textContent = vnFmt(elapsed) + ' / ' + vnFmt(VN_MAX_SECONDS);
+      if (elapsed >= VN_MAX_SECONDS) cvStop();
+    }, 250);
+  }
+  function cvStop() {
+    const st = cvState;
+    if (!st || st.mode !== 'recording') return;
+    st.mode = 'stopping';
+    try { st.recorder.stop(); }
+    catch (e) { cvClear(); showToast('Recording stopped unexpectedly. Please try again.'); }
+  }
+  function cvFinish(st) {
+    clearInterval(st.tick);
+    vnReleaseStream(st);
+    if (cvState !== st) return; // cancelled or closed
+    const seconds = Math.round((Date.now() - st.startedAt) / 1000);
+    const blob = new Blob(st.chunks, { type: (st.mime || 'audio/webm').split(';')[0] });
+    if (seconds < 1 || blob.size === 0) { cvClear(); showToast('That was too short. Hold the recording a little longer.'); return; }
+    if (blob.size > VN_MAX_BYTES) { cvClear(); showToast('That recording is too large. Try a shorter voice comment.'); return; }
+    st.blob = blob;
+    st.url = URL.createObjectURL(blob);
+    st.seconds = Math.min(seconds, VN_MAX_SECONDS);
+    st.audio = new Audio(st.url);
+    st.mode = 'preview';
+    cvRenderPreview(st);
+  }
+  async function cvUpload(st, userId) {
+    const ext = st.mime.includes('mp4') ? 'mp4' : st.mime.includes('ogg') ? 'ogg' : 'webm';
+    const fileName = `comment-voice-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await sb.storage.from('posts').upload(fileName, st.blob, { contentType: st.blob.type || 'audio/webm', upsert: false });
+    if (error) return null;
+    const { data: urlData } = sb.storage.from('posts').getPublicUrl(fileName);
+    return { url: urlData.publicUrl, seconds: st.seconds };
+  }
+  // Removes a voice comment's file from storage. Only the owner can delete it (storage policy).
+  async function cvRemoveAudio(url) {
+    try {
+      const name = decodeURIComponent(new URL(url).pathname.split('/').pop());
+      if (name) await sb.storage.from('posts').remove([name]);
+    } catch (e) { console.error('Could not remove voice comment file:', e); }
+  }
+  function cvPlayerHTML(c) {
+    if (!/^https:\/\//.test(c.audio_url || '')) return '';
+    const secs = Math.max(0, Math.round(Number(c.audio_duration) || 0));
+    return `<div class="cv-player" data-cv-src="${vnAttr(c.audio_url)}" data-cv-secs="${secs}"><button type="button" class="cv-play" data-state="paused" aria-label="Play voice comment" onclick="cvToggle(this)">${VN_PLAY_ICON}</button><span class="cv-time">0:00 / ${secs ? vnFmt(secs) : '--:--'}</span></div>`;
+  }
+  function cvStopPlayback() {
+    if (!cvPlaying) return;
+    const { audio } = cvPlaying;
+    cvPlaying = null;
+    audio.onplay = null; audio.onpause = null; audio.onended = null; audio.ontimeupdate = null; audio.onerror = null;
+    audio.pause();
+    audio.removeAttribute('src');
+  }
+  function cvPlayFail(btn) {
+    vnSetFeedBtn(btn, false);
+    showToast("Couldn't play this voice comment on this device.");
+  }
+  function cvToggle(btn) {
+    const player = btn.closest('.cv-player');
+    if (!player) return;
+    if (cvPlaying && cvPlaying.btn === btn) {
+      if (cvPlaying.audio.paused) cvPlaying.audio.play().catch(() => cvPlayFail(btn));
+      else cvPlaying.audio.pause();
+      return;
+    }
+    cvStopPlayback(); // one voice comment at a time
+    const audio = new Audio(player.dataset.cvSrc);
+    const secs = Number(player.dataset.cvSecs) || 0;
+    const time = player.querySelector('.cv-time');
+    const show = () => {
+      const d = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : secs;
+      if (time) time.textContent = vnFmt(audio.currentTime) + ' / ' + (d ? vnFmt(d) : '--:--');
+    };
+    cvPlaying = { audio, btn };
+    audio.onplay = () => vnSetFeedBtn(btn, true);
+    audio.onpause = () => { if (!audio.ended) vnSetFeedBtn(btn, false); };
+    audio.onended = () => { vnSetFeedBtn(btn, false); audio.currentTime = 0; show(); };
+    audio.ontimeupdate = show;
+    audio.onerror = () => cvPlayFail(btn);
+    audio.play().catch(() => cvPlayFail(btn));
   }
 
   // ---- GIFs in comments. The chosen GIF is kept on the comment's input box until it is sent. ----
@@ -4264,13 +4454,28 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (chip) chip.style.display = 'none';
   }
 
+  // Duplicate-tap guard: one send at a time for each post
   async function submitComment(postId) {
+    if (cvBusy.has(postId)) return;
+    cvBusy.add(postId);
+    try { await sendComment(postId); }
+    finally { cvBusy.delete(postId); }
+  }
+
+  async function sendComment(postId) {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { showToast('Sign in to comment!'); return; }
     const input = commentInputFor(postId);
     const text = input.value.trim();
     const gifUrl = input._gifUrl || null;
-    if (!text && !gifUrl) return;
+    const voiceSt = cvReadyFor(postId) ? cvState : null;
+    if (!text && !gifUrl && !voiceSt) return;
+    // The voice comment uploads before anything is cleared, so a failed upload keeps the text and the recording
+    let voice = null;
+    if (voiceSt) {
+      voice = await cvUpload(voiceSt, session.user.id);
+      if (!voice) { showToast("Couldn't upload your voice comment. Your recording is still here. Tap send to try again."); return; }
+    }
     const body = text;
     const replyTo = input.dataset.replyTo || null;
     const replyToUser = input.dataset.replyToUser || null;
@@ -4279,17 +4484,20 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     clearCommentReply(input, postId);
     clearCommentGif(input);
 
-    // Normal comments send no reply_to or gif_url at all, so they behave exactly as before
+    // Normal comments send no reply_to, gif_url or audio_url at all, so they behave exactly as before
     const payload = { post_id: postId, user_id: session.user.id, body };
     if (replyTo) payload.reply_to = replyTo;
     if (gifUrl) payload.gif_url = gifUrl;
+    if (voice) { payload.audio_url = voice.url; payload.audio_duration = voice.seconds; }
     const { error } = await sb.from('comments').insert(payload);
     if (error) {
+      if (voice) { cvRemoveAudio(voice.url); input.value = body; } // nothing was saved, so do not leave the file behind
       showToast(replyTo ? 'Could not post reply. Try again.' : 'Could not post comment.');
       if (replyTo) { input.value = body; setCommentReply(postId, replyTo, replyToUser, replyToName); }
       if (gifUrl) setCommentGif(input, gifUrl, postId);
       return;
     }
+    if (voiceSt && cvState === voiceSt) cvClear(); // sent: clear the recording so it cannot be sent twice
 
     // Send mention notifications (skip the reply target: they get the reply notification instead)
     const mentions = [...new Set((body.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
@@ -10346,6 +10554,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         <div class="hv-cs-head"><span>Comments</span><button type="button" class="hv-cs-close" aria-label="Close comments">✕</button></div>
         <div class="hv-cs-list"></div>
         <div class="hv-cs-foot">
+          <button type="button" class="hv-cs-mic" aria-label="Record a voice comment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
           <button type="button" class="hv-cs-gif" aria-label="Add a GIF to your comment">GIF</button>
           <input class="hv-cs-input" type="text" placeholder="Add a comment…" autocomplete="off" enterkeyhint="send">
           <button type="button" class="hv-cs-send">Send</button>
@@ -10356,6 +10565,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     sheet.querySelector('.hv-cs-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(postId); } });
     sheet.querySelector('.hv-cs-send').onclick = () => submitComment(postId);
     sheet.querySelector('.hv-cs-gif').onclick = () => openCommentGif(postId);
+    sheet.querySelector('.hv-cs-mic').onclick = () => cvStart(postId);
     hv.root.appendChild(sheet);
     hv.sheet = sheet;
     hv.sheetPostId = postId;
