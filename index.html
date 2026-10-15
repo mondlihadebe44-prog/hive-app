@@ -4268,7 +4268,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const input = commentInputFor(postId);
     const text = input.value.trim();
     const gifUrl = input._gifUrl || null;
-    if (!text) { if (gifUrl) showToast('Write a few words to go with your GIF'); return; }
+    if (!text && !gifUrl) return;
     const body = text;
     const replyTo = input.dataset.replyTo || null;
     const replyToUser = input.dataset.replyToUser || null;
@@ -5210,14 +5210,13 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const vnReady = !!(vnState && vnState.mode === 'preview');
     if (vnReady && !vnState.publishing) postBtn.textContent = 'Publish voice note';
     else if (!vnState && composerMode === 'new' && postBtn.textContent === 'Publish voice note') postBtn.textContent = 'Post';
-    const hasContent = composerMode === 'voice-reply' ? vnReady : (textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || vnReady);
+    const hasContent = composerMode === 'voice-reply' ? vnReady : (textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || composerGifUrl || vnReady);
     postBtn.disabled = !hasContent || len > MAX;
     postBtn.style.opacity = (!hasContent || len > MAX) ? '0.4' : '1';
   }
 
   async function submitComposer() {
     if (!currentUser) { showToast('Sign in first!'); return; }
-    if (composerGifUrl && !document.getElementById('composer-textarea').value.trim()) { showToast('Write a few words to go with your GIF'); return; }
     // Never publish while the mic is still listening: stop first, let the user check the text, then tap Post.
     if (voiceSession) { stopVoiceTyping(); showToast('Stopped listening. Check your text, then tap Post.'); return; }
     const textarea = document.getElementById('composer-textarea');
@@ -9143,7 +9142,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   async function postThreadReply() {
     if (!currentUser || !currentThreadPostId) return;
     const text = document.getElementById('thread-input').value.trim();
-    if (!text) { showToast(threadGifUrl ? 'Write a few words to go with your GIF' : 'Write something first!'); return; }
+    if (!text && !threadGifUrl) { showToast('Write something first!'); return; }
     const gifForReply = threadGifUrl;
 
     const { data: originalPost } = await sb.from('posts').select('thread_id').eq('id', currentThreadPostId).single();
