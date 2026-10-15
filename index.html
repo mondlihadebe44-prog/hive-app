@@ -835,6 +835,12 @@ body {
 }
 .comment-input:focus { border-color: rgba(246,194,26,0.4); }
 .comment-input::placeholder { color: #444; }
+.comment-gif-btn { background: none; border: 1.5px solid #F6C21A; color: #F6C21A; cursor: pointer; padding: 3px 7px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.comment-gif { display: block; max-width: 100%; max-height: 200px; border-radius: 12px; margin-top: 6px; }
+.cm-gif-chip { position: relative; width: 120px; margin: 0 0 8px; }
+.cm-gif-chip img { display: block; width: 100%; max-height: 90px; object-fit: cover; border-radius: 10px; }
+.cm-gif-chip button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: none; background: rgba(0,0,0,0.7); color: #fff; cursor: pointer; font-size: 12px; }
+.hv-cs-gif { background: none; border: 1.5px solid #F6C21A; color: #F6C21A; cursor: pointer; padding: 6px 9px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; flex-shrink: 0; }
 .comment-send {
   width: 36px; height: 36px; background: #F6C21A; border: none;
   border-radius: 50%; color: #000; font-weight: 700; font-size: 16px;
@@ -1998,8 +2004,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <div id="thread-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#000;overflow:hidden;flex-shrink:0"></div>
       <div style="flex:1">
         <textarea id="thread-input" placeholder="Continue your story..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;resize:none;min-height:80px;line-height:1.6"></textarea>
+        <div id="thread-gif-preview" style="display:none;position:relative;width:120px;margin-top:8px">
+          <img id="thread-gif-img" alt="Selected GIF" style="display:block;width:100%;max-height:90px;object-fit:cover;border-radius:10px">
+          <button type="button" onclick="removeThreadGif()" aria-label="Remove GIF" style="position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,0.7);color:#fff;cursor:pointer;font-size:12px">✕</button>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
-          <div style="font-size:12px;color:var(--muted)"><span id="thread-char-count">0</span>/300</div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="font-size:12px;color:var(--muted)"><span id="thread-char-count">0</span>/300</div><button type="button" onclick="openThreadGif()" aria-label="Add a GIF" style="background:none;border:1.5px solid #F6C21A;color:#F6C21A;cursor:pointer;padding:3px 7px;border-radius:6px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700">GIF</button></div>
           <button onclick="postThreadReply()" style="padding:10px 24px;background:var(--gold);color:#000;border:none;border-radius:50px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer">Post 🐝</button>
         </div>
       </div>
@@ -3823,6 +3833,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div class="comment-input-row">
             <div class="comment-avatar" id="comment-avatar-${post.id}" style="width:32px;height:32px;flex-shrink:0;background:#F6C21A;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:12px">${(currentProfile?.full_name||'U')[0]?.toUpperCase()||'U'}</div>
             <input class="comment-input" placeholder="Add a comment…" id="comment-input-${post.id}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment('${post.id}')}">
+            <button type="button" class="comment-gif-btn" onclick="openCommentGif('${post.id}')" aria-label="Add a GIF to your comment">GIF</button>
             <button class="comment-send" onclick="submitComment('${post.id}')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
@@ -4099,7 +4110,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
             <span class="comment-name">${name}${badge}</span>
             <span class="comment-time">${timeTag(c.created_at)}</span>
           </div>
-          <div class="comment-text">${formatBody(c.body || '')}</div>
+          ${c.body ? `<div class="comment-text">${formatBody(c.body)}</div>` : ''}
+          ${/^https:\/\//.test(c.gif_url || '') ? `<img class="comment-gif" src="${vnAttr(c.gif_url)}" alt="GIF comment" loading="lazy">` : ''}
           <div class="comment-actions">
             <button class="comment-action-btn like-comment-btn${liked ? ' liked' : ''}" onclick="likeComment(this,'${c.id}')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="${liked ? '#ff4d6d' : 'none'}" stroke="${liked ? '#ff4d6d' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
@@ -4214,26 +4226,66 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     showToast('Comment deleted');
   }
 
+  // ---- GIFs in comments. The chosen GIF is kept on the comment's input box until it is sent. ----
+  function openCommentGif(postId) {
+    window._gifTarget = 'comment:' + postId;
+    openGifPicker();
+  }
+
+  // The preview sits just above the comment box row (feed) or the sheet's bottom bar (Hive Video)
+  function commentGifHost(input) {
+    const row = input && input.closest('.comment-input-row, .hv-cs-foot');
+    return row ? { row, box: row.parentElement } : null;
+  }
+
+  function setCommentGif(input, url, postId) {
+    const host = commentGifHost(input);
+    if (!host || !/^https:\/\//.test(url || '')) return;
+    input._gifUrl = url;
+    let chip = host.box.querySelector(':scope > .cm-gif-chip');
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.className = 'cm-gif-chip';
+      chip.innerHTML = '<img alt="Selected GIF"><button type="button" aria-label="Remove GIF">✕</button>';
+      chip.querySelector('button').onclick = () => clearCommentGif(input);
+      host.box.insertBefore(chip, host.row);
+    }
+    chip.querySelector('img').src = url;
+    chip.style.display = 'block';
+  }
+
+  function clearCommentGif(input) {
+    if (!input) return;
+    delete input._gifUrl;
+    const host = commentGifHost(input);
+    const chip = host && host.box.querySelector(':scope > .cm-gif-chip');
+    if (chip) chip.style.display = 'none';
+  }
+
   async function submitComment(postId) {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { showToast('Sign in to comment!'); return; }
     const input = commentInputFor(postId);
     const text = input.value.trim();
-    if (!text) return;
+    const gifUrl = input._gifUrl || null;
+    if (!text) { if (gifUrl) showToast('Write a few words to go with your GIF'); return; }
     const body = text;
     const replyTo = input.dataset.replyTo || null;
     const replyToUser = input.dataset.replyToUser || null;
     const replyToName = input.dataset.replyToName || '';
     input.value = '';
     clearCommentReply(input, postId);
+    clearCommentGif(input);
 
-    // Normal comments send no reply_to at all, so they behave exactly as before
+    // Normal comments send no reply_to or gif_url at all, so they behave exactly as before
     const payload = { post_id: postId, user_id: session.user.id, body };
     if (replyTo) payload.reply_to = replyTo;
+    if (gifUrl) payload.gif_url = gifUrl;
     const { error } = await sb.from('comments').insert(payload);
     if (error) {
       showToast(replyTo ? 'Could not post reply. Try again.' : 'Could not post comment.');
       if (replyTo) { input.value = body; setCommentReply(postId, replyTo, replyToUser, replyToName); }
+      if (gifUrl) setCommentGif(input, gifUrl, postId);
       return;
     }
 
@@ -5158,13 +5210,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const vnReady = !!(vnState && vnState.mode === 'preview');
     if (vnReady && !vnState.publishing) postBtn.textContent = 'Publish voice note';
     else if (!vnState && composerMode === 'new' && postBtn.textContent === 'Publish voice note') postBtn.textContent = 'Post';
-    const hasContent = composerMode === 'voice-reply' ? vnReady : (textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || composerGifUrl || vnReady);
+    const hasContent = composerMode === 'voice-reply' ? vnReady : (textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || vnReady);
     postBtn.disabled = !hasContent || len > MAX;
     postBtn.style.opacity = (!hasContent || len > MAX) ? '0.4' : '1';
   }
 
   async function submitComposer() {
     if (!currentUser) { showToast('Sign in first!'); return; }
+    if (composerGifUrl && !document.getElementById('composer-textarea').value.trim()) { showToast('Write a few words to go with your GIF'); return; }
     // Never publish while the mic is still listening: stop first, let the user check the text, then tap Post.
     if (voiceSession) { stopVoiceTyping(); showToast('Stopped listening. Check your text, then tap Post.'); return; }
     const textarea = document.getElementById('composer-textarea');
@@ -9013,6 +9066,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     // Character counter
     const input = document.getElementById('thread-input');
     input.value = '';
+    removeThreadGif();
     input.oninput = function() {
       document.getElementById('thread-char-count').textContent = this.value.length;
       if (this.value.length > 300) this.value = this.value.substring(0, 300);
@@ -9026,10 +9080,28 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     currentThreadPostId = null;
   }
 
+  let threadGifUrl = null;
+  function openThreadGif() {
+    window._gifTarget = 'thread';
+    openGifPicker();
+  }
+  function setThreadGif(url) {
+    if (!/^https:\/\//.test(url || '')) return;
+    threadGifUrl = url;
+    document.getElementById('thread-gif-img').src = url;
+    document.getElementById('thread-gif-preview').style.display = 'block';
+  }
+  function removeThreadGif() {
+    threadGifUrl = null;
+    document.getElementById('thread-gif-preview').style.display = 'none';
+    document.getElementById('thread-gif-img').src = '';
+  }
+
   async function postThreadReply() {
     if (!currentUser || !currentThreadPostId) return;
     const text = document.getElementById('thread-input').value.trim();
-    if (!text) { showToast('Write something first!'); return; }
+    if (!text) { showToast(threadGifUrl ? 'Write a few words to go with your GIF' : 'Write something first!'); return; }
+    const gifForReply = threadGifUrl;
 
     const { data: originalPost } = await sb.from('posts').select('thread_id').eq('id', currentThreadPostId).single();
     const threadId = originalPost?.thread_id || currentThreadPostId;
@@ -9038,10 +9110,12 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       user_id: currentUser.id,
       body: text,
       reply_to: currentThreadPostId,
-      thread_id: threadId
+      thread_id: threadId,
+      ...(gifForReply ? { image_url: gifForReply } : {})
     }).select('*, profiles(username,full_name,avatar_url,verified)').single();
 
     if (error) { showToast('Error posting!'); return; }
+    removeThreadGif();
     // Capture the parent id BEFORE closing the modal: closeThreadModal() clears
     // currentThreadPostId, so reading it afterwards found no card and the reply
     // never appeared until a refresh.
@@ -10228,6 +10302,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         <div class="hv-cs-head"><span>Comments</span><button type="button" class="hv-cs-close" aria-label="Close comments">✕</button></div>
         <div class="hv-cs-list"></div>
         <div class="hv-cs-foot">
+          <button type="button" class="hv-cs-gif" aria-label="Add a GIF to your comment">GIF</button>
           <input class="hv-cs-input" type="text" placeholder="Add a comment…" autocomplete="off" enterkeyhint="send">
           <button type="button" class="hv-cs-send">Send</button>
         </div>
@@ -10236,6 +10311,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     sheet.querySelector('.hv-cs-close').onclick = hvCloseComments;
     sheet.querySelector('.hv-cs-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(postId); } });
     sheet.querySelector('.hv-cs-send').onclick = () => submitComment(postId);
+    sheet.querySelector('.hv-cs-gif').onclick = () => openCommentGif(postId);
     hv.root.appendChild(sheet);
     hv.sheet = sheet;
     hv.sheetPostId = postId;
@@ -11233,6 +11309,19 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   }
 
   function selectGif(url) {
+    if (window._gifTarget === 'thread') {
+      window._gifTarget = null;
+      closeGifPicker();
+      setThreadGif(url);
+      return;
+    }
+    if (String(window._gifTarget || '').startsWith('comment:')) {
+      const postId = window._gifTarget.slice(8);
+      window._gifTarget = null;
+      closeGifPicker();
+      setCommentGif(commentInputFor(postId), url, postId);
+      return;
+    }
     if (window._gifTarget === 'composer') {
       composerGifUrl = url;
       composerImageFiles = []; composerVideoFile = null;
