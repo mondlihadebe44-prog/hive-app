@@ -9562,6 +9562,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       .hv-vn-wave { display:flex; align-items:center; justify-content:center; gap:3px; width:100%; height:80px; }
       .hv-vn-wave .vn-bar { flex:0 0 3px; width:3px; }
       .hv-vn-time { font-family:'DM Sans',sans-serif; font-size:14px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.7); font-variant-numeric:tabular-nums; }
+      .hv-nar-play { width:34px; height:34px; min-width:34px; border-radius:50%; border:none; background:#F6C21A; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; flex-shrink:0; pointer-events:auto; -webkit-tap-highlight-color:transparent; }
+      .hv-nar-play svg { width:16px; height:16px; }
+      .hv-nar-play:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+      .hv-nar-time { font-family:'DM Sans',sans-serif; font-size:13px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); white-space:nowrap; font-variant-numeric:tabular-nums; }
       #hv-create-sheet { z-index:30; }
       .hv-create-opt { display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:12px 14px; border-radius:16px; border:1.5px solid rgba(246,194,26,0.35); background:#0c0b08; color:#fff; text-align:left; cursor:pointer; font-family:'DM Sans',sans-serif; }
       .hv-create-opt:active { transform:scale(0.98); }
@@ -9732,6 +9736,20 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     return !post.video_url && !hasPhotos && /^https?:\/\//.test(post.audio_url || '');
   }
 
+  // A photo dump with a narration recorded on top of it
+  function hvIsNarratedDump(post) {
+    return hvIsPhotoDump(post) && /^https?:\/\//.test(post.narration_url || '');
+  }
+
+  // Narration sits where "Original Audio" would be: same play/pause as a voice note
+  function hvNarrationRowHTML(post) {
+    const secs = Math.max(0, Math.round(Number(post.narration_duration) || 0));
+    return `<svg class="hv-audio-note" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0014 0v-1M12 18v4"/></svg>
+      <span class="hv-audio-label">Narration</span>
+      <button type="button" class="hv-vn-play hv-nar-play" data-state="paused" aria-label="Play narration">${VN_PLAY_ICON}</button>
+      <span class="hv-nar-time">0:00 / ${vnFmt(secs)}</span>`;
+  }
+
   function hvBuildVoicePlayer(post) {
     const wrap = document.createElement('div');
     wrap.className = 'hv-vn';
@@ -9741,7 +9759,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <button type="button" class="hv-vn-play" data-state="paused" aria-label="Play voice note">${VN_PLAY_ICON}</button>
       <div class="hv-vn-wave" aria-hidden="true">${bars}</div>
       <div class="hv-vn-time">0:00 / ${vnFmt(secs)}</div>`;
-    wrap.querySelector('.hv-vn-play').onclick = (e) => { e.stopPropagation(); hvVnToggle(wrap.closest('.hv-slide'), post); };
+    wrap.querySelector('.hv-vn-play').onclick = (e) => { e.stopPropagation(); hvVnToggle(wrap.closest('.hv-slide'), post.audio_url, post.audio_duration); };
     return wrap;
   }
 
@@ -9753,28 +9771,29 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     btn.setAttribute('aria-label', playing ? 'Pause voice note' : 'Play voice note');
   }
 
-  function hvVnProgress(slide, post) {
+  function hvVnProgress(slide) {
     const au = slide._vnAudio;
     if (!au) return;
-    const total = Math.max(0, Math.round(Number(post.audio_duration) || 0));
-    const t = slide.querySelector('.hv-vn-time');
+    const total = Math.max(0, Math.round(Number(slide._vnSecs) || 0));
+    const t = slide.querySelector('.hv-vn-time, .hv-nar-time');
     if (t) t.textContent = vnFmt(au.currentTime) + ' / ' + vnFmt(total);
     const bars = slide.querySelectorAll('.hv-vn-wave .vn-bar');
     const frac = total ? Math.min(1, au.currentTime / total) : 0;
     bars.forEach((b, i) => b.style.setProperty('--o', (i / bars.length) < frac ? '1' : b.dataset.o));
   }
 
-  function hvVnToggle(slide, post) {
-    if (!hv || !slide) return;
+  function hvVnToggle(slide, src, secs) {
+    if (!hv || !slide || !src) return;
     let au = slide._vnAudio;
     if (!au) {
       au = new Audio();
       au.preload = 'none';
-      au.src = post.audio_url;
+      au.src = src;
       slide._vnAudio = au;
-      au.addEventListener('timeupdate', () => hvVnProgress(slide, post));
-      au.addEventListener('ended', () => { au.currentTime = 0; hvVnState(slide, false); hvVnProgress(slide, post); });
-      au.addEventListener('error', () => { hvVnState(slide, false); showToast("Couldn't play this voice note"); });
+      slide._vnSecs = secs;
+      au.addEventListener('timeupdate', () => hvVnProgress(slide));
+      au.addEventListener('ended', () => { au.currentTime = 0; hvVnState(slide, false); hvVnProgress(slide); });
+      au.addEventListener('error', () => { hvVnState(slide, false); showToast("Couldn't play this recording"); });
     }
     if (!au.paused) { au.pause(); hvVnState(slide, false); return; }
     hvStopVoice(hv.container, slide);
@@ -9787,7 +9806,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
     au.muted = false;
     const pr = au.play();
-    if (pr && pr.catch) pr.catch(() => { hvVnState(slide, false); showToast("Couldn't play this voice note"); });
+    if (pr && pr.catch) pr.catch(() => { hvVnState(slide, false); showToast("Couldn't play this recording"); });
     hvVnState(slide, true);
   }
 
@@ -9814,6 +9833,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
     let v = null;
     const isVoice = !hvIsPhotoDump(post) && hvIsVoicePost(post);
+    const narrated = hvIsNarratedDump(post);
     if (hvIsPhotoDump(post)) {
       slide.appendChild(hvBuildPhotoCarousel(post.image_urls));
     } else if (isVoice) {
@@ -9927,6 +9947,13 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
 
     if (isVoice) { const row = slide.querySelector('.hv-audio'); if (row) row.style.display = 'none'; }
+    if (narrated) {
+      const row = slide.querySelector('.hv-audio');
+      if (row) {
+        row.innerHTML = hvNarrationRowHTML(post);
+        slide.querySelector('.hv-nar-play').onclick = (e) => { e.stopPropagation(); hvVnToggle(slide, post.narration_url, post.narration_duration); };
+      }
+    }
     hv.container.appendChild(slide);
     hv.io.observe(slide);
   }
