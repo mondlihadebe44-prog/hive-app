@@ -6049,41 +6049,75 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     document.getElementById('gif-picker-modal').style.display = 'none';
   }
 
+  // Search results: a slow or stuck request gives up after 8 seconds, a late answer to an old search is ignored,
+  // and the first trending list is kept so reopening the picker is instant.
+  const GIF_TIMEOUT_MS = 8000;
+  let gifReqId = 0;
+  let gifTrendingCache = null;
+  let gifLastQuery = 'trending';
+
+  function renderGifMessage(html) {
+    document.getElementById('gif-results').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">${html}</div>`;
+  }
+
+  function renderGifItems(items) {
+    const results = document.getElementById('gif-results');
+    results.innerHTML = '';
+    items.forEach(gif => {
+      const full = gif.file?.md?.gif?.url || gif.file?.sm?.gif?.url || gif.images?.fixed_height?.url;
+      const thumb = gif.file?.sm?.gif?.url || gif.file?.md?.gif?.url || gif.images?.fixed_height_small?.url || full;
+      if (!full || !/^https:\/\//.test(full)) return;
+      const div = document.createElement('div');
+      div.style.cssText = 'border-radius:12px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:#1a1a1a';
+      const img = document.createElement('img');
+      img.src = thumb;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = 'GIF';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      div.appendChild(img);
+      div.onclick = () => selectGif(full);
+      results.appendChild(div);
+    });
+  }
+
   async function searchGifs(query) {
     clearTimeout(gifSearchTimeout);
+    gifLastQuery = query;
+    const myReq = ++gifReqId;
     gifSearchTimeout = setTimeout(async () => {
-      const results = document.getElementById('gif-results');
-      results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">Searching...</div>';
       if (!KLIPY_KEY || KLIPY_KEY === 'YOUR_KLIPY_API_KEY') {
-        results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">GIF search not set up yet — add a Klipy API key</div>';
+        renderGifMessage('GIF search not set up yet — add a Klipy API key');
         return;
       }
+      if (query === 'trending' && gifTrendingCache) { renderGifItems(gifTrendingCache); return; }
+      renderGifMessage('Searching...');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), GIF_TIMEOUT_MS);
       try {
         const endpoint = query === 'trending'
           ? `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/trending?customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`
           : `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search?q=${encodeURIComponent(query)}&customer_id=${KLIPY_CUSTOMER_ID}&per_page=20`;
-        const res = await fetch(endpoint);
+        const res = await fetch(endpoint, { signal: controller.signal });
         const data = await res.json();
-        const items = data.data?.data || data.data || [];
-        results.innerHTML = '';
-        if (!items || items.length === 0) {
-          results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">No GIFs found</div>';
-          return;
-        }
-        items.forEach(gif => {
-          const url = gif.file?.md?.gif?.url || gif.file?.sm?.gif?.url || gif.images?.fixed_height?.url;
-          if (!url) return;
-          const div = document.createElement('div');
-          div.style.cssText = 'border-radius:12px;overflow:hidden;cursor:pointer;aspect-ratio:1';
-          div.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
-          div.onclick = () => selectGif(url);
-          results.appendChild(div);
-        });
-      } catch(e) {
-        results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">GIFs unavailable right now</div>';
+        if (myReq !== gifReqId) return; // a newer search has started: drop this answer
+        const items = (data.data?.data || data.data || []).filter(Boolean);
+        if (!items.length) { renderGifMessage('No GIFs found'); return; }
+        if (query === 'trending') gifTrendingCache = items;
+        renderGifItems(items);
+      } catch (e) {
+        if (myReq !== gifReqId) return;
+        const slow = e && e.name === 'AbortError';
+        renderGifMessage(slow
+          ? 'GIFs are taking too long. <button type="button" onclick="retryGifSearch()" style="margin-top:12px;background:#F6C21A;border:none;color:#000;border-radius:50px;padding:8px 16px;font-family:Syne,sans-serif;font-weight:700;cursor:pointer">Try again</button>'
+          : 'GIFs unavailable right now');
+      } finally {
+        clearTimeout(timer);
       }
     }, 400);
   }
+
+  function retryGifSearch() { searchGifs(gifLastQuery); }
 
   function selectGif(url) {
     selectedGifUrl = url;
