@@ -7540,7 +7540,13 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       setTimeout(async () => {
         // Activate Pro directly
         if (currentUser) {
-          await sb.from('profiles').update({ is_pro: true }).eq('id', currentUser.id);
+          const { error: proErr } = await sb.from('profiles').update({ is_pro: true }).eq('id', currentUser.id);
+          if (proErr) {
+            // The server refused the change, so Pro is not active. Say so instead of a false welcome.
+            console.error('Pro activation refused:', proErr);
+            showToast("Payment received, but Hive Pro isn't active yet. We'll switch it on shortly. 🐝");
+            return;
+          }
           await loadProfile();
           loadSavedTheme();
           showToast('Welcome to Hive Pro! 👑🐝');
