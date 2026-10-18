@@ -2168,7 +2168,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 </div>
 
 <!-- PASSWORD RESET MODAL -->
-<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:700;align-items:center;justify-content:center;padding:20px">
+<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;padding:20px">
   <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:400px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Reset Password 🔑</div>
@@ -2186,7 +2186,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 </div>
 
 <!-- NEW PASSWORD MODAL (shown after clicking reset link) -->
-<div id="new-password-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:800;align-items:center;justify-content:center;padding:20px">
+<div id="new-password-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1000;align-items:center;justify-content:center;padding:20px">
   <div style="background:#111;border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:400px">
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-size:48px;margin-bottom:12px">🔑</div>
@@ -7414,17 +7414,27 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     const email = document.getElementById('reset-email').value.trim();
     if (!email) { showResetError('Please enter your email address'); return; }
 
+    // Clear any earlier result so an old success message cannot sit next to a new error
+    document.getElementById('reset-message').style.display = 'none';
+    document.getElementById('reset-error').style.display = 'none';
+
     const btn = document.getElementById('reset-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
 
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://mondlihadebe44-prog.github.io/hive-app/?reset=true'
-    });
+    // Send the user back to the same site they requested the reset from (e.g. joinhive.co.za)
+    const redirectTo = window.location.origin + window.location.pathname + '?reset=true';
+    let error = null;
+    try {
+      ({ error } = await sb.auth.resetPasswordForEmail(email, { redirectTo }));
+    } catch (e) {
+      error = { message: "Couldn't reach the server. Check your connection and try again." };
+    }
 
     btn.disabled = false; btn.textContent = 'Send Reset Link 🐝';
 
     if (error) {
-      showResetError(error.message);
+      console.error('Password reset request failed:', error);
+      showResetError(error.message || "Couldn't send the reset link. Please try again.");
     } else {
       document.getElementById('reset-error').style.display = 'none';
       const msg = document.getElementById('reset-message');
