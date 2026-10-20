@@ -2933,6 +2933,8 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
       
 
+  </div>
+
   <!-- USER PROFILE PANEL -->
   <div id="user-profile-panel" class="panel">
     <div class="panel-header" style="display:flex;align-items:center;gap:12px">
@@ -3044,8 +3046,6 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       <div id="who-to-follow"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
     </div>
   </div>
-
-</div>
 
     <!-- PROFILE -->
     <div id="profile-panel" class="panel">
@@ -3864,7 +3864,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <button class="action-btn bookmark-btn" onclick="toggleBookmark(this,'${post.id}')" style="margin-left:auto">
             <span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></span>
           </button>
-          ${!isOwn ? `<button class="follow-btn" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span></button>` : '')}
+          ${!isOwn ? `<button class="follow-btn" data-follow-target="${post.user_id}" onclick="toggleFollow(this,'${post.user_id}')">Follow</button>` : (!isThreadReply ? `<button class="action-btn" onclick="openThreadReply('${post.id}')" style="margin-left:auto" title="Continue thread"><span class="action-icon"><svg class="act-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span></button>` : '')}
         </div>
         <div class="comments-section" id="comments-${post.id}">
           <div class="comments-sort-bar">
@@ -4023,39 +4023,95 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     delete btn.dataset.liking; // release guard
   }
 
-  async function loadFollowStatus(userId, card) {
-    if (!currentUser || userId === currentUser.id) return;
-    const btn = card.querySelector('.follow-btn');
-    if (!btn) return;
-    const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
-    if (data) {
-      btn.classList.add('following');
-      btn.textContent = 'Following';
-    } else {
-      btn.classList.remove('following');
-      btn.textContent = 'Follow';
+  // ---- Follow relationships. One set of helpers decides whether you follow someone, so every button agrees. ----
+  const followBusy = new Set(); // people with a follow change in progress: stops double taps creating duplicates
+
+  // Sets the follow relationship to wantFollow. Reports success only after the database accepted the change.
+  async function setFollowRelation(targetId, wantFollow) {
+    if (!currentUser) return { ok: false, message: 'Sign in to follow!' };
+    if (!targetId || targetId === currentUser.id) return { ok: false, message: "You can't follow yourself." };
+    if (followBusy.has(targetId)) return { ok: false, busy: true };
+    followBusy.add(targetId);
+    try {
+      if (wantFollow) {
+        // Check first, so a repeat tap or another tab cannot create a duplicate row
+        const { data: existing, error: checkErr } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', targetId).maybeSingle();
+        if (checkErr) throw checkErr;
+        if (existing) return { ok: true, following: true, changed: false };
+        const { error } = await sb.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
+        if (error && error.code !== '23505') throw error; // 23505 = already there
+        if (!error) {
+          // Notification only for a new follow. A failed notification must not undo the follow itself.
+          const { error: notifErr } = await sb.from('notifications').insert({ user_id: targetId, from_user_id: currentUser.id, type: 'follow' });
+          if (notifErr) console.error('Follow notification failed:', notifErr);
+        }
+        return { ok: true, following: true, changed: !error };
+      }
+      const { error } = await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetId);
+      if (error) throw error;
+      return { ok: true, following: false, changed: true };
+    } catch (err) {
+      console.error('Follow change failed:', err);
+      return { ok: false, message: "Couldn't update follow. Try again." };
+    } finally {
+      followBusy.delete(targetId);
     }
   }
 
-  async function toggleFollow(btn, userId) {
-    if (!currentUser) { showToast('Sign in to follow!'); return; }
-    const isFollowing = btn.classList.contains('following');
-    btn.classList.toggle('following');
-    if (isFollowing) {
-      btn.textContent = 'Follow';
-      hiveHaptic('light');
-      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
-      showToast('Unfollowed');
-    } else {
-      btn.textContent = 'Following';
-      hiveHaptic('success');
-      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
-      if (userId !== currentUser.id) await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
-      showToast('Now following! 🐝');
+  // Sets one follow button to the true state. Each button keeps its own look; the text is always Follow or Following.
+  function renderFollowBtn(btn, following) {
+    btn.classList.toggle('following', following);
+    btn.textContent = following ? 'Following' : 'Follow';
+    if (!btn.classList.contains('follow-btn') && !btn.classList.contains('hv-follow')) {
+      btn.style.background = following ? 'var(--gold)' : 'transparent';
+      btn.style.color = following ? '#000' : 'var(--gold)';
     }
-    // Refresh profile stats
-    await loadProfileStats();
   }
+
+  // Every visible follow button for the same person is updated together
+  function syncFollowUI(targetId, following) {
+    document.querySelectorAll(`[data-follow-target="${targetId}"]`).forEach(b => renderFollowBtn(b, following));
+  }
+
+  // Reads the database once for all follow buttons inside root, then sets each one to the real state
+  async function applyFollowStates(root) {
+    if (!currentUser || !root) return;
+    const btns = [...root.querySelectorAll('[data-follow-target]')];
+    btns.filter(b => b.dataset.followTarget === currentUser.id).forEach(b => { b.style.display = 'none'; }); // never offer to follow yourself
+    const ids = [...new Set(btns.map(b => b.dataset.followTarget))].filter(id => id && id !== currentUser.id);
+    if (ids.length === 0) return;
+    const { data, error } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id).in('following_id', ids);
+    if (error) { console.error('Could not load follow states:', error); return; }
+    const mine = new Set((data || []).map(r => r.following_id));
+    btns.filter(b => b.dataset.followTarget !== currentUser.id).forEach(b => renderFollowBtn(b, mine.has(b.dataset.followTarget)));
+  }
+
+  // Re-reads the numbers on screen from the database after a follow change, instead of adding 1 or taking 1 away
+  async function refreshFollowCounts(targetId) {
+    const panel = document.getElementById('user-profile-panel');
+    if (panel && panel.classList.contains('active') && viewingUserId === targetId) {
+      const { count, error } = await sb.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId);
+      if (!error) document.getElementById('user-followers-count').textContent = count || 0;
+    }
+    loadProfileStats(); // my own followers and following, from the database
+  }
+
+  // One tap handler for every follow button: works out the new state, saves it, then updates everything that shows it
+  async function followTap(btn, targetId) {
+    if (!currentUser) { showToast('Sign in to follow!'); return; }
+    const wantFollow = !btn.classList.contains('following');
+    btn.disabled = true;
+    const res = await setFollowRelation(targetId, wantFollow);
+    btn.disabled = false;
+    if (!res.ok) { if (!res.busy) showToast(res.message || "Couldn't update follow. Try again."); return; }
+    syncFollowUI(targetId, res.following);
+    if (res.following) { hiveHaptic('success'); showToast(res.changed ? 'Now following! 🐝' : 'You already follow them'); }
+    else { hiveHaptic('light'); showToast('Unfollowed'); }
+    refreshFollowCounts(targetId);
+  }
+
+  async function loadFollowStatus(userId, card) { await applyFollowStates(card); }
+  function toggleFollow(btn, userId) { return followTap(btn, userId); }
 
   async function toggleComments(btn, postId) {
     const section = document.getElementById('comments-' + postId);
@@ -8893,28 +8949,17 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     document.getElementById('user-followers-count').textContent = followersRes.count || 0;
     document.getElementById('user-following-count').textContent = followingRes.count || 0;
 
-    // Follow button
+    // Follow button: shows the real state for this person, read from the database
     const followBtn = document.getElementById('user-follow-btn');
     followBtn.dataset.userId = userId;
+    followBtn.dataset.followTarget = userId;
+    renderFollowBtn(followBtn, false); // clear any state left over from the previous profile
     if (currentUser && userId === currentUser.id) {
       followBtn.style.display = 'none';
     } else {
       followBtn.style.display = 'block';
-      if (currentUser) {
-        const { data } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', userId).maybeSingle();
-        if (reqId !== userProfileReqId) return;
-        if (data) {
-          followBtn.textContent = 'Following ✓';
-          followBtn.style.background = 'var(--gold)';
-          followBtn.style.color = '#000';
-          followBtn.classList.add('following');
-        } else {
-          followBtn.textContent = 'Follow';
-          followBtn.style.background = 'transparent';
-          followBtn.style.color = 'var(--gold)';
-          followBtn.classList.remove('following');
-        }
-      }
+      await applyFollowStates(followBtn.parentElement);
+      if (reqId !== userProfileReqId) return;
     }
 
     // Load user posts
@@ -8931,33 +8976,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     userPosts.forEach(post => container.appendChild(createPostCard(post)));
   }
 
-  async function toggleFollowUser(btn) {
-    if (!currentUser) { showToast('Sign in to follow!'); return; }
-    const userId = btn.dataset.userId;
-    const isFollowing = btn.classList.contains('following');
-    if (isFollowing) {
-      btn.classList.remove('following');
-      btn.textContent = 'Follow';
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--gold)';
-      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
-      const el = document.getElementById('user-followers-count');
-      if (el) el.textContent = Math.max(0, parseInt(el.textContent) - 1);
-      showToast('Unfollowed');
-    } else {
-      btn.classList.add('following');
-      btn.textContent = 'Following ✓';
-      btn.style.background = 'var(--gold)';
-      btn.style.color = '#000';
-      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
-      await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
-      const el = document.getElementById('user-followers-count');
-      if (el) el.textContent = parseInt(el.textContent || 0) + 1;
-      showToast('Now following! 🐝');
-    }
-    // Refresh my profile stats
-    await loadProfileStats();
-  }
+  function toggleFollowUser(btn) { return followTap(btn, btn.dataset.userId); }
 
   // POST OPTIONS MENU
   let activeMenu = null;
@@ -9553,9 +9572,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${name}${verified}</div>
           <div style="font-size:12px;color:var(--muted)">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
         </div>
-        <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
+        <button data-follow-target="${u.id}" onclick="followFromExplore(this,'${u.id}')" style="padding:7px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
       listEl.appendChild(row);
     });
+    applyFollowStates(listEl);
 
     // CTA back to the full feed once they've followed someone
     const refreshRow = document.createElement('div');
@@ -9586,9 +9606,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${verified}</div>
           <div style="font-size:11px;color:var(--muted)">@${u.username}</div>
         </div>
-        <button onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
+        <button data-follow-target="${u.id}" onclick="followFromExplore(this,'${u.id}')" style="padding:5px 12px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
       container.appendChild(div);
     });
+    applyFollowStates(container);
   }
 
   // GLOBAL SEARCH
@@ -9738,9 +9759,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div style="font-size:12px;color:#666">@${u.username}${u.location ? ' · 📍 ' + u.location : ''}</div>
           ${u.bio ? `<div style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${u.bio}</div>` : ''}
         </div>
-        <button onclick="event.stopPropagation();followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
+        <button data-follow-target="${u.id}" onclick="event.stopPropagation();followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>`;
       results.appendChild(div);
     });
+    applyFollowStates(results);
   }
 
   async function filterByLocation(location) {
@@ -9765,22 +9787,15 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${name}${verified}</div>
           <div style="font-size:13px;color:var(--muted)">@${u.username}</div>
         </div>
-        <button onclick="followFromExplore(this,'${u.id}')" style="padding:6px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Follow</button>`;
+        <button data-follow-target="${u.id}" onclick="followFromExplore(this,'${u.id}')" style="padding:6px 16px;border-radius:50px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Follow</button>`;
       results.appendChild(div);
     });
+    applyFollowStates(results);
   }
 
-  async function followFromExplore(btn, userId) {
-    if (!currentUser) { showToast('Sign in to follow!'); return; }
-    btn.textContent = 'Following';
-    btn.style.background = 'var(--gold)';
-    btn.style.color = '#000';
-    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
-    await sb.from('notifications').insert({ user_id: userId, from_user_id: currentUser.id, type: 'follow' });
-    showToast('Now following! 🐝');
-  }
+  function followFromExplore(btn, userId) { return followTap(btn, userId); }
 
-  // EXPLORE PAGE
+  // EXPLORE PAGE  // EXPLORE PAGE
   let exploreLoaded = false;
   let exploreChip = 'trending';
 
@@ -9848,9 +9863,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
           <div style="font-size:12px;color:#666">@${u.username||''}</div>
           ${u.bio?`<div style="font-size:12px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.bio}</div>`:''}
         </div>
-        <button onclick="followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>
+        <button data-follow-target="${u.id}" onclick="followFromExplore(this,'${u.id}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid #F6C21A;background:transparent;color:#F6C21A;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Follow</button>
       </div>`;
     }).join('');
+    applyFollowStates(container);
   }
 
   // ── HIVE VIDEO: full-screen vertical viewer inside Explore ──
@@ -10270,7 +10286,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
             <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hiveEsc(name)}${p.verified ? '<svg style="display:inline-block;vertical-align:middle;margin-left:2px;filter:drop-shadow(0 0 2px rgba(246,194,26,0.35))" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" fill="#1877F2"/><circle cx="10" cy="10" r="9" fill="none" stroke="#F6C21A" stroke-width="1.5"/><path d="M6.5 10L8.5 12L13.5 7.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>
             <div style="font-size:12px;color:#ccc">@${hiveEsc(p.username || 'unknown')}</div>
           </div>
-          ${isOwn ? '' : `<button class="hv-follow" onclick="hvToggleFollow(this,'${post.user_id}')">Follow</button>`}
+          ${isOwn ? '' : `<button class="hv-follow" data-follow-target="${post.user_id}" onclick="hvToggleFollow(this,'${post.user_id}')">Follow</button>`}
           <div class="hv-voice-wrap">
             <button type="button" class="hv-voice" onclick="hvStartVoiceReply('${post.id}')" aria-label="Record a voice reply">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/></svg>
@@ -10487,26 +10503,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     card.hidden = false;
   }
   // Follow: the button changes only after the real request succeeds; repeat taps are ignored while it runs
-  async function hvToggleFollow(btn, userId) {
-    if (!currentUser) { showToast('Sign in to follow!'); return; }
-    if (btn.dataset.busy === '1') return;
-    btn.dataset.busy = '1';
-    const me = currentUser.id;
-    const wasFollowing = btn.classList.contains('following');
-    const res = wasFollowing
-      ? await sb.from('follows').delete().eq('follower_id', me).eq('following_id', userId)
-      : await sb.from('follows').insert({ follower_id: me, following_id: userId });
-    delete btn.dataset.busy;
-    if (res.error) { showToast("Couldn't update follow. Try again."); return; }
-    btn.classList.toggle('following', !wasFollowing);
-    btn.textContent = wasFollowing ? 'Follow' : 'Following';
-    hiveHaptic(wasFollowing ? 'light' : 'success');
-    showToast(wasFollowing ? 'Unfollowed' : 'Now following! 🐝');
-    if (!wasFollowing && userId !== me) await sb.from('notifications').insert({ user_id: userId, from_user_id: me, type: 'follow' });
-    loadProfileStats();
-  }
+  function hvToggleFollow(btn, userId) { return followTap(btn, userId); }
 
-  // Voice reply: opens the existing composer (record, preview, cancel, publish) aimed at this video.
+  // Voice reply: opens  // Voice reply: opens the existing composer (record, preview, cancel, publish) aimed at this video.
   // The microphone is requested only when the user taps Record inside the composer.
   function hvStartVoiceReply(postId) {
     if (!currentUser) { showToast('Sign in to reply!'); return; }
