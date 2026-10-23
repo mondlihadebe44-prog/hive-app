@@ -3943,6 +3943,21 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (touchTimer) clearTimeout(touchTimer);
   }
 
+  // Writes one notification unless the same one (same recipient, sender, type and post) already exists.
+  // Plain select-then-insert: the notifications table has no unique key, so upsert with onConflict fails.
+  async function notifyOnce(row) {
+    try {
+      const { data: existing } = await sb.from('notifications').select('id')
+        .eq('user_id', row.user_id).eq('from_user_id', row.from_user_id).eq('type', row.type).eq('post_id', row.post_id)
+        .limit(1);
+      if (existing && existing.length) return;
+      const { error } = await sb.from('notifications').insert(row);
+      if (error) console.error('Notification failed:', row.type, error);
+    } catch (e) {
+      console.error('Notification failed:', row.type, e);
+    }
+  }
+
   async function react(postId, reaction, btn) {
     if (!currentUser) { showToast('Sign in to react!'); return; }
     hiveHaptic('selection');
@@ -3961,7 +3976,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id, reaction });
       const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
       if (post && post.user_id !== currentUser.id) {
-        await sb.from('notifications').insert({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
+        await notifyOnce({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
       }
     }
     icon.textContent = emoji;
@@ -4012,11 +4027,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       );
       const { data: post } = await sb.from('posts').select('user_id').eq('id', postId).single();
       if (post && post.user_id !== currentUser.id) {
-        // Use upsert to prevent duplicate like notifications too
-        await sb.from('notifications').upsert(
-          { user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId },
-          { onConflict: 'user_id,from_user_id,type,post_id', ignoreDuplicates: true }
-        );
+        await notifyOnce({ user_id: post.user_id, from_user_id: currentUser.id, type: 'like', post_id: postId });
       }
     }
 
@@ -4572,6 +4583,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (replyTo) payload.reply_to = replyTo;
     if (gifUrl) payload.gif_url = gifUrl;
     if (voice) { payload.audio_url = voice.url; payload.audio_duration = voice.seconds; }
+    // Is this the commenter's first comment on this post? (Read from comments, which the commenter can see.)
+    const { data: priorComments } = await sb.from('comments').select('id').eq('post_id', postId).eq('user_id', session.user.id).limit(1);
+    const firstComment = !(priorComments && priorComments.length);
     const { error } = await sb.from('comments').insert(payload);
     if (error) {
       if (voice) { cvRemoveAudio(voice.url); input.value = body; } // nothing was saved, so do not leave the file behind
@@ -4583,17 +4597,26 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (voiceSt && cvState === voiceSt) cvClear(); // sent: clear the recording so it cannot be sent twice
 
     // Send mention notifications (skip the reply target: they get the reply notification instead)
+    // notifiedIds records everyone who already got a notification for this comment, so the author is not told twice
+    const notifiedIds = new Set(replyToUser ? [replyToUser] : []);
     const mentions = [...new Set((body.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
     for (const username of mentions) {
       const { data: mentioned } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
       if (mentioned && mentioned.id !== session.user.id && mentioned.id !== replyToUser) {
         await sb.from('notifications').insert({ user_id: mentioned.id, from_user_id: session.user.id, type: 'comment', post_id: postId });
+        notifiedIds.add(mentioned.id);
       }
     }
 
     // Reply notification (no self-notify)
     if (replyTo && replyToUser && replyToUser !== session.user.id) {
       await sb.from('notifications').insert({ user_id: replyToUser, from_user_id: session.user.id, type: 'reply', post_id: postId });
+    }
+
+    // Tell the post's author about the commenter's first comment on the post: never for their own post
+    const { data: commentedPost } = await sb.from('posts').select('user_id').eq('id', postId).maybeSingle();
+    if (firstComment && commentedPost && commentedPost.user_id !== session.user.id && !notifiedIds.has(commentedPost.user_id)) {
+      await notifyOnce({ user_id: commentedPost.user_id, from_user_id: session.user.id, type: 'comment', post_id: postId });
     }
 
     await loadComments(postId);
