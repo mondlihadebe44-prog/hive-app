@@ -6722,6 +6722,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       comment: { icon: '💬', color: '#2D8CFF', msg: 'commented on your post', pluralMsg: 'people commented' },
       message: { icon: '✉️', color: '#9C6FFF', msg: 'sent you a message', pluralMsg: 'new messages' },
       repost:  { icon: '🔁', color: '#00CC88', msg: 'rebuzzed your vibe', pluralMsg: 'people rebuzzed' },
+      quote:   { icon: '✏️', color: '#FF8A3D', msg: 'quoted your post', pluralMsg: 'people quoted your post' },
       reply:   { icon: '↩️', color: '#2D8CFF', msg: 'replied to your comment', pluralMsg: 'people replied to your comments' },
     };
 
@@ -7432,9 +7433,11 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     btn.disabled = false; btn.textContent = 'Post 🐝';
     if (error) { showToast('Error posting quote!'); return; }
 
+    // Notify the original post's owner (never for quoting your own post).
+    // Stored as type 'quote' pointing at the NEW quote post, so tapping it opens the quote.
     const { data: originalPost } = await sb.from('posts').select('user_id').eq('id', currentQuotePostId).single();
     if (originalPost && originalPost.user_id !== currentUser.id) {
-      await sb.from('notifications').insert({ user_id: originalPost.user_id, from_user_id: currentUser.id, type: 'repost', post_id: currentQuotePostId });
+      await notifyQuote(originalPost.user_id, newPost.id);
     }
 
     const quotedId = currentQuotePostId;
@@ -7447,6 +7450,20 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (empty) container.innerHTML = '';
     const card = createPostCard(newPost);
     container.insertBefore(card, container.firstChild);
+  }
+
+  // Quote notification: one row per quote post. The duplicate check stops a retry from adding a second one.
+  async function notifyQuote(ownerId, quotePostId) {
+    try {
+      const { data: existing } = await sb.from('notifications').select('id')
+        .eq('user_id', ownerId).eq('from_user_id', currentUser.id).eq('type', 'quote').eq('post_id', quotePostId)
+        .maybeSingle();
+      if (existing) return;
+      const { error } = await sb.from('notifications').insert({ user_id: ownerId, from_user_id: currentUser.id, type: 'quote', post_id: quotePostId });
+      if (error) console.error('Quote notification failed:', error);
+    } catch (e) {
+      console.error('Quote notification failed:', e);
+    }
   }
 
   async function renderQuotedPost(post, container) {
