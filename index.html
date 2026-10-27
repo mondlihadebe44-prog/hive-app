@@ -4702,6 +4702,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   let composerVideoFile = null;
   let composerGifUrl = null;
   let composerDraft = '';
+  let composerPosting = false; // true while a publish is in progress
 
   function openComposer(mode = 'new', existingPost = null) {
     vnDiscard();
@@ -5527,11 +5528,19 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     if (vnReady && !vnState.publishing) postBtn.textContent = 'Publish voice note';
     else if (!vnState && composerMode === 'new' && postBtn.textContent === 'Publish voice note') postBtn.textContent = 'Post';
     const hasContent = composerMode === 'voice-reply' ? vnReady : (textarea.value.trim().length > 0 || composerImageFiles.length > 0 || composerVideoFile || composerGifUrl || vnReady);
-    postBtn.disabled = !hasContent || len > MAX;
+    postBtn.disabled = composerPosting || !hasContent || len > MAX;
     postBtn.style.opacity = (!hasContent || len > MAX) ? '0.4' : '1';
   }
 
+  // Only one publish at a time: a second tap, or typing during an upload, can't start another post
   async function submitComposer() {
+    if (composerPosting) return;
+    composerPosting = true;
+    try { await submitComposerInner(); }
+    finally { composerPosting = false; }
+  }
+
+  async function submitComposerInner() {
     if (!currentUser) { showToast('Sign in first!'); return; }
     // Never publish while the mic is still listening: stop first, let the user check the text, then tap Post.
     if (voiceSession) { stopVoiceTyping(); showToast('Stopped listening. Check your text, then tap Post.'); return; }
@@ -5653,6 +5662,10 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
     }
 
     composerDraft = '';
+    // Clear the box first: closeComposer() keeps whatever is left in it as the draft,
+    // so without this the published text would reappear when the composer is reopened
+    document.getElementById('composer-textarea').value = '';
+    document.getElementById('compose-text').value = ''; // home box: clears a suggestion once it is published
     closeComposer();
     hiveHaptic('success');
     showToast('Vibe posted! 🐝✨');
@@ -7983,6 +7996,9 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
   function postToHiveFromMind(text) {
     const sheet = document.getElementById('hivemind-sheet');
     const composeInput = document.getElementById('compose-text');
+    // The fullscreen composer opens with composerDraft, so the suggestion must be stored there
+    // or tapping the home box would open an empty composer and the text would look lost
+    composerDraft = text;
 
     // Step 1 — flash the button gold to confirm tap
     // Step 2 — slide HiveMind down
