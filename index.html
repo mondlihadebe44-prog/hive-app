@@ -7799,6 +7799,14 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
 
   // HIVEMIND CHAT
   const HIVEMIND_URL = 'https://yaqdplheuddatviwaijl.supabase.co/functions/v1/hivemind';
+  // The signed-in user's session token. The server checks it, so only signed-in users get AI replies.
+  async function hiveAuthHeader() {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session && session.access_token) return `Bearer ${session.access_token}`;
+    } catch (e) {}
+    return `Bearer ${SUPABASE_KEY}`;
+  }
   let hiveMindHistory = []; // stores {role, content} for conversation context
   let hiveMindTyping = false;
 
@@ -7962,7 +7970,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`,
+          'Authorization': await hiveAuthHeader(),
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk'
         },
         body: JSON.stringify({
@@ -7976,6 +7984,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
       hiveMindTyping = false;
       hmOrbRefresh();
 
+      if (res.status === 401) { appendHiveMindMessage('assistant', '🐝 Please sign in to use HiveMind, then try again.'); return; }
       if (!res.ok || data.error) throw new Error(data.error || 'HiveMind unavailable');
 
       const reply = data.reply;
@@ -8073,7 +8082,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`,
+          'Authorization': await hiveAuthHeader(),
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk'
         },
         body: JSON.stringify({
@@ -8235,7 +8244,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`,
+          'Authorization': await hiveAuthHeader(),
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk'
         },
         body: JSON.stringify({
@@ -8345,7 +8354,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk`,
+          'Authorization': await hiveAuthHeader(),
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcWRwbGhldWRkYXR2aXdhaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTAyNzIsImV4cCI6MjA5MjI4NjI3Mn0.4nP976ApNp2_-a8VIEfe-hSvFVvQ0o1G4nwS_1GK-hk'
         },
         body: JSON.stringify({
@@ -11190,7 +11199,7 @@ time.rel-time:focus-visible { outline: 2px solid #F6C21A; outline-offset: 2px; }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Authorization': await hiveAuthHeader(),
           'apikey': SUPABASE_KEY
         },
         body: JSON.stringify({
