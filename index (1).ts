@@ -5,8 +5,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
+
+// True only when the access token belongs to a signed-in user. Supabase Auth checks the token,
+// so the request body is never trusted for identity. The public anon key is rejected here.
+async function isSignedInUser(req: Request): Promise<boolean> {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) return false
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  // Only signed-in Hive users get AI replies. The 401 includes a friendly reply so the app can show it.
+  if (!(await isSignedInUser(req))) {
+    return new Response(JSON.stringify({ error: 'unauthorized', reply: 'Please sign in to use HiveMind 🐝' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
 
   try {
     const { message, history = [], mode = 'chat', context = {} } = await req.json()
